@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { getCurrentFPLSeason } from '@/lib/season';
+import Image from 'next/image';
 
 export default function Home() {
   const [teamId, setTeamId] = useState('');
@@ -39,10 +40,34 @@ export default function Home() {
   };
 
   const featuredPersonas = [
-    { name: "Sir Alex", title: "GOAT", emoji: "👑" },
-    { name: "Pep", title: "Overthinker", emoji: "🧠" },
-    { name: "Bielsa", title: "Extremist", emoji: "🔥" },
-    { name: "Dyche", title: "Survivalist", emoji: "🛡️" },
+    { 
+      name: "Pep Guardiola", 
+      title: "The Bald Genius", 
+      emoji: "🧠",
+      image: "/images/personas/pep-guardiola-bald-genius.jpg",
+      color: "#6CABDD"
+    },
+    { 
+      name: "Sir Alex Ferguson", 
+      title: "The GOAT", 
+      emoji: "👑",
+      image: "/images/personas/alex-ferguson-goat.jpg",
+      color: "#DA291C"
+    },
+    { 
+      name: "Ruben Amorim", 
+      title: "The Stubborn One", 
+      emoji: "🦁",
+      image: "/images/personas/ruben-amorim-stubborn-one.jpg",
+      color: "#005CAB"
+    },
+    { 
+      name: "Mikel Arteta", 
+      title: "The Process Manager", 
+      emoji: "🏗️",
+      image: "/images/personas/mikel-arteta-process-manager.jpg",
+      color: "#EF0107"
+    },
   ];
 
   return (
@@ -106,35 +131,45 @@ export default function Home() {
             </form>
           </div>
           <div className="flex justify-between items-center mt-3 px-2">
-            <p className="text-[10px] text-white/30 uppercase tracking-widest font-bold">Find ID in Team URL</p>
+            <p className="text-[10px] text-white/30 uppercase tracking-widest font-bold">Find ID in Points tab URL</p>
             {error && <p className="text-xs text-[#e90052] font-black uppercase italic animate-pulse">{error}</p>}
           </div>
         </div>
+
+        <p className="text-center text-white/50 text-[12px] font-bold uppercase tracking-[0.4em] mb-4 md:mb-6">
+          Match with 16 legendary managers
+        </p>
 
         {/* Persona Quick Row - Improved Readability */}
         <div className="w-full mb-12 md:mb-16 animate-slide-in delay-400 opacity-0" style={{ animationFillMode: 'forwards' }}>
           <div className="flex flex-wrap justify-center gap-3 md:gap-4">
             {featuredPersonas.map((p, i) => (
               <div key={i} className="glass-card px-4 py-3 border-white/5 hover:border-white/10 transition-all hover:-translate-y-0.5 group flex items-center gap-3 rounded-2xl">
-                <div className="text-2xl">{p.emoji}</div>
+                <div className="relative w-12 h-12 rounded-full overflow-hidden border-2 border-white/20 flex-shrink-0">
+                  <Image
+                    src={p.image}
+                    alt={p.name}
+                    fill
+                    className="object-cover"
+                    sizes="48px"
+                  />
+                </div>
                 <div>
                   <p className="text-[10px] font-black tracking-widest text-[#00ff87] uppercase leading-none mb-1">{p.title}</p>
-                  <h3 className="text-xs md:text-sm font-black text-white uppercase">{p.name}</h3>
+                  <h3 className="text-xs md:text-sm font-black text-white uppercase">{p.name.split(' ')[0]}</h3>
                 </div>
               </div>
             ))}
           </div>
-          <p className="text-center text-white/50 text-[10px] font-bold uppercase tracking-[0.4em] mt-8 md:mt-10">
-            Matching against 16 legendary archetypes
-          </p>
+          
         </div>
 
-        {/* Value Props - Improved Readability */}
+        {/* Value Props */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12 w-full max-w-4xl px-4 animate-slide-in delay-600 opacity-0 mb-12 md:mb-16" style={{ animationFillMode: 'forwards' }}>
           {[
-            { title: "Ghost Points", desc: "We track exactly how many points you left on the bench over the season." },
-            { title: "Tactical Path", desc: "Your season timeline turned into a beautiful, shareable tactical roadmap." },
-            { title: "Identity Match", desc: "Advanced data-driven matching against iconic manager manager archetypes." }
+            { title: "Bench Regret", desc: "Every point you left in the dugout. Every wrong team selection." },
+            { title: "Transfer Impact", desc: "Net points from every move. See which deals actually paid off." },
+            { title: "What-If Engine", desc: "Simulate any transfer. See what could have been." }
           ].map((feat, i) => (
             <div key={i} className="text-center md:text-left flex flex-col md:block items-center">
               <h4 className="text-white text-xs font-black uppercase tracking-widest mb-2 italic">{feat.title}</h4>

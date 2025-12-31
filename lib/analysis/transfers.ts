@@ -1,6 +1,7 @@
-import { TransferAnalysis } from '../types';
+import { TransferAnalysis, Transfer, GameWeek } from '../types';
 import { ManagerData } from './types';
 import { getPlayer, getPlayerPointsInGameweek } from './utils';
+import { calculateHoursBeforeDeadline, getLocalHourOfDay, getTimezoneForRegion } from './timezone';
 
 /**
  * Analyze all transfers made by a manager
@@ -216,4 +217,128 @@ export function analyzeTransfers(data: ManagerData): TransferAnalysis[] {
     }
 
     return analyses;
+}
+
+/**
+ * Analyze the timing of transfers relative to gameweek deadlines
+ * Detects patterns like panic buying (last minute), early planning, or reactive behavior
+ * Note: FPL deadline is typically 90 mins before first fixture kickoff
+ */
+export function analyzeTransferTiming(data: ManagerData): {
+    panicTransfers: number;           // Within 3 hours of deadline (extreme last-minute)
+    deadlineDayTransfers: number;     // 3-24 hours before deadline (scrambling)
+    midWeekTransfers: number;         // 24-96 hours before deadline (measured adjustment)
+    earlyStrategicTransfers: number;  // 96+ hours before deadline (methodical planning)
+    kneeJerkTransfers: number;        // Within 48 hours of PREVIOUS GW deadline (reactive to live results)
+    avgHoursBeforeDeadline: number;
+    avgLocalHourOfDay: number;        // Average hour (0-23) in user's timezone
+    lateNightTransfers: number;       // Between 11pm-5am local time (reactive/panic)
+} {
+    const { bootstrap, transfers, history, managerInfo } = data;
+    
+    // Get user's timezone from their region
+    const userTimezone = getTimezoneForRegion(managerInfo.player_region_name);
+    
+    // Get chip usage to filter out wildcard/freehit transfers
+    const chipsByGW = new Map<number, string>();
+    history.chips.forEach(chip => {
+        chipsByGW.set(chip.event, chip.name);
+    });
+    
+    // Filter to non-chip transfers only (more meaningful for timing analysis)
+    const meaningfulTransfers = transfers.filter(t => {
+        const chipUsed = chipsByGW.get(t.event);
+        return !chipUsed || (chipUsed !== 'wildcard' && chipUsed !== 'freehit');
+    });
+    
+    if (meaningfulTransfers.length === 0) {
+        return {
+            panicTransfers: 0,
+            deadlineDayTransfers: 0,
+            midWeekTransfers: 0,
+            earlyStrategicTransfers: 0,
+            kneeJerkTransfers: 0,
+            avgHoursBeforeDeadline: 0,
+            avgLocalHourOfDay: 12,
+            lateNightTransfers: 0,
+        };
+    }
+    
+    let panicCount = 0;
+    let deadlineDayCount = 0;
+    let midWeekCount = 0;
+    let earlyStrategicCount = 0;
+    let kneeJerkCount = 0;
+    let lateNightCount = 0;
+    let totalHoursBeforeDeadline = 0;
+    let totalLocalHour = 0;
+    let validTransfers = 0;
+    
+    for (const transfer of meaningfulTransfers) {
+        // Find the gameweek deadline for this transfer
+        const gameweek = bootstrap.events.find(gw => gw.id === transfer.event);
+        if (!gameweek || !transfer.time) continue;
+        
+        // Also find the PREVIOUS gameweek deadline to detect knee-jerk reactions
+        const previousGameweek = bootstrap.events.find(gw => gw.id === transfer.event - 1);
+        
+        const hoursBeforeDeadline = calculateHoursBeforeDeadline(
+            transfer.time,
+            gameweek.deadline_time
+        );
+        
+        const localHour = getLocalHourOfDay(transfer.time, userTimezone);
+        
+        // Only count transfers made before the deadline (positive hours)
+        if (hoursBeforeDeadline > 0) {
+            validTransfers++;
+            totalHoursBeforeDeadline += hoursBeforeDeadline;
+            totalLocalHour += localHour;
+            
+            // Check for knee-jerk: Transfer made within 48h of PREVIOUS GW deadline
+            // This means they're reacting to early fixtures, not full GW data
+            if (previousGameweek) {
+                const transferTime = new Date(transfer.time);
+                const previousDeadline = new Date(previousGameweek.deadline_time);
+                const hoursAfterPreviousDeadline = (transferTime.getTime() - previousDeadline.getTime()) / (1000 * 60 * 60);
+                
+                // Knee-jerk: Made transfer within 48h of previous GW starting
+                if (hoursAfterPreviousDeadline < 48 && hoursAfterPreviousDeadline > 0) {
+                    kneeJerkCount++;
+                }
+            }
+            
+            // Categorize by timing relative to THIS GW's deadline
+            if (hoursBeforeDeadline <= 3) {
+                // Panic: < 3 hours before deadline (extreme last-minute)
+                panicCount++;
+            } else if (hoursBeforeDeadline <= 24) {
+                // Deadline day: 3-24 hours (scrambling on deadline day)
+                deadlineDayCount++;
+            } else if (hoursBeforeDeadline <= 96) {
+                // Mid-week: 24-96 hours (measured adjustment)
+                midWeekCount++;
+            } else {
+                // Early strategic: 96+ hours (methodical planning after full data)
+                earlyStrategicCount++;
+            }
+            
+            // Check for late night transfers (11pm-5am local time)
+            // Indicates reactive/emotional decision-making
+            if (localHour >= 23 || localHour <= 5) {
+                lateNightCount++;
+            }
+        }
+    }
+    
+    return {
+        panicTransfers: panicCount,
+        deadlineDayTransfers: deadlineDayCount,
+        midWeekTransfers: midWeekCount,
+        earlyStrategicTransfers: earlyStrategicCount,
+        kneeJerkTransfers: kneeJerkCount,
+        avgHoursBeforeDeadline: validTransfers > 0 ? totalHoursBeforeDeadline / validTransfers : 0,
+        avgLocalHourOfDay: validTransfers > 0 ? totalLocalHour / validTransfers : 12,
+        lateNightTransfers: lateNightCount,
+    };
 }

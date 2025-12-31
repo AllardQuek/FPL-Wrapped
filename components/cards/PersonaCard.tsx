@@ -171,14 +171,14 @@ export function PersonaCard({ summary }: PersonaCardProps) {
                                 <div className="space-y-3">
                                     {persona.memorableMoments.map((moment, i) => (
                                         <div key={i} className="bg-black/[0.02] rounded-xl p-3 border border-black/5">
-                                            <div className="flex items-start gap-2">
+                                            <div className="flex items-start gap-2 text-left">
                                                 <span className="text-lg shrink-0">
                                                     {moment.includes('benched') ? '😱' : 
                                                      moment.includes('captained') && moment.includes('but') ? '😭' :
                                                      moment.includes('captained') ? '🎯' :
                                                      moment.includes('signed') || moment.includes('played') ? '⭐' : '📈'}
                                                 </span>
-                                                <p className="text-sm text-black/75 leading-relaxed font-medium">
+                                                <p className="text-sm text-black/75 leading-relaxed font-medium text-left">
                                                     {moment}
                                                 </p>
                                             </div>

@@ -175,6 +175,7 @@ export function generateSeasonSummary(data: ManagerData): SeasonSummary {
         captaincyEfficiency,
         avgBenchPerWeek,
         templateOverlap,
+        captaincyAnalyses,  // NEW: Pass captaincy analyses for pattern detection
         bestTransfer || undefined,
         worstTransfer || undefined,
         bestCaptainPick || undefined,

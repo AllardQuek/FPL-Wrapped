@@ -1,7 +1,6 @@
 'use client';
 
 import { SeasonSummary } from '@/lib/types';
-import { StatNumber } from '@/components/ui/StatNumber';
 
 interface OverviewCardProps {
   summary: SeasonSummary;
@@ -15,64 +14,43 @@ export function OverviewCard({ summary }: OverviewCardProps) {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-8 text-center">
-      <div className="max-w-lg w-full">
-        <p className="text-[#00ff87] text-sm mb-8 tracking-widest uppercase animate-fade-in opacity-0" style={{ animationFillMode: 'forwards' }}>
-          The Numbers
-        </p>
+    <div className="min-h-screen flex flex-col items-center justify-center p-8">
+      <div className="max-w-lg w-full text-center">
+        <p className="text-white/40 text-[10px] tracking-[0.3em] uppercase mb-12">Section 01: The Résumé</p>
 
-        <h2 className="text-3xl md:text-4xl font-bold mb-12 animate-slide-in opacity-0 delay-100" style={{ animationFillMode: 'forwards' }}>
-          Your Season at a Glance
-        </h2>
-
-        <div className="space-y-8">
-          {/* Total Points */}
-          <div className="glass-card p-6 animate-slide-in opacity-0 delay-200" style={{ animationFillMode: 'forwards' }}>
-            <p className="text-white/50 text-sm mb-2">Total Points</p>
-            <div className="text-5xl md:text-6xl font-black glow-text text-[#00ff87]">
-              <StatNumber value={summary.totalPoints} duration={1500} />
+        <div className="space-y-6">
+          {/* Big Number Headline */}
+          <div className="relative inline-block mb-8 w-full">
+            <h2 className="text-[8rem] md:text-[10rem] font-black tracking-tighter text-white opacity-5 select-none leading-none">SCORE</h2>
+            <div className="absolute inset-0 flex flex-col items-center justify-center px-4">
+              <p className="text-xs text-[#00ff87] font-bold tracking-widest uppercase mb-1">Total Points</p>
+              <p className="text-5xl sm:text-6xl md:text-7xl font-bold tracking-tighter text-white">{summary.totalPoints}</p>
             </div>
           </div>
 
-          {/* Overall Rank */}
-          <div className="glass-card p-6 animate-slide-in opacity-0 delay-300" style={{ animationFillMode: 'forwards' }}>
-            <p className="text-white/50 text-sm mb-2">Overall Rank</p>
-            <div className="text-4xl md:text-5xl font-bold text-white">
-              #{formatRank(summary.overallRank)}
+          {/* Stats Row */}
+          <div className="grid grid-cols-2 gap-px bg-white/10 rounded-3xl overflow-hidden border border-white/10 backdrop-blur-md">
+            <div className="bg-white/5 p-6 md:p-8 backdrop-blur-md">
+              <p className="text-[10px] font-bold text-white/30 tracking-widest uppercase mb-2">Final Rank</p>
+              <p className="text-2xl md:text-3xl font-black text-white italic">#{formatRank(summary.overallRank)}</p>
+            </div>
+            <div className="bg-white/5 p-6 md:p-8 border-l border-white/10 backdrop-blur-md">
+              <p className="text-[10px] font-bold text-white/30 tracking-widest uppercase mb-2">Decision Grade</p>
+              <p className="text-2xl md:text-3xl font-black text-[#00ff87] italic">{summary.overallDecisionGrade}</p>
             </div>
           </div>
 
-          {/* Best & Worst Gameweeks */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="glass-card p-4 animate-slide-in opacity-0 delay-400" style={{ animationFillMode: 'forwards' }}>
-              <p className="text-white/50 text-xs mb-1">Best Gameweek</p>
-              <p className="text-sm text-white/70">GW{summary.bestGameweek.event}</p>
-              <p className="text-2xl font-bold text-[#00ff87]">
-                <StatNumber value={summary.bestGameweek.points} /> pts
-              </p>
+          {/* Highlights */}
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex-1 bg-white/5 rounded-2xl p-6 border border-white/5">
+              <p className="text-[10px] font-bold text-white/30 tracking-widest uppercase mb-1">Peak Form</p>
+              <p className="text-xl font-bold text-[#00ff87]">{summary.bestGameweek.points} PTS</p>
+              <p className="text-[9px] text-white/40 uppercase">Gameweek {summary.bestGameweek.event}</p>
             </div>
-            <div className="glass-card p-4 animate-slide-in opacity-0 delay-500" style={{ animationFillMode: 'forwards' }}>
-              <p className="text-white/50 text-xs mb-1">Worst Gameweek</p>
-              <p className="text-sm text-white/70">GW{summary.worstGameweek.event}</p>
-              <p className="text-2xl font-bold text-[#e90052]">
-                <StatNumber value={summary.worstGameweek.points} /> pts
-              </p>
-            </div>
-          </div>
-
-          {/* Transfers & Chips */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="glass-card p-4 animate-slide-in opacity-0 delay-600" style={{ animationFillMode: 'forwards' }}>
-              <p className="text-white/50 text-xs mb-1">Transfers Made</p>
-              <p className="text-2xl font-bold text-white">
-                <StatNumber value={summary.totalTransfers} />
-              </p>
-            </div>
-            <div className="glass-card p-4 animate-slide-in opacity-0 delay-700" style={{ animationFillMode: 'forwards' }}>
-              <p className="text-white/50 text-xs mb-1">Hit Points Taken</p>
-              <p className="text-2xl font-bold text-[#e90052]">
-                -<StatNumber value={summary.totalTransfersCost} />
-              </p>
+            <div className="flex-1 bg-white/5 rounded-2xl p-6 border border-white/5">
+              <p className="text-[10px] font-bold text-white/30 tracking-widest uppercase mb-1">Low Point</p>
+              <p className="text-xl font-bold text-[#e90052]">{summary.worstGameweek.points} PTS</p>
+              <p className="text-[9px] text-white/40 uppercase">Gameweek {summary.worstGameweek.event}</p>
             </div>
           </div>
         </div>

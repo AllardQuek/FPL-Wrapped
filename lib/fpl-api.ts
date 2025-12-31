@@ -8,11 +8,35 @@ import {
   LiveGameWeek,
   Player,
 } from './types';
+import fs from 'fs';
+import path from 'path';
 
 const FPL_BASE_URL = 'https://fantasy.premierleague.com/api';
 
 // Cache for bootstrap data (players, teams, gameweeks)
 let bootstrapCache: FPLBootstrap | null = null;
+
+/**
+ * Save manager data as a JSON mock for testing
+ */
+async function saveManagerDataMock(managerId: number, data: any) {
+  try {
+    const mockPath = path.join(process.cwd(), '.cache', `manager-${managerId}.json`);
+
+    // Safely serialize Maps
+    const serializedData = JSON.stringify(data, (key, value) => {
+      if (value instanceof Map) {
+        return Object.fromEntries(value);
+      }
+      return value;
+    }, 2);
+
+    fs.writeFileSync(mockPath, serializedData);
+    console.log(`Saved mock data to ${mockPath}`);
+  } catch (error) {
+    console.error('Failed to save mock data:', error);
+  }
+}
 
 /**
  * Fetches data from the FPL API
@@ -24,7 +48,7 @@ async function fetchFPL<T>(endpoint: string): Promise<T> {
     headers: {
       'User-Agent': 'FPL-Wrapped/1.0',
     },
-    next: { revalidate: 300 }, // Cache for 5 minutes
+    cache: 'no-store', // Disable caching to avoid 2MB limit error
   });
 
   if (!response.ok) {
@@ -34,16 +58,58 @@ async function fetchFPL<T>(endpoint: string): Promise<T> {
   return response.json();
 }
 
+
 /**
  * Get bootstrap-static data (all players, teams, gameweeks)
- * This is the main data source and should be cached
+ * Uses a local file cache to bypass Next.js 2MB Data Cache limit
+ * and persist data across dev server restarts.
  */
 export async function getBootstrapData(): Promise<FPLBootstrap> {
+  // 1. Try In-Memory Cache (Fastest - Works in Prod & Dev)
   if (bootstrapCache) {
     return bootstrapCache;
   }
-  
+
+  // 2. Try File System Cache (Dev Only)
+  // Vercel/Production file systems are read-only except for /tmp, 
+  // so we stick to memory cache for simplicity and scale there.
+  const isDev = process.env.NODE_ENV === 'development';
+  const cacheDir = path.join(process.cwd(), '.cache');
+  const cacheFile = path.join(cacheDir, 'fpl-bootstrap.json');
+
+  if (isDev) {
+    try {
+      if (fs.existsSync(cacheFile)) {
+        const fileStat = fs.statSync(cacheFile);
+        const now = Date.now();
+        const age = now - fileStat.mtimeMs;
+
+        // Cache valid for 1 hour (3600000ms)
+        if (age < 3600000) {
+          const fileContent = fs.readFileSync(cacheFile, 'utf-8');
+          bootstrapCache = JSON.parse(fileContent);
+          return bootstrapCache!;
+        }
+      }
+    } catch (error) {
+      console.error('Error reading bootstrap cache:', error);
+    }
+  }
+
+  // 3. Fetch from API (Fallback)
   bootstrapCache = await fetchFPL<FPLBootstrap>('/bootstrap-static/');
+
+  // 4. Save to File System (Dev Only)
+  if (isDev) {
+    try {
+      if (!fs.existsSync(cacheDir)) {
+        fs.mkdirSync(cacheDir, { recursive: true });
+      }
+      fs.writeFileSync(cacheFile, JSON.stringify(bootstrapCache));
+    } catch (error) {
+      console.error('Error saving bootstrap cache:', error);
+    }
+  }
   return bootstrapCache;
 }
 
@@ -135,7 +201,7 @@ export async function getCurrentGameweek(): Promise<number> {
 export async function fetchAllManagerData(managerId: number) {
   // Fetch bootstrap data first (cached)
   const bootstrap = await getBootstrapData();
-  
+
   // Fetch manager-specific data in parallel
   const [managerInfo, history, transfers] = await Promise.all([
     getManagerInfo(managerId),
@@ -153,7 +219,7 @@ export async function fetchAllManagerData(managerId: number) {
     getGameWeekPicks(managerId, gw).catch(() => null)
   );
   const allPicks = await Promise.all(picksPromises);
-  
+
   // Create a map of gameweek -> picks
   const picksByGameweek = new Map<number, GameWeekPicks>();
   finishedGameweeks.forEach((gw, index) => {
@@ -168,7 +234,7 @@ export async function fetchAllManagerData(managerId: number) {
     getLiveGameWeek(gw).catch(() => null)
   );
   const allLive = await Promise.all(livePromises);
-  
+
   // Create a map of gameweek -> live data
   const liveByGameweek = new Map<number, LiveGameWeek>();
   finishedGameweeks.forEach((gw, index) => {
@@ -178,7 +244,7 @@ export async function fetchAllManagerData(managerId: number) {
     }
   });
 
-  return {
+  const result = {
     bootstrap,
     managerInfo,
     history,
@@ -187,6 +253,13 @@ export async function fetchAllManagerData(managerId: number) {
     liveByGameweek,
     finishedGameweeks,
   };
+
+  // Save mock data for local testing
+  if (process.env.NODE_ENV === 'development') {
+    saveManagerDataMock(managerId, result);
+  }
+
+  return result;
 }
 
 /**

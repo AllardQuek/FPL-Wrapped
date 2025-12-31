@@ -31,6 +31,36 @@ body {
   min-height: 100vh;
 }
 
+/* Text selection styling */
+::selection {
+  background-color: rgba(0, 255, 135, 0.3);
+  color: #ffffff;
+}
+
+::-moz-selection {
+  background-color: rgba(0, 255, 135, 0.3);
+  color: #ffffff;
+}
+
+/* Ensure text is selectable by default */
+p, h1, h2, h3, h4, h5, h6, span, div {
+  user-select: text;
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+}
+
+/* Remove focus outline for keyboard navigation - we handle it with our progress bar */
+section:focus,
+section:focus-visible {
+  outline: none;
+}
+
+/* Prevent browser default focus styles on keyboard navigation */
+*:focus:not(:focus-visible) {
+  outline: none;
+}
+
 /* Animated gradient background */
 .gradient-bg {
   background: linear-gradient(

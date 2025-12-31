@@ -1,0 +1,219 @@
+import { TransferAnalysis } from '../types';
+import { ManagerData } from './types';
+import { getPlayer, getPlayerPointsInGameweek } from './utils';
+
+/**
+ * Analyze all transfers made by a manager
+ */
+export function analyzeTransfers(data: ManagerData): TransferAnalysis[] {
+    const { bootstrap, transfers, liveByGameweek, finishedGameweeks, picksByGameweek, history } = data;
+    const analyses: TransferAnalysis[] = [];
+
+    // Get chip usage to filter out wildcard/freehit transfers
+    const chipsByGW = new Map<number, string>();
+    history.chips.forEach(chip => {
+        chipsByGW.set(chip.event, chip.name);
+    });
+
+    const sortedFinishedGWs = [...finishedGameweeks].sort((a, b) => a - b);
+
+    for (const transfer of transfers) {
+        const chipUsed = chipsByGW.get(transfer.event);
+
+        // Skip Free Hit transfers entirely (they're temporary)
+        if (chipUsed === 'freehit') {
+            continue;
+        }
+
+        // Skip Wildcard transfers from API (we'll calculate net transfers separately)
+        if (chipUsed === 'wildcard') {
+            continue;
+        }
+
+        const playerIn = getPlayer(transfer.element_in, bootstrap);
+        const playerOut = getPlayer(transfer.element_out, bootstrap);
+
+        if (!playerIn || !playerOut) continue;
+
+        // Calculate points comparison: playerIn vs playerOut
+        let pointsIn = 0;
+        let pointsOut = 0;
+        let gameweeksHeld = 0;
+        let lastGW = transfer.event;
+        const pointsHistory: { gw: number; in: number; out: number }[] = [];
+
+        for (const gw of sortedFinishedGWs) {
+            if (gw < transfer.event) continue;
+
+            const picks = picksByGameweek.get(gw);
+            if (!picks) continue;
+
+            const playerStillOwned = picks.picks.some(p => p.element === transfer.element_in);
+            if (!playerStillOwned) {
+                // Check if they appear in the next gameweek (might be a Free Hit or data gap)
+                const nextGW = gw + 1;
+                const nextPicks = picksByGameweek.get(nextGW);
+                const ownedNext = nextPicks?.picks.some(p => p.element === transfer.element_in);
+
+                if (!ownedNext) break;
+                // If owned next, we skip this week's points (as they weren't in the active squad)
+                continue;
+            }
+
+            gameweeksHeld++;
+            lastGW = gw;
+            const pIn = getPlayerPointsInGameweek(transfer.element_in, gw, liveByGameweek);
+            const pOut = getPlayerPointsInGameweek(transfer.element_out, gw, liveByGameweek);
+
+            pointsIn += pIn;
+            pointsOut += pOut;
+            pointsHistory.push({ gw, in: pIn, out: pOut });
+        }
+
+        const pointsGained = pointsIn - pointsOut;
+        let verdict: TransferAnalysis['verdict'];
+        if (pointsGained >= 20) verdict = 'excellent';
+        else if (pointsGained >= 5) verdict = 'good';
+        else if (pointsGained >= -5) verdict = 'neutral';
+        else if (pointsGained >= -15) verdict = 'poor';
+        else verdict = 'terrible';
+
+        analyses.push({
+            transfer: { ...transfer },
+            playerIn,
+            playerOut,
+            pointsGained,
+            gameweeksHeld,
+            ownedGWRange: { start: transfer.event, end: lastGW },
+            verdict,
+            breakdown: {
+                pointsIn,
+                pointsOut,
+                gwRange: `GW${transfer.event}-GW${lastGW}`,
+                pointsHistory
+            }
+        });
+    }
+
+    // Final Wildcard Net Transfer Calculation (The Fix)
+    for (const [gw, chipName] of chipsByGW.entries()) {
+        if (chipName !== 'wildcard') continue;
+        if (!sortedFinishedGWs.includes(gw)) continue;
+
+        const prevGW = gw - 1;
+        const prevPicks = picksByGameweek.get(prevGW);
+        const currPicks = picksByGameweek.get(gw);
+
+        if (!prevPicks || !currPicks) continue;
+
+        const prevPlayerIds = new Set(prevPicks.picks.map(p => p.element));
+        const currPlayerIds = new Set(currPicks.picks.map(p => p.element));
+
+        // Get players that changed
+        const netInIds = currPicks.picks
+            .map(p => p.element)
+            .filter(id => !prevPlayerIds.has(id));
+
+        const netOutIds = prevPicks.picks
+            .map(p => p.element)
+            .filter(id => !currPlayerIds.has(id));
+
+        // Group by position (element_type) to make logical pairs
+        const playersByPosIn: Record<number, number[]> = {};
+        const playersByPosOut: Record<number, number[]> = {};
+
+        netInIds.forEach(id => {
+            const p = getPlayer(id, bootstrap);
+            if (p) {
+                if (!playersByPosIn[p.element_type]) playersByPosIn[p.element_type] = [];
+                playersByPosIn[p.element_type].push(id);
+            }
+        });
+
+        netOutIds.forEach(id => {
+            const p = getPlayer(id, bootstrap);
+            if (p) {
+                if (!playersByPosOut[p.element_type]) playersByPosOut[p.element_type] = [];
+                playersByPosOut[p.element_type].push(id);
+            }
+        });
+
+        // Loop through positions 1-4 (GKP, DEF, MID, FWD)
+        for (let pos = 1; pos <= 4; pos++) {
+            const posIn = playersByPosIn[pos] || [];
+            const posOut = playersByPosOut[pos] || [];
+            const numTransfers = Math.min(posIn.length, posOut.length);
+
+            for (let i = 0; i < numTransfers; i++) {
+                const playerIn = getPlayer(posIn[i], bootstrap);
+                const playerOut = getPlayer(posOut[i], bootstrap);
+
+                if (!playerIn || !playerOut) continue;
+
+                let pointsIn = 0;
+                let pointsOut = 0;
+                let gameweeksHeld = 0;
+                let lastGW = gw;
+                const pointsHistory: { gw: number; in: number; out: number }[] = [];
+
+                for (const fGW of sortedFinishedGWs) {
+                    if (fGW < gw) continue;
+                    const picks = picksByGameweek.get(fGW);
+
+                    const playerStillOwned = picks?.picks.some(p => p.element === playerIn.id);
+                    if (!playerStillOwned) {
+                        const nextGW = fGW + 1;
+                        const nextPicks = picksByGameweek.get(nextGW);
+                        const ownedNext = nextPicks?.picks.some(p => p.element === playerIn.id);
+                        if (!ownedNext) break;
+                        continue;
+                    }
+
+                    gameweeksHeld++;
+                    lastGW = fGW;
+                    const pIn = getPlayerPointsInGameweek(playerIn.id, fGW, liveByGameweek);
+                    const pOut = getPlayerPointsInGameweek(playerOut.id, fGW, liveByGameweek);
+
+                    pointsIn += pIn;
+                    pointsOut += pOut;
+                    pointsHistory.push({ gw: fGW, in: pIn, out: pOut });
+                }
+
+                const pointsGained = pointsIn - pointsOut;
+                let verdict: TransferAnalysis['verdict'];
+                if (pointsGained >= 20) verdict = 'excellent';
+                else if (pointsGained >= 5) verdict = 'good';
+                else if (pointsGained >= -5) verdict = 'neutral';
+                else if (pointsGained >= -15) verdict = 'poor';
+                else verdict = 'terrible';
+
+                analyses.push({
+                    transfer: {
+                        element_in: playerIn.id,
+                        element_out: playerOut.id,
+                        event: gw,
+                        entry: 0,
+                        element_in_cost: 0,
+                        element_out_cost: 0,
+                        time: ''
+                    },
+                    playerIn,
+                    playerOut,
+                    pointsGained,
+                    gameweeksHeld,
+                    ownedGWRange: { start: gw, end: lastGW },
+                    verdict,
+                    isWildcard: true,
+                    breakdown: {
+                        pointsIn,
+                        pointsOut,
+                        gwRange: `GW${gw}-GW${lastGW}`,
+                        pointsHistory
+                    }
+                });
+            }
+        }
+    }
+
+    return analyses;
+}

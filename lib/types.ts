@@ -349,6 +349,36 @@ export interface ChipUsage {
   event: number;
 }
 
+export interface ChipAnalysis {
+  name: string;
+  event: number;
+  pointsGained: number;
+  verdict: string;
+  details: string;
+  isExcellent: boolean;
+  used: boolean;
+  // Raw data for audit trail
+  metadata?: {
+    // Bench Boost specific
+    benchPlayers?: { name: string; points: number }[];
+    // Triple Captain specific
+    captainName?: string;
+    captainBasePoints?: number;
+    // Free Hit specific
+    freeHitPoints?: number;
+    previousTeamPoints?: number;
+    freeHitPlayers?: { name: string; points: number; multiplier: number }[];
+    previousTeamPlayers?: { name: string; points: number; multiplier: number }[];
+    // Wildcard specific
+    gameweeksBefore?: number[];
+    pointsBefore?: number[];
+    avgBefore?: number;
+    gameweeksAfter?: number[];
+    pointsAfter?: number[];
+    avgAfter?: number;
+  };
+}
+
 // Transfer types
 export interface Transfer {
   element_in: number;
@@ -532,7 +562,15 @@ export interface TransferAnalysis {
   playerOut: Player;
   pointsGained: number; // Points from player in - points from player out after transfer
   gameweeksHeld: number;
+  ownedGWRange: { start: number; end: number };
   verdict: 'excellent' | 'good' | 'neutral' | 'poor' | 'terrible';
+  isWildcard?: boolean;
+  breakdown?: {
+    pointsIn: number;
+    pointsOut: number;
+    gwRange: string;
+    pointsHistory: { gw: number; in: number; out: number }[];
+  };
 }
 
 export interface CaptaincyAnalysis {
@@ -546,6 +584,7 @@ export interface CaptaincyAnalysis {
   pointsLeftOnTable: number;
   wasOptimal: boolean;
   wasSuccessful: boolean; // Captain scored 6+ points
+  wasMostCaptainedGlobal: boolean;
 }
 
 export interface BenchAnalysis {
@@ -554,7 +593,25 @@ export interface BenchAnalysis {
   benchPlayers: { player: Player; points: number }[];
   lowestStarterPoints: number;
   missedPoints: number; // Best bench player - worst starter if bench was better
+  bestBenchPick: { player: Player; points: number } | null;
   hadBenchRegret: boolean;
+  errorPosition?: 'GKP' | 'DEF' | 'MID' | 'FWD'; // Position of the benched player who should have started
+}
+
+export interface ManagerPersona {
+  name: string; // e.g. "Pep Guardiola"
+  title: string; // e.g. "The Overthinker"
+  description: string;
+  spectrum: {
+    trait: string;
+    score: number;
+    maxScore: number;
+  }[];
+  primaryColor: string;
+  imageUrl?: string;
+  traits: string[];
+  emoji?: string;
+  memorableMoments?: string[]; // Specific one-liner examples: "In GW8 I benched Salah and he hauled for 24 points"
 }
 
 export interface SeasonSummary {
@@ -563,7 +620,7 @@ export interface SeasonSummary {
   teamName: string;
   totalPoints: number;
   overallRank: number;
-  
+
   // Transfer analysis
   totalTransfers: number;
   totalTransfersCost: number;
@@ -571,7 +628,7 @@ export interface SeasonSummary {
   bestTransfer: TransferAnalysis | null;
   worstTransfer: TransferAnalysis | null;
   transferGrade: 'A' | 'B' | 'C' | 'D' | 'F';
-  
+
   // Captaincy analysis
   totalCaptaincyPoints: number;
   optimalCaptaincyPoints: number;
@@ -580,22 +637,38 @@ export interface SeasonSummary {
   bestCaptainPick: CaptaincyAnalysis | null;
   worstCaptainPick: CaptaincyAnalysis | null;
   captaincyGrade: 'A' | 'B' | 'C' | 'D' | 'F';
-  
+
   // Bench analysis
   totalBenchPoints: number;
   benchRegrets: number;
   worstBenchMiss: BenchAnalysis | null;
   benchGrade: 'A' | 'B' | 'C' | 'D' | 'F';
-  
+
   // Overall
   overallDecisionGrade: 'A' | 'B' | 'C' | 'D' | 'F';
-  
+
+  // Persona
+  persona: ManagerPersona;
+  templateOverlap: number;
+  transferAnalyses: TransferAnalysis[];
+  captaincyAnalyses: CaptaincyAnalysis[];
+  benchAnalyses: BenchAnalysis[];
+  chipAnalyses: ChipAnalysis[];
+
   // Extras
   bestGameweek: { event: number; points: number };
   worstGameweek: { event: number; points: number };
   rankProgression: { event: number; rank: number }[];
   chipsUsed: ChipUsage[];
   mvpPlayer: { player: Player; points: number } | null;
+  topContributors: { player: Player; points: number; percentage: number }[];
+  positionBreakdown: {
+    position: 'GKP' | 'DEF' | 'MID' | 'FWD';
+    points: number;
+    percentage: number;
+    playerCount: number;
+  }[];
+  allPlayers: { id: number; web_name: string; team: number }[];
 }
 
 

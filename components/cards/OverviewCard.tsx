@@ -37,28 +37,76 @@ export function OverviewCard({ summary }: OverviewCardProps) {
   };
 
   const renderOverallGradeTooltip = () => {
+    // Calculate rank-based grade
+    const totalPlayers = 10000000;
+    const percentile = ((totalPlayers - summary.overallRank) / totalPlayers) * 100;
+    
+    let rankGrade: string;
+    let rankScore: number;
+    if (percentile >= 95) { rankGrade = 'A'; rankScore = 4; }
+    else if (percentile >= 85) { rankGrade = 'B'; rankScore = 3; }
+    else if (percentile >= 60) { rankGrade = 'C'; rankScore = 2; }
+    else if (percentile >= 30) { rankGrade = 'D'; rankScore = 1; }
+    else { rankGrade = 'F'; rankScore = 0; }
+    
+    // Calculate decision average
+    const gradeToScore: Record<string, number> = { 'A': 4, 'B': 3, 'C': 2, 'D': 1, 'F': 0 };
+    const decisionAvg = (gradeToScore[summary.transferGrade] + gradeToScore[summary.captaincyGrade] + gradeToScore[summary.benchGrade]) / 3;
+    const decisionGrade = decisionAvg >= 3.5 ? 'A' : decisionAvg >= 2.5 ? 'B' : decisionAvg >= 1.5 ? 'C' : decisionAvg >= 0.5 ? 'D' : 'F';
+    
+    // Calculate blended result
+    const blendedScore = (rankScore * 0.65) + (decisionAvg * 0.35);
+    
     return (
       <div className="space-y-2">
-        <div className="font-semibold text-white text-xs">Overall Grade Breakdown</div>
+        <div className="font-semibold text-white text-xs">Overall Grade Calculation</div>
         <div className="text-[11px] text-white/80 leading-relaxed">
-          Your overall grade is the average of your performance across three key decision areas:
+          Your grade combines rank performance (outcome) with decision quality (process):
         </div>
-        <div className="space-y-1.5 pt-1">
-          <div className="flex justify-between items-center">
-            <span className="text-[10px] text-white/70">Transfer Decisions</span>
-            <span className={`text-xs font-bold ${getGradeColor(summary.transferGrade)}`}>{summary.transferGrade}</span>
+        
+        {/* Rank Performance */}
+        <div className="pt-2 border-t border-white/10">
+          <div className="flex justify-between items-center mb-1">
+            <span className="text-[10px] text-white/70">Rank Performance (65% weight)</span>
+            <span className={`text-xs font-bold ${getGradeColor(rankGrade)}`}>{rankGrade}</span>
           </div>
-          <div className="flex justify-between items-center">
-            <span className="text-[10px] text-white/70">Captaincy Choices</span>
-            <span className={`text-xs font-bold ${getGradeColor(summary.captaincyGrade)}`}>{summary.captaincyGrade}</span>
-          </div>
-          <div className="flex justify-between items-center">
-            <span className="text-[10px] text-white/70">Bench Management</span>
-            <span className={`text-xs font-bold ${getGradeColor(summary.benchGrade)}`}>{summary.benchGrade}</span>
+          <div className="text-[9px] text-white/50 pl-1">
+            #{formatRank(summary.overallRank)} = Top {percentile.toFixed(1)}%
           </div>
         </div>
-        <div className="text-[10px] text-white/50 pt-2 border-t border-white/10">
-          Each grade reflects your efficiency and decision quality in that area.
+        
+        {/* Decision Quality */}
+        <div className="pt-2 border-t border-white/10">
+          <div className="flex justify-between items-center mb-1">
+            <span className="text-[10px] text-white/70">Decision Quality (35% weight)</span>
+            <span className={`text-xs font-bold ${getGradeColor(decisionGrade)}`}>{decisionGrade}</span>
+          </div>
+          <div className="space-y-0.5 pl-1">
+            <div className="flex justify-between items-center">
+              <span className="text-[9px] text-white/50">Transfers:</span>
+              <span className={`text-[9px] font-bold ${getGradeColor(summary.transferGrade)}`}>{summary.transferGrade}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-[9px] text-white/50">Captaincy:</span>
+              <span className={`text-[9px] font-bold ${getGradeColor(summary.captaincyGrade)}`}>{summary.captaincyGrade}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-[9px] text-white/50">Bench:</span>
+              <span className={`text-[9px] font-bold ${getGradeColor(summary.benchGrade)}`}>{summary.benchGrade}</span>
+            </div>
+          </div>
+        </div>
+        
+        {/* Final Calculation */}
+        <div className="pt-2 border-t border-white/10">
+          <div className="text-[9px] text-white/50 space-y-0.5">
+            <div>({rankScore.toFixed(1)} × 0.65) + ({decisionAvg.toFixed(1)} × 0.35)</div>
+            <div>= {(rankScore * 0.65).toFixed(2)} + {(decisionAvg * 0.35).toFixed(2)} = {blendedScore.toFixed(2)}</div>
+          </div>
+          <div className="flex justify-between items-center mt-1.5">
+            <span className="text-[10px] text-white/70 font-semibold">Final Grade:</span>
+            <span className={`text-sm font-bold ${getGradeColor(summary.overallDecisionGrade)}`}>{summary.overallDecisionGrade}</span>
+          </div>
         </div>
       </div>
     );

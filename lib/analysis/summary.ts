@@ -343,14 +343,32 @@ export function generateSeasonSummary(data: ManagerData): SeasonSummary {
         squadValueArchetype = 'fully-invested';
     }
 
-    // Calculate overall decision grade based on component grades
+    // Calculate overall decision grade based on component grades AND rank performance
     const gradeToScore = { 'A': 4, 'B': 3, 'C': 2, 'D': 1, 'F': 0 };
     const scoreToGrade = { 4: 'A', 3: 'B', 2: 'C', 1: 'D', 0: 'F' } as const;
     
-    const avgScore = Math.round(
-        (gradeToScore[transferGrade] + gradeToScore[captaincyGrade] + gradeToScore[benchGrade]) / 3
-    );
-    const overallDecisionGrade = scoreToGrade[avgScore as keyof typeof scoreToGrade] || 'C';
+    // Get current overall rank
+    const currentOverallRank = history.current[history.current.length - 1]?.overall_rank ?? 0;
+    
+    // Calculate rank-based grade (outcome quality)
+    // Assuming ~10M FPL players
+    const totalPlayers = 10000000;
+    const percentile = currentOverallRank > 0 ? ((totalPlayers - currentOverallRank) / totalPlayers) * 100 : 0;
+    
+    let rankGradeScore: number;
+    if (percentile >= 95) rankGradeScore = 4; // A: Top 5% (~500K)
+    else if (percentile >= 85) rankGradeScore = 3; // B: Top 15% (~1.5M)
+    else if (percentile >= 60) rankGradeScore = 2; // C: Top 40% (~4M)
+    else if (percentile >= 30) rankGradeScore = 1; // D: Top 70% (~7M)
+    else rankGradeScore = 0; // F: Below 70%
+    
+    // Calculate decision-based grade average (process quality)
+    const decisionAvgScore = (gradeToScore[transferGrade] + gradeToScore[captaincyGrade] + gradeToScore[benchGrade]) / 3;
+    
+    // Weighted blend: 65% rank outcome, 35% decision process
+    // This recognizes that results matter more than process, but process still contributes
+    const blendedScore = Math.round((rankGradeScore * 0.65) + (decisionAvgScore * 0.35));
+    const overallDecisionGrade = scoreToGrade[blendedScore as keyof typeof scoreToGrade] || 'C';
 
     return {
         managerId: managerInfo.id,

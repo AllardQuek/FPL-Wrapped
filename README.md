@@ -6,6 +6,14 @@ Your Fantasy Premier League Season in Review - A "Spotify Wrapped" style experie
 ![Next.js](https://img.shields.io/badge/Next.js-16-black?style=for-the-badge)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?style=for-the-badge)
 
+## Design Philosophy
+
+FPL generates overwhelming amounts of data - hundreds of gameweeks, transfers, captain picks, and team selections. FPL Wrapped transforms this data deluge into an **entertaining, digestible story**.
+
+Inspired by personality frameworks like **MBTI's 16 personalities**, we don't just show you stats - we give you a **Manager Persona** that captures your FPL "DNA". Are you a Pep Guardiola (the overthinker), a José Mourinho (the pragmatist), or a Harry Redknapp (the wheeler-dealer)?
+
+The goal: **Make data exploration fun, personal, and shareable** - turning spreadsheet fatigue into "Wrapped" excitement.
+
 ## Features
 
 FPL Wrapped analyzes your season and grades your decision-making across three key areas:
@@ -30,6 +38,19 @@ FPL Wrapped analyzes your season and grades your decision-making across three ke
     - Compare points for each player when selected for gameweek v.s. not selected (only for gameweeks owned by manager)
     - Biggest bench misses (e.g. you benched mateta during GW8 when he scored 17 points)
 2. Team selection grade (A-F)
+
+### 🔍 Decision Spotlight & What-If Simulator
+An interactive deep-dive into your transfer decisions with unique features:
+1. **Transfer Efficiency Report**: Visual breakdown of your best/worst transfers
+2. **Interactive Transfer Chart**: See the performance trajectory of every transfer
+3. **What-If Simulator**: Compare any two players across any gameweek range to explore "what could have been"
+4. **Export & Share**: Generate shareable images of individual cards or your entire season
+
+### 📊 Squad Analysis
+Understand your squad composition and key contributors:
+1. **Top Contributors**: See which players carried your season (top 4 players by points contribution)
+2. **Position Breakdown**: Points contribution by position (DEF/MID/FWD/GK)
+3. **Template Overlap**: How much your squad aligned with the template (differential vs. template player)
 
 ## 🍪 Chip Analysis
 1. Bench Boost

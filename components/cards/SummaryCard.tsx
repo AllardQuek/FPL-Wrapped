@@ -56,66 +56,59 @@ export function SummaryCard({ summary }: SummaryCardProps) {
         >
           <div className="flex items-center justify-between mb-6">
             <p className="text-[11px] font-black tracking-[0.2em] uppercase text-black/50">{currentSeason} Season</p>
-            <p className="text-[11px] font-semibold text-black/40">Personality Report</p>
+            <div className="flex items-center gap-2">
+              <span 
+                className="px-1.5 py-0.5 rounded text-[9px] font-black tracking-wider"
+                style={{ 
+                  backgroundColor: `${persona.primaryColor}15`,
+                  color: persona.primaryColor,
+                  border: `1px solid ${persona.primaryColor}30`,
+                }}
+              >
+                {persona.personalityCode}
+              </span>
+              <p className="text-[11px] font-semibold text-black/40">Personality Report</p>
+            </div>
           </div>
 
           {/* Desktop Layout */}
           <div className="hidden md:grid md:grid-cols-2 md:gap-12">
-            <div className="space-y-6">
-              <ProfileHeader
-                imageUrl={persona.imageUrl}
-                emoji={persona.emoji}
-                name={persona.name}
-                teamName={summary.teamName}
-                managerId={summary.managerId}
-                title={persona.title}
-                primaryColor={persona.primaryColor}
-              />
+            <div className="space-y-4">
+              <div className="space-y-6">
+                <ProfileHeader
+                  imageUrl={persona.imageUrl}
+                  emoji={persona.emoji}
+                  name={persona.name}
+                  teamName={summary.teamName}
+                  managerId={summary.managerId}
+                  title={persona.title}
+                  primaryColor={persona.primaryColor}
+                />
 
-              <StatsRow
-                overallRank={summary.overallRank}
-                totalPoints={summary.totalPoints}
-                grade={summary.overallDecisionGrade}
-                primaryColor={persona.primaryColor}
-              />
+                <StatsRow
+                  overallRank={summary.overallRank}
+                  totalPoints={summary.totalPoints}
+                  grade={summary.overallDecisionGrade}
+                  primaryColor={persona.primaryColor}
+                />
+              </div>
 
-              <div className="space-y-3">
-                <p className="text-[9px] font-bold tracking-[0.15em] uppercase" style={{ color: `${persona.primaryColor}80` }}>
-                  Key Highlights
-                </p>
-                <div className="grid grid-cols-2 gap-3">
-                  {metrics.map((metric, index) => (
-                    <PerformanceMetric
-                      key={index}
-                      emoji={metric.emoji}
-                      label={metric.label}
-                      value={metric.value}
-                      primaryColor={persona.primaryColor}
-                      opacityLevel={metric.opacityLevel}
-                    />
-                  ))}
-                </div>
+              <div className="pt-3 border-t border-black/5">
+                <SeasonVerdict 
+                  totalTransfers={summary.totalTransfers}
+                  totalTransfersCost={summary.totalTransfersCost}
+                  netImpact={netImpact}
+                  personaName={persona.name}
+                  managerId={summary.managerId}
+                  templateOverlap={summary.templateOverlap}
+                  benchRegrets={summary.benchRegrets}
+                  captaincySuccessRate={summary.captaincySuccessRate}
+                  chipsPlayed={summary.chipAnalyses.length}
+                />
               </div>
             </div>
 
-            <div className="space-y-8 border-l pl-10" style={{ borderColor: `${persona.primaryColor}25` }}>
-              <div className="text-center space-y-4">
-                <div className="space-y-2">
-                  <p className="text-[10px] font-bold text-black/50 uppercase tracking-wide">Personality Profile</p>
-                  <div 
-                    className="inline-block px-6 py-3 rounded-xl font-black text-3xl tracking-wider"
-                    style={{ 
-                      backgroundColor: `${persona.primaryColor}15`,
-                      color: persona.primaryColor,
-                      border: `2px solid ${persona.primaryColor}30`,
-                    }}
-                  >
-                    {persona.personalityCode}
-                  </div>
-                </div>
-                <TraitBadges traits={persona.traits} primaryColor={persona.primaryColor} centered />
-              </div>
-
+            <div className="flex flex-col justify-center">
               <PersonaMoments 
                 moments={persona.memorableMoments || []} 
                 primaryColor={persona.primaryColor} 
@@ -123,22 +116,7 @@ export function SummaryCard({ summary }: SummaryCardProps) {
             </div>
           </div>
 
-          <div className="mt-8 pt-8 border-t" style={{ borderColor: `${persona.primaryColor}20` }}>
-            <SeasonVerdict 
-              totalTransfers={summary.totalTransfers}
-              totalTransfersCost={summary.totalTransfersCost}
-              netImpact={netImpact}
-              personaName={persona.name}
-              managerId={summary.managerId}
-              templateOverlap={summary.templateOverlap}
-              benchRegrets={summary.benchRegrets}
-              captaincySuccessRate={summary.captaincySuccessRate}
-              chipsPlayed={summary.chipAnalyses.length}
-            />
-          </div>
-
-          {/* Mobile Layout */}
-          <div className="md:hidden space-y-8">
+          <div className="md:hidden space-y-6">
             <ProfileHeader
               imageUrl={persona.imageUrl}
               emoji={persona.emoji}
@@ -158,61 +136,24 @@ export function SummaryCard({ summary }: SummaryCardProps) {
               isMobile
             />
 
-            <div className="space-y-3">
-              <p className="text-[9px] font-bold tracking-[0.15em] uppercase text-center" style={{ color: `${persona.primaryColor}80` }}>
-                Key Highlights
-              </p>
-              <div className="grid grid-cols-2 gap-3">
-                {metrics.map((metric, index) => (
-                  <PerformanceMetric
-                    key={index}
-                    emoji={metric.emoji}
-                    label={metric.label}
-                    value={metric.value}
-                    primaryColor={persona.primaryColor}
-                    opacityLevel={metric.opacityLevel}
-                    isMobile
-                  />
-                ))}
-              </div>
-            </div>
-
-            <div className="space-y-6 border-t pt-6" style={{ borderColor: `${persona.primaryColor}20` }}>
-              <div className="text-center space-y-4">
-                <div className="space-y-2">
-                  <p className="text-[10px] font-bold text-black/50 uppercase tracking-wide">Personality Profile</p>
-                  <div 
-                    className="inline-block px-6 py-3 rounded-xl font-black text-2xl tracking-wider"
-                    style={{ 
-                      backgroundColor: `${persona.primaryColor}15`,
-                      color: persona.primaryColor,
-                      border: `2px solid ${persona.primaryColor}30`,
-                    }}
-                  >
-                    {persona.personalityCode}
-                  </div>
-                </div>
-                <TraitBadges traits={persona.traits} primaryColor={persona.primaryColor} centered />
-              </div>
-
+            <div className="space-y-4 border-t pt-4" style={{ borderColor: `${persona.primaryColor}10` }}>
               <PersonaMoments 
-                moments={persona.memorableMoments || []} 
+                moments={persona.memorableMoments?.slice(0, 1) || []} 
                 primaryColor={persona.primaryColor} 
               />
-            </div>
-
-            <div className="pt-6 border-t" style={{ borderColor: `${persona.primaryColor}20` }}>
-              <SeasonVerdict 
-                totalTransfers={summary.totalTransfers}
-                totalTransfersCost={summary.totalTransfersCost}
-                netImpact={netImpact}
-                personaName={persona.name}
-                managerId={summary.managerId}
-                templateOverlap={summary.templateOverlap}
-                benchRegrets={summary.benchRegrets}
-                captaincySuccessRate={summary.captaincySuccessRate}
-                chipsPlayed={summary.chipAnalyses.length}
-              />
+              <div className="pt-4 border-t border-black/5">
+                <SeasonVerdict 
+                  totalTransfers={summary.totalTransfers}
+                  totalTransfersCost={summary.totalTransfersCost}
+                  netImpact={netImpact}
+                  personaName={persona.name}
+                  managerId={summary.managerId}
+                  templateOverlap={summary.templateOverlap}
+                  benchRegrets={summary.benchRegrets}
+                  captaincySuccessRate={summary.captaincySuccessRate}
+                  chipsPlayed={summary.chipAnalyses.length}
+                />
+              </div>
             </div>
           </div>
         </div>

@@ -11,23 +11,26 @@ export function StatsRow({
   totalPoints, 
   grade,
   primaryColor,
-  isMobile = false 
+  isMobile = false
 }: StatsRowProps) {
+  const labelSize = 'text-[8px]';
+  const valueSize = 'text-lg';
+  
   if (isMobile) {
     return (
-      <div className="flex gap-4 justify-center w-full">
-        <div className="text-center">
-          <p className="text-[10px] font-bold text-black/30 tracking-widest uppercase mb-1">Final Rank</p>
-          <p className="text-xl font-black tracking-tighter italic text-black/90">#{overallRank.toLocaleString()}</p>
+      <div className="flex gap-6 justify-start w-full">
+        <div className="text-left">
+          <p className={`${labelSize} font-bold text-black/25 tracking-widest uppercase mb-0.5`}>Rank</p>
+          <p className={`${valueSize} font-black tracking-tighter italic text-black/90`}>#{overallRank.toLocaleString()}</p>
         </div>
-        <div className="text-center">
-          <p className="text-[10px] font-bold text-black/30 tracking-widest uppercase mb-1">Total Points</p>
-          <p className="text-xl font-black tracking-tighter text-black/90">{totalPoints.toLocaleString()}</p>
+        <div className="text-left">
+          <p className={`${labelSize} font-bold text-black/25 tracking-widest uppercase mb-0.5`}>Points</p>
+          <p className={`${valueSize} font-black tracking-tighter text-black/90`}>{totalPoints.toLocaleString()}</p>
         </div>
         {grade && (
-          <div className="text-center">
-            <p className="text-[10px] font-bold text-black/30 tracking-widest uppercase mb-1">Season Grade</p>
-            <p className="text-xl font-black tracking-tighter text-black/90" style={{ color: primaryColor }}>{grade}</p>
+          <div className="text-left">
+            <p className={`${labelSize} font-bold text-black/25 tracking-widest uppercase mb-0.5`}>Grade</p>
+            <p className={`${valueSize} font-black tracking-tighter text-black/90`} style={{ color: primaryColor }}>{grade}</p>
           </div>
         )}
       </div>
@@ -35,27 +38,18 @@ export function StatsRow({
   }
   
   return (
-    <div className="flex gap-4">
-      <div 
-        className="flex-1 text-center bg-gradient-to-br from-white to-slate-50/50 rounded-xl p-4 border" 
-        style={{ borderColor: `${primaryColor}25` }}
-      >
-        <p className="text-[10px] font-bold text-black/30 tracking-widest uppercase mb-1">Final Rank</p>
+    <div className="flex gap-10">
+      <div>
+        <p className="text-[9px] font-bold text-black/25 tracking-widest uppercase mb-0.5">Final Rank</p>
         <p className="text-2xl font-black tracking-tighter italic text-black/90">#{overallRank.toLocaleString()}</p>
       </div>
-      <div 
-        className="flex-1 text-center bg-gradient-to-br from-white to-slate-50/50 rounded-xl p-4 border" 
-        style={{ borderColor: `${primaryColor}25` }}
-      >
-        <p className="text-[10px] font-bold text-black/30 tracking-widest uppercase mb-1">Total Points</p>
+      <div>
+        <p className="text-[9px] font-bold text-black/25 tracking-widest uppercase mb-0.5">Total Points</p>
         <p className="text-2xl font-black tracking-tighter text-black/90">{totalPoints.toLocaleString()}</p>
       </div>
       {grade && (
-        <div 
-          className="flex-1 text-center bg-gradient-to-br from-white to-slate-50/50 rounded-xl p-4 border" 
-          style={{ borderColor: `${primaryColor}25` }}
-        >
-          <p className="text-[10px] font-bold text-black/30 tracking-widest uppercase mb-1">Season Grade</p>
+        <div>
+          <p className="text-[9px] font-bold text-black/25 tracking-widest uppercase mb-0.5">Season Grade</p>
           <p className="text-2xl font-black tracking-tighter" style={{ color: primaryColor }}>{grade}</p>
         </div>
       )}

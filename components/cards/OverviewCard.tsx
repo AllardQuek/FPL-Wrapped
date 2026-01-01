@@ -222,9 +222,9 @@ export function OverviewCard({ summary }: OverviewCardProps) {
 
         {/* Squad Value Card */}
         {summary.currentSquadValue && (
-          <div className="bg-white/5 rounded-2xl p-6 border border-white/5">
+          <div className="bg-white/5 rounded-2xl p-6 border border-white/5 text-center sm:text-left">
             <p className="text-[10px] font-bold text-white/40 tracking-widest uppercase mb-3">Squad Value</p>
-            <div className="flex items-end justify-between gap-4">
+            <div className="flex flex-col sm:flex-row items-center sm:items-end justify-center sm:justify-between gap-4">
               <div className="flex items-baseline gap-3">
                 <p className="text-2xl font-black text-white">{formatValue(summary.currentSquadValue)}</p>
                 <div className={`flex items-center gap-1 ${getTrendColor()}`}>
@@ -245,7 +245,7 @@ export function OverviewCard({ summary }: OverviewCardProps) {
                     </TooltipPrimitive.Trigger>
                     <TooltipPrimitive.Portal>
                       <TooltipPrimitive.Content
-                        side="left"
+                        side="top"
                         className="z-50 max-w-[260px] rounded-md border border-white/10 bg-[#0d0015]/95 px-3 py-2 text-xs text-white shadow-md animate-in fade-in-0 zoom-in-95 backdrop-blur-sm"
                         sideOffset={5}
                       >
@@ -262,12 +262,12 @@ export function OverviewCard({ summary }: OverviewCardProps) {
 
         {/* Highlights */}
         <div className="flex flex-col sm:flex-row gap-4">
-          <div className="flex-1 bg-white/5 rounded-2xl p-6 border border-white/5">
+          <div className="flex-1 bg-white/5 rounded-2xl p-6 border border-white/5 text-center sm:text-left">
             <p className="text-[10px] font-bold text-white/40 tracking-widest uppercase mb-1">Peak Form</p>
             <p className="text-xl font-bold text-[#00ff87]">{summary.bestGameweek.points} PTS</p>
             <p className="text-[9px] text-white/40 uppercase">Gameweek {summary.bestGameweek.event}</p>
           </div>
-          <div className="flex-1 bg-white/5 rounded-2xl p-6 border border-white/5">
+          <div className="flex-1 bg-white/5 rounded-2xl p-6 border border-white/5 text-center sm:text-left">
             <p className="text-[10px] font-bold text-white/40 tracking-widest uppercase mb-1">Low Point</p>
             <p className="text-xl font-bold text-[#e90052]">{summary.worstGameweek.points} PTS</p>
             <p className="text-[9px] text-white/40 uppercase">Gameweek {summary.worstGameweek.event}</p>

@@ -87,12 +87,12 @@ export function SeasonVerdict({
   };
 
   return (
-    <div className="flex flex-col items-center text-center max-w-xl mx-auto">
+    <div className="flex flex-col items-start text-left max-w-xl">
       <div className="flex items-center gap-2 mb-2">
         <span className="text-lg">{getStatusEmoji()}</span>
-        <span className="text-[9px] font-black text-black/30 uppercase tracking-[0.2em]">Season Strategy</span>
+        <span className="text-[10px] font-black text-black/40 uppercase tracking-[0.2em]">Season Strategy</span>
       </div>
-      <p className="text-sm text-black/60 font-medium leading-relaxed italic px-4">
+      <p className="text-sm text-black/70 font-medium leading-relaxed italic">
         &quot;{insight}&quot;
       </p>
     </div>

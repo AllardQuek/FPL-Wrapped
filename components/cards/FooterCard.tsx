@@ -71,7 +71,7 @@ export function FooterCard() {
             className="inline-block p-1 rounded-full bg-white/5 backdrop-blur-md px-6 py-2 border border-white/10 hover:bg-white/10 transition-colors cursor-pointer"
           >
             <p className="text-xs text-white/60 font-medium">
-              Share your Season Summary 📸
+              Share your Profile 📸
             </p>
           </button>
           <div>

@@ -11,14 +11,14 @@ export function PersonaMoments({ moments, primaryColor }: PersonaMomentsProps) {
     if (!moments || moments.length === 0) return null;
 
     return (
-        <div className="mt-8 pt-6 border-t border-black/5">
+        <div>
             <p 
-                className="text-[10px] font-bold tracking-[0.15em] uppercase mb-4"
-                style={{ color: `${primaryColor}80` }}
+                className="text-[11px] font-black tracking-[0.15em] uppercase mb-3"
+                style={{ color: `${primaryColor}` }}
             >
                 {moments.length > 1 ? 'Defining Moments' : 'Your Season Highlight'}
             </p>
-            <div className="space-y-3">
+            <div className="space-y-2">
                 {moments.map((moment, i) => (
                     <div 
                         key={i} 
@@ -26,7 +26,7 @@ export function PersonaMoments({ moments, primaryColor }: PersonaMomentsProps) {
                     >
                         <div className="flex items-start gap-3 text-left">
                             <div 
-                                className="w-10 h-10 rounded-full flex items-center justify-center text-xl shrink-0"
+                                className="w-10 h-10 text-xl rounded-full flex items-center justify-center shrink-0"
                                 style={{ backgroundColor: `${primaryColor}10` }}
                             >
                                 {moment.includes('benched') ? '😱' : 
@@ -34,7 +34,7 @@ export function PersonaMoments({ moments, primaryColor }: PersonaMomentsProps) {
                                  moment.includes('captained') ? '🎯' :
                                  moment.includes('signed') || moment.includes('played') ? '⭐' : '📈'}
                             </div>
-                            <p className="text-sm text-black/75 leading-relaxed font-medium text-left pt-1">
+                            <p className="text-base text-black/80 leading-relaxed font-medium text-left pt-0.5">
                                 {moment}
                             </p>
                         </div>

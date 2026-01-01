@@ -24,16 +24,16 @@ export function ProfileHeader({
 }: ProfileHeaderProps) {
   const [imageError, setImageError] = useState(false);
   
-  const photoSize = isMobile ? 'w-24 h-24' : 'w-32 h-32';
-  const emojiSize = isMobile ? 'text-4xl' : 'text-5xl';
-  const nameSize = isMobile ? 'text-2xl' : 'text-3xl';
-  const teamSize = isMobile ? 'text-sm' : 'text-base';
-  const titleSize = isMobile ? 'text-xs' : 'text-sm';
-  const alignment = isMobile ? 'text-center' : 'text-left';
-  const padding = isMobile ? 'px-4' : '';
+  const photoSize = isMobile ? 'w-20 h-20' : 'w-32 h-32';
+  const emojiSize = isMobile ? 'text-3xl' : 'text-5xl';
+  const nameSize = isMobile ? 'text-xl' : 'text-3xl';
+  const teamSize = isMobile ? 'text-xs' : 'text-base';
+  const titleSize = isMobile ? 'text-[10px]' : 'text-sm';
+  const alignment = 'text-left';
+  const padding = '';
   
   return (
-    <div className={`flex ${isMobile ? 'flex-col items-center' : 'gap-6'}`}>
+    <div className="flex gap-4 items-center">
       {/* Photo */}
       <div 
         className={`${photoSize} rounded-2xl bg-gradient-to-br from-slate-50 to-slate-100 flex-shrink-0 flex items-center justify-center shadow-lg overflow-hidden relative border-2`}
@@ -46,7 +46,7 @@ export function ProfileHeader({
             fill
             className="object-cover"
             onError={() => setImageError(true)}
-            sizes={isMobile ? '96px' : '128px'}
+            sizes={isMobile ? '80px' : '128px'}
             priority
           />
         ) : (
@@ -55,17 +55,19 @@ export function ProfileHeader({
       </div>
 
       {/* Name & Details */}
-      <div className={`flex-1 ${alignment} min-w-0 ${isMobile ? 'w-full' : ''}`}>
-        <h3 
-          className={`${nameSize} font-black tracking-tighter mb-1 break-words ${padding}`}
-          style={{ color: primaryColor }}
-        >
-          @{teamName.toUpperCase()}
-        </h3>
-        <p className="text-[10px] font-medium text-black/40 tracking-wide mb-3">ID: {managerId}</p>
-        <p className={`${teamSize} font-black text-black/70 tracking-tight mb-2`}>{name}</p>
+      <div className="flex-1 text-left min-w-0">
+        <div className="flex items-center gap-2 mb-0.5">
+          <h3 
+            className={`${nameSize} font-black tracking-tighter break-words`}
+            style={{ color: primaryColor }}
+          >
+            @{teamName.toUpperCase()}
+          </h3>
+        </div>
+        <p className="text-[9px] font-medium text-black/40 tracking-wide mb-1">ID: {managerId}</p>
+        <p className={`${teamSize} font-black text-black/70 tracking-tight mb-1`}>{name}</p>
         <p 
-          className={`${titleSize} font-bold tracking-wide uppercase mb-3`}
+          className={`${titleSize} font-bold tracking-wide uppercase`}
           style={{ color: primaryColor }}
         >
           {title}

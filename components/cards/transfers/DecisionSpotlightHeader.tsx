@@ -28,14 +28,14 @@ export function DecisionSpotlightHeader({
           </p>
           <div className="h-px w-8 bg-[#00ff87]/30"></div>
         </div>
-        <h3 className="text-2xl md:text-4xl font-black text-white tracking-tighter italic uppercase flex flex-col md:flex-row md:items-center md:justify-center gap-2 md:gap-3">
-          <div className="flex items-center justify-center gap-2 md:gap-3">
-            <div className="w-1.5 h-6 md:w-2 md:h-8 bg-[#37ffef] rounded-full"></div>
+        <h3 className="text-xl sm:text-2xl md:text-4xl font-black text-white tracking-tighter italic uppercase flex items-center justify-center gap-2 md:gap-3 flex-wrap">
+          <div className="flex items-center justify-center gap-1.5 md:gap-3">
+            <div className="w-1 h-5 md:w-2 md:h-8 bg-[#37ffef] rounded-full"></div>
             <span className="text-[#37ffef]">{activeTransfer.playerIn.web_name}</span>
           </div>
-          <span className="text-base md:text-lg text-white/30 not-italic md:mx-1">vs</span>
-          <div className="flex items-center justify-center gap-2 md:gap-3">
-            <div className="w-1.5 h-6 md:w-2 md:h-8 bg-[#ff6b9d] rounded-full"></div>
+          <span className="text-xs md:text-lg text-white/30 not-italic mx-0.5 md:mx-1">vs</span>
+          <div className="flex items-center justify-center gap-1.5 md:gap-3">
+            <div className="w-1 h-5 md:w-2 md:h-8 bg-[#ff6b9d] rounded-full"></div>
             <span className="text-[#ff6b9d]">{activeTransfer.playerOut.web_name}</span>
           </div>
         </h3>

@@ -188,19 +188,19 @@ export function generateSeasonSummary(data: ManagerData): SeasonSummary {
     const effectiveTransferGWs = actualTransferGWs > 0 ? actualTransferGWs : totalTransfers * 10;
     
     // Thresholds: points per transfer per gameweek actually held
-    // A: +3.5 pt/transfer/GW (elite - consistently brilliant picks)
-    // B: +2.5 pt/transfer/GW (very good returns)
-    // C: +2.0 pt/transfer/GW (expected baseline - decent edge)
-    // D: +1.0 pt/transfer/GW (below average but acceptable)
-    // F: <1.0 pt/transfer/GW (poor/losing value)
+    // A: +2.0 pt/transfer/GW (elite - consistently brilliant picks)
+    // B: +1.5 pt/transfer/GW (very good returns)
+    // C: +1.0 pt/transfer/GW (expected baseline - decent edge)
+    // D: +0.5 pt/transfer/GW (below average but acceptable)
+    // F: <0.5 pt/transfer/GW (poor/losing value)
     //
     // Example: 20 transfers held for avg 15 GWs = 300 transfer-GWs
-    // A: +1050 pts, B: +750 pts, C: +600 pts, D: +300 pts
+    // A: +600 pts, B: +450 pts, C: +300 pts, D: +150 pts
     const transferGrade = calculateGrade(transferEfficiency, {
-        a: effectiveTransferGWs * 3.5,
-        b: effectiveTransferGWs * 2.5,
-        c: effectiveTransferGWs * 2.0,
-        d: effectiveTransferGWs * 1.0,
+        a: effectiveTransferGWs * 2.0,
+        b: effectiveTransferGWs * 1.5,
+        c: effectiveTransferGWs * 1.0,
+        d: effectiveTransferGWs * 0.5,
     });
 
     // Captaincy stats

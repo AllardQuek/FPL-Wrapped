@@ -30,26 +30,26 @@ const GradeExplanation = ({ netImpact, actualTransferGWs, grade }: { netImpact: 
     <div className="grid grid-cols-5 gap-2 pt-2 border-t border-white/20">
       <div className="text-center">
         <div className="text-[#00ff87] font-black text-lg">A</div>
-        <div className="text-white/70 text-[10px] leading-tight">+3.5 pt per transfer-GW</div>
-      </div>
-      <div className="text-center">
-        <div className="text-[#39d2c0] font-black text-lg">B</div>
-        <div className="text-white/70 text-[10px] leading-tight">+2.5 pt per transfer-GW</div>
-      </div>
-      <div className="text-center">
-        <div className="text-white/90 font-black text-lg">C</div>
         <div className="text-white/70 text-[10px] leading-tight">+2.0 pt per transfer-GW</div>
       </div>
       <div className="text-center">
-        <div className="text-[#ff8b39] font-black text-lg">D</div>
+        <div className="text-[#39d2c0] font-black text-lg">B</div>
+        <div className="text-white/70 text-[10px] leading-tight">+1.5 pt per transfer-GW</div>
+      </div>
+      <div className="text-center">
+        <div className="text-white/90 font-black text-lg">C</div>
         <div className="text-white/70 text-[10px] leading-tight">+1.0 pt per transfer-GW</div>
       </div>
       <div className="text-center">
+        <div className="text-[#ff8b39] font-black text-lg">D</div>
+        <div className="text-white/70 text-[10px] leading-tight">+0.5 pt per transfer-GW</div>
+      </div>
+      <div className="text-center">
         <div className="text-[#e90052] font-black text-lg">F</div>
-        <div className="text-white/70 text-[10px] leading-tight">&lt;+1.0</div>
+        <div className="text-white/70 text-[10px] leading-tight">&lt;+0.5</div>
       </div>
     </div>
-    <p className="text-white/60 text-xs pt-2 italic">Example: 20 transfers × 15 GWs avg = 300 transfer-GWs. A≥+1050, B≥+750, C≥+600, D≥+300</p>
+    <p className="text-white/60 text-xs pt-2 italic">Example: 20 transfers × 15 GWs avg = 300 transfer-GWs. A≥+600, B≥+450, C≥+300, D≥+150</p>
     {actualTransferGWs && actualTransferGWs > 0 && (
       <div className="mt-3 pt-3 border-t border-white/20">
         <p className="font-semibold text-white mb-2">Your Calculation:</p>
@@ -61,19 +61,19 @@ const GradeExplanation = ({ netImpact, actualTransferGWs, grade }: { netImpact: 
             <p className="text-white/70 text-xs">Your thresholds:</p>
             <div className="grid grid-cols-5 gap-1 mt-1">
               <div className="text-center">
-                <div className={`text-xs font-bold ${grade === 'A' ? 'text-[#00ff87]' : 'text-white/50'}`}>A: +{Math.round(actualTransferGWs * 3.5)}</div>
+                <div className={`text-xs font-bold ${grade === 'A' ? 'text-[#00ff87]' : 'text-white/50'}`}>A: +{Math.round(actualTransferGWs * 2.0)}</div>
               </div>
               <div className="text-center">
-                <div className={`text-xs font-bold ${grade === 'B' ? 'text-[#39d2c0]' : 'text-white/50'}`}>B: +{Math.round(actualTransferGWs * 2.5)}</div>
+                <div className={`text-xs font-bold ${grade === 'B' ? 'text-[#39d2c0]' : 'text-white/50'}`}>B: +{Math.round(actualTransferGWs * 1.5)}</div>
               </div>
               <div className="text-center">
-                <div className={`text-xs font-bold ${grade === 'C' ? 'text-white' : 'text-white/50'}`}>C: +{Math.round(actualTransferGWs * 2.0)}</div>
+                <div className={`text-xs font-bold ${grade === 'C' ? 'text-white' : 'text-white/50'}`}>C: +{Math.round(actualTransferGWs * 1.0)}</div>
               </div>
               <div className="text-center">
-                <div className={`text-xs font-bold ${grade === 'D' ? 'text-[#ff8b39]' : 'text-white/50'}`}>D: +{Math.round(actualTransferGWs * 1.0)}</div>
+                <div className={`text-xs font-bold ${grade === 'D' ? 'text-[#ff8b39]' : 'text-white/50'}`}>D: +{Math.round(actualTransferGWs * 0.5)}</div>
               </div>
               <div className="text-center">
-                <div className={`text-xs font-bold ${grade === 'F' ? 'text-[#ef4444]' : 'text-white/50'}`}>F: &lt;{Math.round(actualTransferGWs * 1.0)}</div>
+                <div className={`text-xs font-bold ${grade === 'F' ? 'text-[#ef4444]' : 'text-white/50'}`}>F: &lt;{Math.round(actualTransferGWs * 0.5)}</div>
               </div>
             </div>
           </div>

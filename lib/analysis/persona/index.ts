@@ -12,8 +12,9 @@ import {
   BenchAnalysis,
   ChipAnalysis,
   FPLBootstrap,
+  SeasonSummary,
 } from '../../types';
-import { ManagerData } from '../types';
+import { ManagerData, TransferTiming } from '../types';
 import { analyzeTransferTiming } from '../transfers';
 import { getPersonaImagePath } from '../../constants/persona-images';
 
@@ -191,7 +192,7 @@ function calculateMetrics(
   squadValue: number,
   chipPersonality: ChipPersonality,
   patienceMetrics?: SeasonSummary['patienceMetrics'],
-  transferTiming?: any
+  transferTiming?: TransferTiming
 ): PersonaMetrics {
   const N = NORMALIZATION;
 
@@ -217,10 +218,9 @@ function calculateMetrics(
     
     if (total > 0) {
       const planned = (transferTiming.midWeekTransfers || 0) + (transferTiming.earlyStrategicTransfers || 0);
-      const reactive = (transferTiming.panicTransfers || 0) + (transferTiming.deadlineDayTransfers || 0);
       
       // Base score from planned vs reactive
-      let baseTiming = planned / total;
+      const baseTiming = planned / total;
       
       // Penalize knee-jerks and late-night reactors
       const kneeJerkPenalty = Math.min(0.3, ((transferTiming.kneeJerkTransfers || 0) / total) * 0.5);

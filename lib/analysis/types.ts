@@ -16,3 +16,14 @@ export interface ManagerData {
     liveByGameweek: Map<number, LiveGameWeek>;
     finishedGameweeks: number[];
 }
+
+export interface TransferTiming {
+    panicTransfers: number;
+    deadlineDayTransfers: number;
+    midWeekTransfers: number;
+    earlyStrategicTransfers: number;
+    kneeJerkTransfers: number;
+    avgHoursBeforeDeadline: number;
+    avgLocalHourOfDay: number;
+    lateNightTransfers: number;
+}

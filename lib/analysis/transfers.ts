@@ -1,5 +1,5 @@
 import { TransferAnalysis, Transfer, GameWeek } from '../types';
-import { ManagerData } from './types';
+import { ManagerData, TransferTiming } from './types';
 import { getPlayer, getPlayerPointsInGameweek } from './utils';
 import { calculateHoursBeforeDeadline, getLocalHourOfDay, getTimezoneForRegion } from './timezone';
 
@@ -322,16 +322,7 @@ export function analyzeTransfers(data: ManagerData): TransferAnalysis[] {
  * Detects patterns like panic buying (last minute), early planning, or reactive behavior
  * Note: FPL deadline is typically 90 mins before first fixture kickoff
  */
-export function analyzeTransferTiming(data: ManagerData): {
-    panicTransfers: number;           // Within 3 hours of deadline (extreme last-minute)
-    deadlineDayTransfers: number;     // 3-24 hours before deadline (scrambling)
-    midWeekTransfers: number;         // 24-96 hours before deadline (measured adjustment)
-    earlyStrategicTransfers: number;  // 96+ hours before deadline (methodical planning)
-    kneeJerkTransfers: number;        // Within 48 hours of PREVIOUS GW deadline (reactive to live results)
-    avgHoursBeforeDeadline: number;
-    avgLocalHourOfDay: number;        // Average hour (0-23) in user's timezone
-    lateNightTransfers: number;       // Between 11pm-5am local time (reactive/panic)
-} {
+export function analyzeTransferTiming(data: ManagerData): TransferTiming {
     const { bootstrap, transfers, history, managerInfo } = data;
     
     // Get user's timezone from their region

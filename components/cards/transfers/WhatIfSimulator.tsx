@@ -12,6 +12,7 @@ interface WhatIfSimulatorProps {
   startGW: number;
   endGW: number;
   isSimLoading: boolean;
+  simError?: string | null;
   setP1Search: (val: string) => void;
   setP2Search: (val: string) => void;
   setSelectedP1: (val: number | null) => void;
@@ -30,6 +31,7 @@ export function WhatIfSimulator({
   startGW,
   endGW,
   isSimLoading,
+  simError,
   setP1Search,
   setP2Search,
   setSelectedP1,
@@ -120,6 +122,13 @@ export function WhatIfSimulator({
             />
           </div>
         </div>
+        
+        {simError && (
+          <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3 text-center">
+            <p className="text-red-400 text-[10px] font-bold uppercase tracking-wider">{simError}</p>
+          </div>
+        )}
+
         <button
           onClick={onSimulate}
           disabled={!selectedP1 || !selectedP2 || isSimLoading}

@@ -96,15 +96,15 @@ export default function Home() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="bg-[#00ff87] hover:bg-[#00e67a] text-[#0d0015] font-black px-8 py-4 rounded-xl transition-all flex items-center justify-center gap-2 whitespace-nowrap active:scale-95 shadow-lg text-sm md:text-base sm:w-auto"
+                className="bg-[#00ff87] hover:bg-[#00e67a] text-[#0d0015] font-black px-8 py-4 rounded-xl transition-all flex items-center justify-center whitespace-nowrap active:scale-95 shadow-lg sm:w-auto"
               >
-                {isLoading ? (
-                  <div className="spinner w-5 h-5 border-2 border-black/30 border-t-black" />
-                ) : (
-                  <svg className="w-6 h-6 animate-pulse" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M12 2C12 2 12.5 8.5 14.5 10.5C16.5 12.5 22 13 22 13C22 13 16.5 13.5 14.5 15.5C12.5 17.5 12 24 12 24C12 24 11.5 17.5 9.5 15.5C7.5 13.5 2 13 2 13C2 13 7.5 12.5 9.5 10.5C11.5 8.5 12 2 12 2Z" />
-                  </svg>
-                )}
+                <svg 
+                  className={`w-6 h-6 ${isLoading ? 'animate-spin' : 'animate-pulse'}`} 
+                  viewBox="0 0 24 24" 
+                  fill="currentColor"
+                >
+                  <path d="M12 2C12 2 12.5 8.5 14.5 10.5C16.5 12.5 22 13 22 13C22 13 16.5 13.5 14.5 15.5C12.5 17.5 12 24 12 24C12 24 11.5 17.5 9.5 15.5C7.5 13.5 2 13 2 13C2 13 7.5 12.5 9.5 10.5C11.5 8.5 12 2 12 2Z" />
+                </svg>
               </button>
             </form>
           </div>

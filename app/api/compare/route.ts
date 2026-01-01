@@ -66,6 +66,15 @@ export async function GET(request: NextRequest) {
         });
     } catch (error) {
         console.error('Error in compare API:', error);
-        return NextResponse.json({ error: 'Failed to compare players' }, { status: 500 });
+        const errorMessage = error instanceof Error ? error.message : '';
+
+        if (errorMessage.includes('429')) {
+            return NextResponse.json(
+                { error: 'The FPL API is currently busy. Please try again in a minute.' },
+                { status: 429 }
+            );
+        }
+
+        return NextResponse.json({ error: 'Failed to compare players. Please try again later.' }, { status: 500 });
     }
 }

@@ -107,50 +107,50 @@ export default function WrappedPage() {
     setMounted(true);
   }, []);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
+  const fetchData = useCallback(async () => {
+    if (!teamId) return;
+    
+    try {
+      setLoading(true);
+      setError(null);
 
-        // Show different loading messages
-        const messages = [
-          'Fetching your data...',
-          'Analyzing your transfers...',
-          'Reviewing your captain picks...',
-          'Calculating your bench points...',
-          'Generating your wrapped...',
-        ];
+      // Show different loading messages
+      const messages = [
+        'Fetching your data...',
+        'Analyzing your transfers...',
+        'Reviewing your captain picks...',
+        'Calculating your bench points...',
+        'Generating your wrapped...',
+      ];
 
-        let messageIndex = 0;
-        const messageInterval = setInterval(() => {
-          messageIndex = (messageIndex + 1) % messages.length;
-          setLoadingMessage(messages[messageIndex]);
-        }, 2000);
+      let messageIndex = 0;
+      const messageInterval = setInterval(() => {
+        messageIndex = (messageIndex + 1) % messages.length;
+        setLoadingMessage(messages[messageIndex]);
+      }, 2000);
 
-        const response = await fetch(`/api/manager/${teamId}`);
+      const response = await fetch(`/api/manager/${teamId}`);
 
-        clearInterval(messageInterval);
+      clearInterval(messageInterval);
 
-        if (!response.ok) {
-          const data = await response.json();
-          throw new Error(data.error || 'Failed to fetch data');
-        }
-
+      if (!response.ok) {
         const data = await response.json();
-        setSummary(data);
-      } catch (err) {
-        console.error('Error fetching wrapped data:', err);
-        setError(err instanceof Error ? err.message : 'Something went wrong');
-      } finally {
-        setLoading(false);
+        throw new Error(data.error || 'Failed to fetch data');
       }
-    };
 
-    if (teamId) {
-      fetchData();
+      const data = await response.json();
+      setSummary(data);
+    } catch (err) {
+      console.error('Error fetching wrapped data:', err);
+      setError(err instanceof Error ? err.message : 'Something went wrong');
+    } finally {
+      setLoading(false);
     }
   }, [teamId]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   // Loading state
   if (loading) {
@@ -199,12 +199,20 @@ export default function WrappedPage() {
           <div className="text-6xl mb-6">😕</div>
           <h2 className="text-2xl font-bold text-white mb-4 uppercase tracking-tight italic">Oops!</h2>
           <p className="text-white/60 mb-8 font-medium">{error}</p>
-          <button
-            onClick={() => router.push('/')}
-            className="fpl-button"
-          >
-            Try Again
-          </button>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <button
+              onClick={() => fetchData()}
+              className="fpl-button"
+            >
+              Try Again
+            </button>
+            <button
+              onClick={() => router.push('/')}
+              className="px-8 py-3 bg-white/10 text-white font-bold rounded-full hover:bg-white/20 transition-all uppercase tracking-wider text-sm border border-white/20"
+            >
+              Go Back
+            </button>
+          </div>
         </div>
       </div>
     );

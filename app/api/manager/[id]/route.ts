@@ -27,16 +27,26 @@ export async function GET(
   } catch (error) {
     console.error('Error fetching manager data:', error);
     
+    const errorMessage = error instanceof Error ? error.message : '';
+
     // Check if it's a 404 error (manager not found)
-    if (error instanceof Error && error.message.includes('404')) {
+    if (errorMessage.includes('404')) {
       return NextResponse.json(
         { error: 'Manager not found. Please check your Team ID.' },
         { status: 404 }
       );
     }
 
+    // Check if it's a 429 error (rate limited)
+    if (errorMessage.includes('429')) {
+      return NextResponse.json(
+        { error: 'The FPL API is currently busy. Please wait a minute and try again.' },
+        { status: 429 }
+      );
+    }
+
     return NextResponse.json(
-      { error: 'Failed to fetch manager data. Please try again.' },
+      { error: 'Failed to fetch manager data. The FPL API might be down or busy. Please try again later.' },
       { status: 500 }
     );
   }

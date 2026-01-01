@@ -25,6 +25,7 @@ export function TransferCard({ summary }: TransferCardProps) {
   const [endGW, setEndGW] = useState(summary.rankProgression.length);
   const [simResult, setSimResult] = useState<SeasonSummary['transferAnalyses'][0] | null>(null);
   const [isSimLoading, setIsSimLoading] = useState(false);
+  const [simError, setSimError] = useState<string | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
 
   // Get top 5 transfers
@@ -37,13 +38,21 @@ export function TransferCard({ summary }: TransferCardProps) {
   const handleSimulate = async () => {
     if (!selectedP1 || !selectedP2) return;
     setIsSimLoading(true);
+    setSimError(null);
     try {
       const resp = await fetch(`/api/compare?p1=${selectedP1}&p2=${selectedP2}&start=${startGW}&end=${endGW}`);
+      
+      if (!resp.ok) {
+        const data = await resp.json();
+        throw new Error(data.error || 'Failed to simulate transfer');
+      }
+
       const data = await resp.json();
       setSimResult(data);
       setIsWhatIf(true);
     } catch (err) {
       console.error(err);
+      setSimError(err instanceof Error ? err.message : 'Failed to simulate transfer');
     } finally {
       setIsSimLoading(false);
     }
@@ -111,6 +120,7 @@ export function TransferCard({ summary }: TransferCardProps) {
                         startGW={startGW}
                         endGW={endGW}
                         isSimLoading={isSimLoading}
+                        simError={simError}
                         setP1Search={setP1Search}
                         setP2Search={setP2Search}
                         setSelectedP1={setSelectedP1}

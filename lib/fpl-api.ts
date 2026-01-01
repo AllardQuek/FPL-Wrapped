@@ -16,6 +16,20 @@ const FPL_BASE_URL = 'https://fantasy.premierleague.com/api';
 // Cache for bootstrap data (players, teams, gameweeks)
 let bootstrapCache: FPLBootstrap | null = null;
 
+// Cache for live gameweek data (shared across managers)
+const liveCache = new Map<number, LiveGameWeek>();
+
+// Cache for manager picks (to avoid re-fetching if same manager requested)
+const picksCache = new Map<string, GameWeekPicks>();
+
+// Cache for player summaries (shared across managers)
+const playerSummaryCache = new Map<number, PlayerSummary>();
+
+/**
+ * Simple sleep function for rate limiting
+ */
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
 /**
  * Save manager data as a JSON mock for testing
  */
@@ -39,23 +53,39 @@ async function saveManagerDataMock(managerId: number, data: unknown) {
 }
 
 /**
- * Fetches data from the FPL API
- * Note: The FPL API has CORS restrictions, so in production
- * you'll need to use a server-side route or proxy
+ * Fetches data from the FPL API with simple retry logic
  */
-async function fetchFPL<T>(endpoint: string): Promise<T> {
-  const response = await fetch(`${FPL_BASE_URL}${endpoint}`, {
-    headers: {
-      'User-Agent': 'FPL-Wrapped/1.0',
-    },
-    cache: 'no-store', // Disable caching to avoid 2MB limit error
-  });
+async function fetchFPL<T>(endpoint: string, retries = 3): Promise<T> {
+  for (let i = 0; i < retries; i++) {
+    try {
+      const response = await fetch(`${FPL_BASE_URL}${endpoint}`, {
+        headers: {
+          'User-Agent': 'FPL-Wrapped/1.0',
+        },
+        cache: 'no-store',
+      });
 
-  if (!response.ok) {
-    throw new Error(`FPL API error: ${response.status} ${response.statusText}`);
+      if (response.status === 429) {
+        const retryAfter = response.headers.get('Retry-After');
+        const waitTime = retryAfter ? parseInt(retryAfter, 10) * 1000 : 2000 * (i + 1);
+        console.warn(`Rate limited on ${endpoint}. Waiting ${waitTime}ms...`);
+        await sleep(waitTime);
+        continue;
+      }
+
+      if (!response.ok) {
+        throw new Error(`FPL API error: ${response.status} ${response.statusText}`);
+      }
+
+      return response.json();
+    } catch (error) {
+      if (i === retries - 1) throw error;
+      const waitTime = 1000 * (i + 1);
+      console.warn(`Fetch failed for ${endpoint}. Retrying in ${waitTime}ms... (${i + 1}/${retries})`);
+      await sleep(waitTime);
+    }
   }
-
-  return response.json();
+  throw new Error(`Failed to fetch ${endpoint} after ${retries} retries`);
 }
 
 
@@ -141,21 +171,37 @@ export async function getGameWeekPicks(
   managerId: number,
   gameweek: number
 ): Promise<GameWeekPicks> {
-  return fetchFPL<GameWeekPicks>(`/entry/${managerId}/event/${gameweek}/picks/`);
+  const cacheKey = `${managerId}-${gameweek}`;
+  if (picksCache.has(cacheKey)) {
+    return picksCache.get(cacheKey)!;
+  }
+  const data = await fetchFPL<GameWeekPicks>(`/entry/${managerId}/event/${gameweek}/picks/`);
+  picksCache.set(cacheKey, data);
+  return data;
 }
 
 /**
  * Get detailed player history (all gameweeks)
  */
 export async function getPlayerSummary(playerId: number): Promise<PlayerSummary> {
-  return fetchFPL<PlayerSummary>(`/element-summary/${playerId}/`);
+  if (playerSummaryCache.has(playerId)) {
+    return playerSummaryCache.get(playerId)!;
+  }
+  const data = await fetchFPL<PlayerSummary>(`/element-summary/${playerId}/`);
+  playerSummaryCache.set(playerId, data);
+  return data;
 }
 
 /**
  * Get live gameweek data (points for all players in a gameweek)
  */
 export async function getLiveGameWeek(gameweek: number): Promise<LiveGameWeek> {
-  return fetchFPL<LiveGameWeek>(`/event/${gameweek}/live/`);
+  if (liveCache.has(gameweek)) {
+    return liveCache.get(gameweek)!;
+  }
+  const data = await fetchFPL<LiveGameWeek>(`/event/${gameweek}/live/`);
+  liveCache.set(gameweek, data);
+  return data;
 }
 
 // Helper functions
@@ -214,35 +260,34 @@ export async function fetchAllManagerData(managerId: number) {
     .filter((e) => e.finished)
     .map((e) => e.id);
 
-  // Fetch picks for each finished gameweek
-  const picksPromises = finishedGameweeks.map((gw) =>
-    getGameWeekPicks(managerId, gw).catch(() => null)
-  );
-  const allPicks = await Promise.all(picksPromises);
-
-  // Create a map of gameweek -> picks
+  // Fetch picks and live data for each finished gameweek
+  // We use a small batch size and delay to avoid hitting rate limits
   const picksByGameweek = new Map<number, GameWeekPicks>();
-  finishedGameweeks.forEach((gw, index) => {
-    const picks = allPicks[index];
-    if (picks) {
-      picksByGameweek.set(gw, picks);
-    }
-  });
-
-  // Fetch live data for each finished gameweek (for player points)
-  const livePromises = finishedGameweeks.map((gw) =>
-    getLiveGameWeek(gw).catch(() => null)
-  );
-  const allLive = await Promise.all(livePromises);
-
-  // Create a map of gameweek -> live data
   const liveByGameweek = new Map<number, LiveGameWeek>();
-  finishedGameweeks.forEach((gw, index) => {
-    const live = allLive[index];
-    if (live) {
-      liveByGameweek.set(gw, live);
+  
+  const BATCH_SIZE = 5;
+  const BATCH_DELAY = 100; // ms
+
+  for (let i = 0; i < finishedGameweeks.length; i += BATCH_SIZE) {
+    const batch = finishedGameweeks.slice(i, i + BATCH_SIZE);
+    
+    await Promise.all(batch.map(async (gw) => {
+      try {
+        const [picks, live] = await Promise.all([
+          getGameWeekPicks(managerId, gw),
+          getLiveGameWeek(gw)
+        ]);
+        picksByGameweek.set(gw, picks);
+        liveByGameweek.set(gw, live);
+      } catch (error) {
+        console.error(`Error fetching data for GW${gw}:`, error);
+      }
+    }));
+
+    if (i + BATCH_SIZE < finishedGameweeks.length) {
+      await sleep(BATCH_DELAY);
     }
-  });
+  }
 
   const result = {
     bootstrap,
@@ -267,6 +312,9 @@ export async function fetchAllManagerData(managerId: number) {
  */
 export function clearCache(): void {
   bootstrapCache = null;
+  liveCache.clear();
+  picksCache.clear();
+  playerSummaryCache.clear();
 }
 
 

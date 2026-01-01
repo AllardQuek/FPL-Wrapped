@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "FPL Wrapped | Your Fantasy Premier League Season Review",
+  title: "FPL Wrapped",
   description: "Discover how good (or bad) your FPL decisions were this season. Analyze your transfers, captaincy picks, and team selections.",
   keywords: ["FPL", "Fantasy Premier League", "Wrapped", "Season Review", "Statistics"],
 };

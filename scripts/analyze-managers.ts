@@ -147,10 +147,17 @@ async function analyzeManager(managerId: number) {
 async function main() {
   const results = [];
   
-  for (const managerId of managers) {
+  for (let i = 0; i < managers.length; i++) {
+    const managerId = managers[i];
     const result = await analyzeManager(managerId);
     if (result) {
       results.push(result);
+    }
+    
+    // Add a small delay between managers to be kind to the API
+    if (i < managers.length - 1) {
+      const delay = 500; // 0.5 seconds
+      await new Promise(resolve => setTimeout(resolve, delay));
     }
   }
 

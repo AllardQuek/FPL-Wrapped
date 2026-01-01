@@ -2,6 +2,8 @@
  * Quick Persona Check - Diagnostic for squad value signals
  */
 
+export {};
+
 async function checkManager(managerId: number) {
   const response = await fetch(`http://localhost:3000/api/manager/${managerId}`);
   const data = await response.json();
@@ -21,7 +23,7 @@ async function checkManager(managerId: number) {
   
   console.log(`\n🎯 Top Traits:`);
   if (data.persona.spectrum) {
-    data.persona.spectrum.slice(0, 4).forEach((t: any) => {
+    data.persona.spectrum.slice(0, 4).forEach((t: { trait: string; score: number; maxScore: number }) => {
       console.log(`   ${t.trait}: ${t.score}/${t.maxScore}`);
     });
   }
@@ -41,7 +43,7 @@ async function main() {
   for (const id of managers) {
     try {
       await checkManager(id);
-    } catch (e) {
+    } catch {
       console.log(`\n❌ Error fetching ${id}`);
     }
   }

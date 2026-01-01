@@ -3,7 +3,7 @@
  * Detects specific behavioral patterns that strongly indicate certain personas
  */
 
-import { Transfer } from '../../types';
+import { Transfer, Player, GameWeekPicks, Pick } from '../../types';
 import { ManagerData } from '../types';
 import {
   BehavioralSignals,
@@ -361,7 +361,7 @@ function detectSquadValuePatterns(
     
     // Build current player value map from bootstrap
     if (data.bootstrap?.elements) {
-      data.bootstrap.elements.forEach((player: any) => {
+      data.bootstrap.elements.forEach((player: Player) => {
         playerValues.set(player.id, player.now_cost);
       });
     }
@@ -369,14 +369,14 @@ function detectSquadValuePatterns(
     // Calculate bank balance for each GW where we have picks data
     const bankBalances: number[] = [];
     
-    if (data.picks) {
-      data.picks.forEach((gwPicks: any) => {
+    if (data.picksByGameweek) {
+      data.picksByGameweek.forEach((gwPicks: GameWeekPicks) => {
         if (gwPicks.picks && gwPicks.entry_history) {
           const teamValue = gwPicks.entry_history.value; // Total team value including bank
           
           // Sum current player values
           let squadValue = 0;
-          gwPicks.picks.forEach((pick: any) => {
+          gwPicks.picks.forEach((pick: Pick) => {
             squadValue += playerValues.get(pick.element) || 0;
           });
           
@@ -394,7 +394,7 @@ function detectSquadValuePatterns(
       signals.bankHoarder = avgBank >= T.BANK_HOARDER_THRESHOLD;
       signals.fullyInvested = avgBank <= T.FULLY_INVESTED_THRESHOLD;
     }
-  } catch (error) {
+  } catch {
     // If bank calculation fails, skip those signals
     // They'll remain false from createDefaultSignals
   }

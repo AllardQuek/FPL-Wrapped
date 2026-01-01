@@ -2,6 +2,8 @@
  * Debug Behavioral Signals - Shows which signals are firing
  */
 
+export {};
+
 // This would need to be modified to actually call the persona calculation
 // and return the signals. For now, let's create a diagnostic based on the data we have.
 
@@ -87,7 +89,7 @@ async function main() {
   for (const id of managers) {
     try {
       await debugSignals(id);
-    } catch (e) {
+    } catch {
       console.log(`\n❌ Error fetching ${id}`);
     }
   }

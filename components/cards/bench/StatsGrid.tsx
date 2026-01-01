@@ -31,7 +31,7 @@ export function StatsGrid({ summary }: StatsGridProps) {
                 <p className="font-semibold text-white">Total Bench Points</p>
                 <p>The cumulative points scored by all your substitutes throughout the season.</p>
                 <div className="pt-2 border-t border-white/20">
-                  <p className="text-white/70 text-xs">These are points left on the bench that didn't contribute to your gameweek score.</p>
+                  <p className="text-white/70 text-xs">These are points left on the bench that didn&apos;t contribute to your gameweek score.</p>
                 </div>
               </div>
             } 

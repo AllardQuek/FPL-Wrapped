@@ -4,6 +4,8 @@
  * Deep dive into behavioral signals and timing patterns that influence persona assignment
  */
 
+export {};
+
 const managers = [
   205286,    // wong minamino - Wenger
   1685942,   // JYi Lye - Slot

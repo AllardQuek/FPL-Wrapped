@@ -3,6 +3,8 @@
  * Run with: npx tsx scripts/check-profile-images.ts <teamId>
  */
 
+export {};
+
 const FPL_BASE_URL = 'https://fantasy.premierleague.com';
 
 async function checkImageUrl(url: string): Promise<boolean> {

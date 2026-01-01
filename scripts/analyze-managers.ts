@@ -5,6 +5,8 @@
  * the classification algorithm and identify areas for improvement.
  */
 
+export {};
+
 const managers = [
   205286,    // Original test manager
   1685942,   // Original test manager

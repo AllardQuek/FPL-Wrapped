@@ -650,7 +650,9 @@ export interface SeasonSummary {
   // Transfer analysis
   totalTransfers: number;
   totalTransfersCost: number;
+  hitsTaken: number;
   netTransferPoints: number;
+  transferEfficiency: number;
   bestTransfer: TransferAnalysis | null;
   worstTransfer: TransferAnalysis | null;
   transferGrade: 'A' | 'B' | 'C' | 'D' | 'F';
@@ -660,12 +662,14 @@ export interface SeasonSummary {
   optimalCaptaincyPoints: number;
   captaincyPointsLost: number;
   captaincySuccessRate: number;
+  captaincyEfficiency: number;
   bestCaptainPick: CaptaincyAnalysis | null;
   worstCaptainPick: CaptaincyAnalysis | null;
   captaincyGrade: 'A' | 'B' | 'C' | 'D' | 'F';
 
   // Bench analysis
   totalBenchPoints: number;
+  avgPointsOnBench: number;
   benchRegrets: number;
   worstBenchMiss: BenchAnalysis | null;
   benchGrade: 'A' | 'B' | 'C' | 'D' | 'F';

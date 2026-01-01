@@ -4,6 +4,8 @@
  * Tests the new squad value behavioral signals to ensure proper persona assignment
  */
 
+export {};
+
 const testManagers = [
   495371,    // Allard Q - Your team (Ancelotti with 105m squad value)
   205286,    // wong minamino

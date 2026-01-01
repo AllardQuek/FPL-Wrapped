@@ -19,7 +19,7 @@ let bootstrapCache: FPLBootstrap | null = null;
 /**
  * Save manager data as a JSON mock for testing
  */
-async function saveManagerDataMock(managerId: number, data: any) {
+async function saveManagerDataMock(managerId: number, data: unknown) {
   try {
     const mockPath = path.join(process.cwd(), '.cache', `manager-${managerId}.json`);
 

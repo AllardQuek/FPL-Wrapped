@@ -150,7 +150,7 @@ export function calculatePatienceMetrics(data: ManagerData): SeasonSummary['pati
  * Generate complete season summary with all analysis
  */
 export function generateSeasonSummary(data: ManagerData): SeasonSummary {
-    const { managerInfo, history, transfers } = data;
+    const { managerInfo, history } = data;
 
     // Run all analyses
     const transferAnalyses = analyzeTransfers(data);
@@ -383,7 +383,6 @@ export function generateSeasonSummary(data: ManagerData): SeasonSummary {
         rankProgression: history.current.map(gw => ({ event: gw.event, rank: gw.overall_rank })),
         chipsUsed: history.chips,
         allPlayers: data.bootstrap.elements.map(p => ({ id: p.id, web_name: p.web_name, team: p.team })),
-        transferTiming,
-        patienceMetrics
+        transferTiming
     };
 }

@@ -2,9 +2,7 @@
 
 import { SeasonSummary } from '@/lib/types';
 import { getCurrentFPLSeason } from '@/lib/season';
-import { PerformanceMetric } from './summary/PerformanceMetric';
 import { ProfileHeader } from './summary/ProfileHeader';
-import { TraitBadges } from './summary/TraitBadges';
 import { StatsRow } from './summary/StatsRow';
 import { PersonaMoments } from './persona/PersonaMoments';
 import { SeasonVerdict } from './summary/SeasonVerdict';
@@ -17,33 +15,6 @@ export function SummaryCard({ summary }: SummaryCardProps) {
   const { persona } = summary;
   const currentSeason = getCurrentFPLSeason();
   const netImpact = summary.netTransferPoints - summary.totalTransfersCost;
-
-  const metrics = [
-    {
-      emoji: '🔄',
-      label: 'Transfers Made',
-      value: `${netImpact >= 0 ? '+' : ''}${netImpact} pts`,
-      opacityLevel: '25'
-    },
-    {
-      emoji: '⚡',
-      label: 'Captain Success',
-      value: `${summary.captaincySuccessRate.toFixed(0)}%`,
-      opacityLevel: '35'
-    },
-    {
-      emoji: '😱',
-      label: 'Bench Regrets',
-      value: summary.benchRegrets,
-      opacityLevel: '40'
-    },
-    {
-      emoji: summary.templateOverlap >= 50 ? '🐑' : summary.templateOverlap >= 25 ? '⚖️' : '🦄',
-      label: 'Template Overlap',
-      value: `${summary.templateOverlap.toFixed(0)}%`,
-      opacityLevel: '45'
-    }
-  ];
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-8 relative">

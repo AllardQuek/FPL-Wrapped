@@ -29,8 +29,6 @@ export function ProfileHeader({
   const nameSize = isMobile ? 'text-xl' : 'text-3xl';
   const teamSize = isMobile ? 'text-xs' : 'text-base';
   const titleSize = isMobile ? 'text-[10px]' : 'text-sm';
-  const alignment = 'text-left';
-  const padding = '';
   
   return (
     <div className="flex gap-4 items-center">

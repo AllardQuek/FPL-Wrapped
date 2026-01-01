@@ -5,7 +5,7 @@
  * modules to determine a manager's FPL persona based on their playing style.
  */
 
-import { BehavioralSignals, CaptainPattern } from './types';
+import { BehavioralSignals } from './types';
 import {
   ManagerPersona,
   TransferAnalysis,

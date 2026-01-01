@@ -168,7 +168,7 @@ export function PersonaCard({ summary }: PersonaCardProps) {
                         <div className="space-y-3 mb-4">
                             <p className="text-[10px] font-bold text-black/40 uppercase tracking-widest mb-2">Personality Spectrum</p>
                             {spectrums.map(({ key, getTooltip, ...spectrum }) => {
-                                const score = persona.spectrums[key as keyof typeof persona.spectrums];
+                                const score = persona.spectrums[key as keyof typeof persona.spectrums] ?? 0.5;
                                 return (
                                     <PersonalitySpectrum
                                         key={key}

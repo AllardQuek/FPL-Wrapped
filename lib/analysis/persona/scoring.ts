@@ -7,6 +7,7 @@ import {
   PersonaMetrics,
   BehavioralSignals,
   CaptainPattern,
+  PersonalitySpectrums,
 } from './types';
 import { PERSONA_MAP, RANK_THRESHOLDS } from './constants';
 

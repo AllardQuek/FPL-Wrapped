@@ -269,9 +269,6 @@ function buildPersonaResult(
   // Calculate manager's actual spectrum scores
   const managerVector = calculateManagerVector(metrics, signals);
 
-  // Calculate 4-letter personality code based on manager's actual scores
-  const managerCode = calculatePersonalityCode(managerVector);
-
   return {
     key: selectedKey,
     name: personaData.name,
@@ -286,8 +283,7 @@ function buildPersonaResult(
     imageUrl: getPersonaImagePath(selectedKey),
     memorableMoments: memorableMoments.slice(0, 3),
     spectrums: managerVector,
-    personalityCode: managerCode, // The manager's actual code
-    canonicalCode: personaData.personalityCode, // The persona's official code
+    personalityCode: personaData.personalityCode, // Always show the persona's official code
   };
 }
 

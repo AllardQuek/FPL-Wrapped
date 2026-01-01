@@ -36,8 +36,7 @@ async function analyzeManager(managerId: number) {
     console.log(`MANAGER ID: ${managerId} - ${summary.managerName}`);
     console.log(`${'='.repeat(80)}`);
 
-    console.log(`\n🎯 ASSIGNED PERSONA: ${summary.persona.name} [${summary.persona.canonicalCode}]`);
-    console.log(`   Natural Code: ${summary.persona.personalityCode} ${summary.persona.personalityCode === summary.persona.canonicalCode ? '✓' : '→ ' + summary.persona.canonicalCode}`);
+    console.log(`\n🎯 ASSIGNED PERSONA: ${summary.persona.name} [${summary.persona.personalityCode}]`);
     console.log(`   Full Title: ${summary.persona.title || 'N/A'}`);
     console.log(`   Vector: D=${summary.persona.spectrums.differential.toFixed(2)} L=${summary.persona.spectrums.logical.toFixed(2)} P=${summary.persona.spectrums.patient.toFixed(2)} C=${summary.persona.spectrums.cautious.toFixed(2)}`);
     console.log();
@@ -151,8 +150,7 @@ async function analyzeManager(managerId: number) {
       templateOverlap: summary.templateOverlap,
       overallDecisionGrade: summary.overallDecisionGrade,
       hitsTaken: summary.hitsTaken,
-      naturalCode: summary.persona.personalityCode,
-      assignedCode: summary.persona.canonicalCode,
+      personalityCode: summary.persona.personalityCode,
       vectorD: summary.persona.spectrums.differential,
       vectorL: summary.persona.spectrums.logical,
       vectorP: summary.persona.spectrums.patient,

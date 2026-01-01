@@ -628,11 +628,9 @@ export interface ManagerPersona {
     patient: number;
     cautious: number;
     chaos?: number;
-    chipRisk?: number;
     timingRisk?: number;
   };
-  personalityCode: string; // The manager's actual 4-letter code (e.g. "DIRA")
-  canonicalCode: string; // The persona's official 4-letter code (e.g. "TAPC")
+  personalityCode: string; // The persona's official 4-letter code (e.g. "TAPC")
 }
 
 export interface TransferTimingAnalysis {

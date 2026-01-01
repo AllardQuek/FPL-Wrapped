@@ -139,7 +139,7 @@ export function PersonaCard({ summary }: PersonaCardProps) {
                         <PersonaHeader 
                             title={persona.title} 
                             primaryColor={persona.primaryColor} 
-                            code={persona.canonicalCode}
+                            code={persona.personalityCode}
                         />
                         
                         <PersonaAvatar 
@@ -180,37 +180,6 @@ export function PersonaCard({ summary }: PersonaCardProps) {
                                     />
                                 );
                             })}
-                            <div className="flex flex-col items-center justify-center pt-4 gap-1">
-                                <div className="flex items-center gap-2">
-                                    <span 
-                                        className="px-1.5 py-0.5 rounded text-[10px] font-black tracking-wider"
-                                        style={{ 
-                                            backgroundColor: `${persona.primaryColor}15`,
-                                            color: persona.primaryColor,
-                                            border: `1px solid ${persona.primaryColor}30`,
-                                        }}
-                                        title="Your Natural Personality Code"
-                                    >
-                                        {persona.personalityCode}
-                                    </span>
-                                    {persona.personalityCode !== persona.canonicalCode && (
-                                        <>
-                                            <span className="text-[10px] font-bold text-black/20">→</span>
-                                            <span 
-                                                className="px-1.5 py-0.5 rounded text-[10px] font-black tracking-wider bg-black text-white"
-                                                title="Assigned Persona Code"
-                                            >
-                                                {persona.canonicalCode}
-                                            </span>
-                                        </>
-                                    )}
-                                </div>
-                                <p className="text-[8px] font-bold text-black/30 uppercase tracking-tighter">
-                                    {persona.personalityCode === persona.canonicalCode 
-                                        ? 'Canonical Match' 
-                                        : 'Behavioral Alignment'}
-                                </p>
-                            </div>
                         </div>
                     </div>
                 </div>

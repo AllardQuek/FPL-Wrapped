@@ -150,7 +150,6 @@ async function analyzeManager(managerId: number) {
       templateOverlap: summary.templateOverlap,
       overallDecisionGrade: summary.overallDecisionGrade,
       hitsTaken: summary.hitsTaken,
-      personalityCode: summary.persona.personalityCode,
       vectorD: summary.persona.spectrums.differential,
       vectorL: summary.persona.spectrums.logical,
       vectorP: summary.persona.spectrums.patient,

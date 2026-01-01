@@ -610,6 +610,8 @@ export interface ManagerPersona {
   name: string; // e.g. "Pep Guardiola"
   title: string; // e.g. "The Overthinker"
   description: string;
+  quote?: string;
+  quoteSource?: string;
   spectrum: {
     trait: string;
     score: number;

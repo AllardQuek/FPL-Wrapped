@@ -11,6 +11,8 @@ interface SeasonVerdictProps {
   managerId: number;
   templateOverlap: number;
   benchRegrets: number;
+  captaincySuccessRate: number;
+  chipsPlayed: number;
 }
 
 export function SeasonVerdict({ 
@@ -20,7 +22,9 @@ export function SeasonVerdict({
   personaName, 
   managerId,
   templateOverlap,
-  benchRegrets
+  benchRegrets,
+  captaincySuccessRate,
+  chipsPlayed
 }: SeasonVerdictProps) {
   const insight = useMemo(() => {
     const hitsCount = totalTransfersCost / 4;
@@ -39,12 +43,22 @@ export function SeasonVerdict({
       return CATEGORY_QUOTES.BENCH_REGRET[quoteIndex % CATEGORY_QUOTES.BENCH_REGRET.length];
     }
 
-    // 3. Template Hugger
+    // 3. Captaincy Drama
+    if (captaincySuccessRate < 40) {
+      return CATEGORY_QUOTES.CAPTAINCY[quoteIndex % CATEGORY_QUOTES.CAPTAINCY.length];
+    }
+
+    // 4. Chip Chaos
+    if (chipsPlayed > 3 && totalTransfers > 30) {
+      return CATEGORY_QUOTES.CHIPS[quoteIndex % CATEGORY_QUOTES.CHIPS.length];
+    }
+
+    // 5. Template Hugger
     if (templateOverlap > 75) {
       return CATEGORY_QUOTES.TEMPLATE[quoteIndex % CATEGORY_QUOTES.TEMPLATE.length];
     }
 
-    // 4. Statistical Categories
+    // 6. Statistical Categories
     if (totalTransfers < 15) {
       return CATEGORY_QUOTES.PATIENT[quoteIndex % CATEGORY_QUOTES.PATIENT.length];
     } 
@@ -61,9 +75,9 @@ export function SeasonVerdict({
       return CATEGORY_QUOTES.SNIPER[quoteIndex % CATEGORY_QUOTES.SNIPER.length];
     }
 
-    // 5. Fallback
+    // 7. Fallback
     return CATEGORY_QUOTES.FALLBACK[quoteIndex % CATEGORY_QUOTES.FALLBACK.length];
-  }, [totalTransfers, totalTransfersCost, netImpact, personaName, managerId, templateOverlap, benchRegrets]);
+  }, [totalTransfers, totalTransfersCost, netImpact, personaName, managerId, templateOverlap, benchRegrets, captaincySuccessRate, chipsPlayed]);
 
   const getStatusEmoji = () => {
     if (totalTransfers < 15) return '🛡️';

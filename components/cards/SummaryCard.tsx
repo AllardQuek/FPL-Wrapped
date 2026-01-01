@@ -132,6 +132,8 @@ export function SummaryCard({ summary }: SummaryCardProps) {
               managerId={summary.managerId}
               templateOverlap={summary.templateOverlap}
               benchRegrets={summary.benchRegrets}
+              captaincySuccessRate={summary.captaincySuccessRate}
+              chipsPlayed={summary.chipAnalyses.length}
             />
           </div>
 
@@ -208,6 +210,8 @@ export function SummaryCard({ summary }: SummaryCardProps) {
                 managerId={summary.managerId}
                 templateOverlap={summary.templateOverlap}
                 benchRegrets={summary.benchRegrets}
+                captaincySuccessRate={summary.captaincySuccessRate}
+                chipsPlayed={summary.chipAnalyses.length}
               />
             </div>
           </div>

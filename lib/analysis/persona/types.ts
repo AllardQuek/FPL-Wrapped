@@ -159,6 +159,8 @@ export interface PersonaDefinition {
   name: string;
   title: string;
   desc: string;
+  quote?: string;
+  quoteSource?: string;
   color: string;
   traits: string[];
   emoji: string;

@@ -19,38 +19,48 @@ export const MANAGER_QUOTES: Record<string, string> = {
 
 export const CATEGORY_QUOTES = {
   PATIENT: [
+    "Your superpower was doing nothing while everyone else panicked.",
     "Patience is a virtue. Or you just forgot your password for three months. Either way, it worked.",
-    "The 'Set and Forget' specialist. You trust your team more than most people trust their own family.",
-    "Your superpower was doing nothing while everyone else panicked."
+    "You didn't 'hold' your transfers. You just had a life. We're jealous."
   ],
   CHAOS: [
+    "Your transfer plan was simple: if in doubt, take a -4.",
     "The Knee-Jerk King. You see a green arrow in a highlight reel and the transfer is made before the replay ends.",
-    "You've made more moves than a chess grandmaster on speed. Frequent flyer points pending.",
-    "Your transfer plan was simple: if in doubt, take a -4."
+    "You didn't just knee-jerk, you knee-dislocated. Every Saturday morning was a new crisis."
   ],
   HIT_MERCHANT: [
-    "The Hit Merchant. You treat -4s like they're free samples at a supermarket. High risk, high reward.",
     "You didn't just chase points. You chased them with a -8.",
-    "The 'Points are just a number' specialist. You've taken more hits than a boxing bag."
+    "The Hit Merchant. You treat -4s like they're free samples at a supermarket.",
+    "You're the reason the FPL servers are still running. Those -4s paid for the electricity."
   ],
   SNIPER: [
-    "The Sniper. You don't move often, but when you do, it's lethal. Spreadsheet warrior.",
     "You didn't chase every bandwagon – you waited for the right ones.",
-    "Meticulous. Every move you made was a calculated strike."
+    "Spreadsheet warrior. You treat your transfers like a fine wine; most of us treat them like a 3am kebab.",
+    "Meticulous. Every move you made was a calculated strike. Or a very lucky guess."
   ],
   TEMPLATE: [
     "You started the season saying you’d be different. You ended up with the full template like everyone else.",
     "You whispered 'just one more safe pick' and finished with 10 of the same players as your rivals.",
-    "The template hugger. Safety in numbers, even if those numbers are all owning Erling Haaland."
+    "Your team was so template that even the FPL bot thought it was looking in a mirror."
   ],
   BENCH_REGRET: [
     "You left enough points on the bench to finish a few hundred thousand places higher.",
     "Your real FPL team was the bench you never trusted.",
     "The bench outscored the starting XI. Is there a trophy for that? Because there should be."
   ],
+  CAPTAINCY: [
+    "Sometimes you nailed the armband, sometimes you invented new ways to suffer.",
+    "Your season motto: 'Next week the captain will finally haul.'",
+    "The captaincy rollercoaster. High highs, low lows, and a lot of screaming into pillows."
+  ],
+  CHIPS: [
+    "You swore you’d save your chips for the doubles… then panic‑hit them in a random single gameweek.",
+    "Your chips had two settings: absolute banger or complete disaster.",
+    "Chip strategy? More like chip chaos. But at least it wasn't boring."
+  ],
   FALLBACK: [
     "Gandhi said never back the early kickoff. You backed the early kickoff. Every. Single. Time.",
     "I'm never playing this game again... see you next week.",
-    "The eye test lied to me. Again. And again. And probably next week too."
+    "You spent 4 hours on a Friday night researching xG just to be outscored by your cousin who hasn't logged in since GW3."
   ]
 };

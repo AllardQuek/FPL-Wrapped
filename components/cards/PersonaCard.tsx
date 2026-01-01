@@ -152,6 +152,8 @@ export function PersonaCard({ summary }: PersonaCardProps) {
                             <PersonaIdentity 
                                 name={persona.name} 
                                 description={persona.description} 
+                                quote={persona.quote}
+                                quoteSource={persona.quoteSource}
                             />
                             <div className="mt-4">
                                 <TraitBadges 

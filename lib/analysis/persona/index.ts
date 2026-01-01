@@ -288,6 +288,8 @@ function buildPersonaResult(
     name: personaData.name,
     title: personaData.title,
     description: personaData.desc,
+    quote: personaData.quote,
+    quoteSource: personaData.quoteSource,
     spectrum: topTraits.slice(0, 4),
     primaryColor: personaData.color,
     traits: personaData.traits,

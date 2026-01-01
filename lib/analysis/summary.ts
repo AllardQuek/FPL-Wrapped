@@ -181,7 +181,9 @@ export function generateSeasonSummary(data: ManagerData): SeasonSummary {
         bestCaptainPick || undefined,
         worstCaptainPick || undefined,
         worstBenchMiss || undefined,
-        chipAnalyses.find(c => c.used && c.isExcellent) || undefined
+        chipAnalyses.find(c => c.used && c.isExcellent) || undefined,
+        chipAnalyses,      // NEW: Pass ALL chips for comprehensive personality analysis
+        data.bootstrap     // NEW: Pass bootstrap data for chip popularity comparison
     );
 
     const topContributors = calculateTopContributors(data);

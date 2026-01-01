@@ -5,7 +5,16 @@
  * the classification algorithm and identify areas for improvement.
  */
 
-const managers = [205286, 1685942, 7486369, 495371];
+const managers = [
+  205286,    // Original test manager
+  1685942,   // Original test manager
+  7486369,   // Original test manager
+  495371,    // Original test manager
+  2825258,   // Suspected "Most Template" - new test case
+  7182632,   // Additional test case
+  2165087,   // Additional test case
+  9350232,   // Additional test case
+];
 
 console.log('='.repeat(80));
 console.log('MANAGER PERSONA ANALYSIS');
@@ -27,57 +36,83 @@ async function analyzeManager(managerId: number) {
     console.log(`${'='.repeat(80)}`);
 
     console.log(`\n🎯 ASSIGNED PERSONA: ${summary.persona.name}`);
-    console.log(`   Full Title: ${summary.persona.fullName}`);
-    console.log(`   Archetype: ${summary.persona.archetype}`);
+    console.log(`   Full Title: ${summary.persona.fullName || 'N/A'}`);
+    console.log(`   Archetype: ${summary.persona.archetype || 'N/A'}`);
     console.log();
 
     console.log('📊 OVERALL PERFORMANCE:');
     console.log(`   Total Points: ${summary.totalPoints}`);
     console.log(`   Overall Rank: ${summary.overallRank?.toLocaleString() || 'N/A'}`);
-    console.log(`   Season Grade: ${summary.seasonGrade}`);
+    console.log(`   Season Grade: ${summary.seasonGrade || 'N/A'}`);
     console.log();
 
-    console.log('� TRANSFER ANALYSIS:');
+    console.log('🔄 TRANSFER ANALYSIS:');
     console.log(`   Total Transfers: ${summary.totalTransfers}`);
-    console.log(`   Hits Taken: ${summary.hitsTaken}`);
-    console.log(`   Total Hit Cost: -${summary.hitsTaken * 4} pts`);
-    console.log(`   Transfer Efficiency: ${summary.transferEfficiency.toFixed(1)}%`);
-    console.log(`   Transfer Grade: ${summary.transferGrade}`);
+    console.log(`   Hits Taken: ${summary.hitsTaken ?? 'N/A'}`);
+    console.log(`   Total Hit Cost: ${summary.hitsTaken ? `-${summary.hitsTaken * 4} pts` : 'N/A'}`);
+    console.log(`   Transfer Efficiency: ${summary.transferEfficiency?.toFixed(1) ?? 'N/A'}%`);
+    console.log(`   Transfer Grade: ${summary.transferGrade || 'N/A'}`);
     if (summary.bestTransfer) {
       console.log(`   Best Transfer: ${summary.bestTransfer.playerIn.web_name} (GW${summary.bestTransfer.gameweek})`);
     }
     console.log();
 
     console.log('👑 CAPTAINCY ANALYSIS:');
-    console.log(`   Captaincy Efficiency: ${summary.captaincyEfficiency.toFixed(1)}%`);
-    console.log(`   Captaincy Grade: ${summary.captaincyGrade}`);
+    console.log(`   Captaincy Efficiency: ${summary.captaincyEfficiency?.toFixed(1) ?? 'N/A'}%`);
+    console.log(`   Captaincy Grade: ${summary.captaincyGrade || 'N/A'}`);
     if (summary.bestCaptain) {
       console.log(`   Best Captain: ${summary.bestCaptain.player.web_name} (GW${summary.bestCaptain.gameweek}, ${summary.bestCaptain.points} pts)`);
     }
     console.log();
 
-    console.log('� BENCH ANALYSIS:');
-    console.log(`   Avg Bench Points/GW: ${summary.avgPointsOnBench.toFixed(1)}`);
-    console.log(`   Bench Regrets: ${summary.benchRegrets} times`);
-    console.log(`   Bench Grade: ${summary.benchGrade}`);
+    console.log('🪑 BENCH ANALYSIS:');
+    console.log(`   Avg Bench Points/GW: ${summary.avgPointsOnBench?.toFixed(1) ?? 'N/A'}`);
+    console.log(`   Bench Regrets: ${summary.benchRegrets ?? 'N/A'} times`);
+    console.log(`   Bench Grade: ${summary.benchGrade || 'N/A'}`);
     console.log();
 
-    console.log('💎 CHIPS USED:');
-    const chipsUsed = summary.chips.filter((c: { used: boolean }) => c.used);
-    if (chipsUsed.length > 0) {
-      chipsUsed.forEach((chip: { name: string; gameweek: number; pointsGained: number }) => {
-        console.log(`   GW${chip.gameweek}: ${chip.name} (+${chip.pointsGained} pts)`);
+    if (summary.chips && Array.isArray(summary.chips)) {
+      console.log('💎 CHIPS USED:');
+      const chipsUsed = summary.chips.filter((c: { used: boolean }) => c.used);
+      if (chipsUsed.length > 0) {
+        chipsUsed.forEach((chip: { name: string; gameweek: number; pointsGained: number }) => {
+          console.log(`   GW${chip.gameweek}: ${chip.name} (+${chip.pointsGained} pts)`);
+        });
+      } else {
+        console.log('   No chips used yet');
+      }
+      console.log();
+    }
+
+    console.log('📈 SQUAD ANALYSIS:');
+    console.log(`   Template Overlap: ${summary.templateOverlap?.toFixed(1) ?? 'N/A'}%`);
+    console.log(`   Overall Decision Grade: ${summary.overallDecisionGrade || 'N/A'}`);
+    console.log();
+
+    console.log('✨ MEMORABLE MOMENTS:');
+    if (summary.persona?.memorableMoments && summary.persona.memorableMoments.length > 0) {
+      summary.persona.memorableMoments.forEach((moment: string) => {
+        console.log(`   • ${moment}`);
       });
     } else {
-      console.log('   No chips used yet');
+      console.log('   No memorable moments recorded');
     }
     console.log();
 
-    console.log('📈 SQUAD ANALYSIS:');
-    console.log(`   Template Overlap: ${summary.templateOverlap.toFixed(1)}%`);
-    console.log(`   Squad Value: £${(summary.squadValue / 10).toFixed(1)}m`);
-    if (summary.mostValuablePlayer) {
-      console.log(`   MVP: ${summary.mostValuablePlayer.player.web_name} (${summary.mostValuablePlayer.points} pts)`);
+    console.log('🧠 PERSONA TRAITS:');
+    if (summary.persona?.traits && summary.persona.traits.length > 0) {
+      summary.persona.traits.forEach((trait: string) => {
+        console.log(`   • ${trait}`);
+      });
+    }
+    console.log();
+
+    console.log('📈 BEHAVIORAL SPECTRUM:');
+    if (summary.persona?.spectrum && summary.persona.spectrum.length > 0) {
+      summary.persona.spectrum.forEach((item: { trait: string; score: number; maxScore: number }) => {
+        const bar = '█'.repeat(Math.round(item.score / 10)) + '░'.repeat(10 - Math.round(item.score / 10));
+        console.log(`   ${item.trait.padEnd(25)} ${bar} ${item.score}/${item.maxScore}`);
+      });
     }
     console.log();
 
@@ -86,17 +121,19 @@ async function analyzeManager(managerId: number) {
       managerId,
       name: summary.managerName,
       persona: summary.persona.name,
-      personaArchetype: summary.persona.archetype,
+      personaTitle: summary.persona.title,
+      personaDescription: summary.persona.description,
       totalPoints: summary.totalPoints,
       overallRank: summary.overallRank,
       totalTransfers: summary.totalTransfers,
-      hitsTaken: summary.hitsTaken,
-      transferEfficiency: summary.transferEfficiency,
-      captaincyEfficiency: summary.captaincyEfficiency,
-      avgBenchPoints: summary.avgPointsOnBench,
+      netTransferPoints: summary.netTransferPoints,
+      transferGrade: summary.transferGrade,
+      captaincyGrade: summary.captaincyGrade,
+      captaincySuccessRate: summary.captaincySuccessRate,
+      benchRegrets: summary.benchRegrets,
+      benchGrade: summary.benchGrade,
       templateOverlap: summary.templateOverlap,
-      squadValue: summary.squadValue,
-      seasonGrade: summary.seasonGrade,
+      overallDecisionGrade: summary.overallDecisionGrade,
     };
 
   } catch (error) {
@@ -143,21 +180,21 @@ async function main() {
   }
 
   console.log('🔍 KEY DIFFERENTIATORS:');
-  console.log('   Transfer Activity:');
+  console.log('   Transfer Performance:');
   results.forEach(r => {
-    console.log(`      ${r.name.padEnd(30)} ${r.totalTransfers} transfers, ${r.hitsTaken} hits`);
+    console.log(`      ${r.name.padEnd(30)} ${r.totalTransfers} transfers, Net: ${r.netTransferPoints} pts, Grade: ${r.transferGrade}`);
   });
   console.log();
   
-  console.log('   Efficiency Metrics:');
+  console.log('   Captain & Bench:');
   results.forEach(r => {
-    console.log(`      ${r.name.padEnd(30)} Transfer: ${r.transferEfficiency.toFixed(0)}%, Captaincy: ${r.captaincyEfficiency.toFixed(0)}%`);
+    console.log(`      ${r.name.padEnd(30)} Cap Grade: ${r.captaincyGrade}, Success: ${r.captaincySuccessRate?.toFixed(0) ?? 'N/A'}%, Bench Regrets: ${r.benchRegrets}`);
   });
   console.log();
   
-  console.log('   Style Indicators:');
+  console.log('   Overall Style:');
   results.forEach(r => {
-    console.log(`      ${r.name.padEnd(30)} Template: ${r.templateOverlap.toFixed(0)}%, Bench: ${r.avgBenchPoints.toFixed(1)} pts/GW`);
+    console.log(`      ${r.name.padEnd(30)} Template: ${r.templateOverlap?.toFixed(0) ?? 'N/A'}%, Overall Grade: ${r.overallDecisionGrade}`);
   });
   console.log();
 

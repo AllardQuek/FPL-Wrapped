@@ -25,6 +25,13 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ error: 'One or more players not found' }, { status: 404 });
         }
 
+        // Validate that both players are of the same position (element_type)
+        if (player1.element_type !== player2.element_type) {
+            return NextResponse.json({ 
+                error: 'Players must be of the same position. In FPL, you can only transfer players of the same position.' 
+            }, { status: 400 });
+        }
+
         const pointsHistory: { gw: number; in: number; out: number }[] = [];
         let pointsInTotal = 0;
         let pointsOutTotal = 0;

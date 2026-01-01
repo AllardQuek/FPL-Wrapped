@@ -110,23 +110,40 @@ export function analyzeChips(data: ManagerData): ChipAnalysis[] {
                 }
             } else if (chip.name === 'wildcard') {
                 const before = finishedGameweeks.filter(g => g < chip.event && g >= chip.event - 4);
-                const after = finishedGameweeks.filter(g => g > chip.event && g <= chip.event + 4);
+                const after = finishedGameweeks.filter(g => g >= chip.event && g < chip.event + 4);
                 if (before.length > 0 && after.length > 0) {
-                    const pointsBefore = before.map(g => history.current.find(h => h.event === g)?.points || 0);
-                    const pointsAfter = after.map(g => history.current.find(h => h.event === g)?.points || 0);
-                    const avgBefore = pointsBefore.reduce((sum, p) => sum + p, 0) / before.length;
-                    const avgAfter = pointsAfter.reduce((sum, p) => sum + p, 0) / after.length;
+                    const beforeData = before.map(g => {
+                        const h = history.current.find(h => h.event === g);
+                        const avg = bootstrap.events.find(e => e.id === g)?.average_entry_score || 0;
+                        const points = h?.points || 0;
+                        const hits = h?.event_transfers_cost || 0;
+                        return { gw: g, points, hits, avg, net: points - hits - avg };
+                    });
+                    const afterData = after.map(g => {
+                        const h = history.current.find(h => h.event === g);
+                        const avg = bootstrap.events.find(e => e.id === g)?.average_entry_score || 0;
+                        const points = h?.points || 0;
+                        const hits = h?.event_transfers_cost || 0;
+                        return { gw: g, points, hits, avg, net: points - hits - avg };
+                    });
+
+                    const avgBefore = beforeData.reduce((sum, d) => sum + d.net, 0) / beforeData.length;
+                    const avgAfter = afterData.reduce((sum, d) => sum + d.net, 0) / afterData.length;
                     pointsGained = Math.round(avgAfter - avgBefore);
                     isExcellent = pointsGained >= 5;
                     verdict = isExcellent ? "Transformed" : pointsGained >= 0 ? "Improved" : "Tough Run";
-                    details = `${pointsGained >= 0 ? 'Up' : 'Down'} ${Math.abs(pointsGained)} pts/GW after the refresh.`;
+                    details = `${pointsGained >= 0 ? 'Up' : 'Down'} ${Math.abs(pointsGained)} pts/GW relative to average.`;
                     metadata = {
                         gameweeksBefore: before,
-                        pointsBefore,
+                        pointsBefore: beforeData.map(d => d.net),
                         avgBefore: Math.round(avgBefore),
                         gameweeksAfter: after,
-                        pointsAfter,
-                        avgAfter: Math.round(avgAfter)
+                        pointsAfter: afterData.map(d => d.net),
+                        avgAfter: Math.round(avgAfter),
+                        wildcardDetails: {
+                            before: beforeData,
+                            after: afterData
+                        }
                     };
                 }
             }

@@ -415,6 +415,10 @@ export interface ChipAnalysis {
     gameweeksAfter?: number[];
     pointsAfter?: number[];
     avgAfter?: number;
+    wildcardDetails?: {
+      before: { gw: number; points: number; hits: number; avg: number; net: number }[];
+      after: { gw: number; points: number; hits: number; avg: number; net: number }[];
+    };
   };
 }
 
@@ -750,7 +754,7 @@ export interface SeasonSummary {
     percentage: number;
     playerCount: number;
   }[];
-  allPlayers: { id: number; web_name: string; team: number }[];
+  allPlayers: { id: number; web_name: string; team: number; element_type: number }[];
   transferTiming: TransferTimingAnalysis;
   patienceMetrics: {
     longestHeldPlayer: { player: Player; weeks: number } | null;

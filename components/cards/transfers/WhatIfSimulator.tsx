@@ -40,12 +40,29 @@ export function WhatIfSimulator({
   setEndGW,
   onSimulate
 }: WhatIfSimulatorProps) {
+  // Get selected player positions for filtering
+  const selectedP1Player = selectedP1 ? summary.allPlayers.find(p => p.id === selectedP1) : null;
+  const selectedP2Player = selectedP2 ? summary.allPlayers.find(p => p.id === selectedP2) : null;
+
+  // Filter players by search term
   const filteredPlayers1 = p1Search.length > 1
-    ? summary.allPlayers.filter(p => p.web_name.toLowerCase().includes(p1Search.toLowerCase())).slice(0, 5)
+    ? summary.allPlayers.filter(p => {
+        // Match search term
+        if (!p.web_name.toLowerCase().includes(p1Search.toLowerCase())) return false;
+        // If p2 is selected, only show players of the same position
+        if (selectedP2Player && p.element_type !== selectedP2Player.element_type) return false;
+        return true;
+      }).slice(0, 5)
     : [];
 
   const filteredPlayers2 = p2Search.length > 1
-    ? summary.allPlayers.filter(p => p.web_name.toLowerCase().includes(p2Search.toLowerCase())).slice(0, 5)
+    ? summary.allPlayers.filter(p => {
+        // Match search term
+        if (!p.web_name.toLowerCase().includes(p2Search.toLowerCase())) return false;
+        // If p1 is selected, only show players of the same position
+        if (selectedP1Player && p.element_type !== selectedP1Player.element_type) return false;
+        return true;
+      }).slice(0, 5)
     : [];
 
   return (

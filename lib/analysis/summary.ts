@@ -418,7 +418,7 @@ export function generateSeasonSummary(data: ManagerData): SeasonSummary {
         worstGameweek: history.current.reduce((worst, gw) => gw.points < worst.points ? { event: gw.event, points: gw.points } : worst, { event: 0, points: 1000 }),
         rankProgression: history.current.map(gw => ({ event: gw.event, rank: gw.overall_rank })),
         chipsUsed: history.chips,
-        allPlayers: data.bootstrap.elements.map(p => ({ id: p.id, web_name: p.web_name, team: p.team })),
+        allPlayers: data.bootstrap.elements.map(p => ({ id: p.id, web_name: p.web_name, team: p.team, element_type: p.element_type })),
         transferTiming
     };
 }

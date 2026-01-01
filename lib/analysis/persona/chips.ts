@@ -78,8 +78,8 @@ function calculateEffectivenessScore(usedChips: ChipAnalysis[]): number {
         // Free Hit: -5 to 15 pts → 0-1
         return Math.min(1, Math.max(0, (points + 5) / 20));
       case 'wildcard':
-        // Wildcard: -3 to 7 pts/gw → 0-1
-        return Math.min(1, Math.max(0, (points + 3) / 10));
+        // Wildcard: -10 to 15 pts/gw → 0-1 (Normalized relative to average)
+        return Math.min(1, Math.max(0, (points + 10) / 25));
       default:
         return 0.5;
     }

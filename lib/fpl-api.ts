@@ -7,6 +7,7 @@ import {
   PlayerSummary,
   LiveGameWeek,
   Player,
+  LeagueStandings,
 } from './types';
 import fs from 'fs';
 import path from 'path';
@@ -162,6 +163,16 @@ export async function getManagerHistory(managerId: number): Promise<ManagerHisto
  */
 export async function getManagerTransfers(managerId: number): Promise<Transfer[]> {
   return fetchFPL<Transfer[]>(`/entry/${managerId}/transfers/`);
+}
+
+/**
+ * Get league standings (paginated)
+ */
+export async function getLeagueStandings(
+  leagueId: number,
+  page: number = 1
+): Promise<LeagueStandings> {
+  return fetchFPL<LeagueStandings>(`/leagues-classic/${leagueId}/standings/?page_standings=${page}`);
 }
 
 /**

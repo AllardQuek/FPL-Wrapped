@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "analyze:league": "npx tsx scripts/bulk-analyze-league.ts"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.15",

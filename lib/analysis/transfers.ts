@@ -1,4 +1,4 @@
-import { TransferAnalysis, Transfer, GameWeek } from '../types';
+import { TransferAnalysis } from '../types';
 import { ManagerData, TransferTiming } from './types';
 import { getPlayer, getPlayerPointsInGameweek } from './utils';
 import { calculateHoursBeforeDeadline, getLocalHourOfDay, getTimezoneForRegion } from './timezone';

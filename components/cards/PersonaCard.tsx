@@ -1,8 +1,12 @@
 'use client';
 
 import { SeasonSummary } from '@/lib/types';
-import Image from 'next/image';
-import { useState } from 'react';
+import { PERSONALITY_SPECTRUMS } from '@/lib/analysis/persona/constants';
+import { PersonaHeader } from './persona/PersonaHeader';
+import { PersonaAvatar } from './persona/PersonaAvatar';
+import { PersonaIdentity } from './persona/PersonaIdentity';
+import { PersonalitySpectrum } from './summary/PersonalitySpectrum';
+import { TraitBadges } from './summary/TraitBadges';
 
 interface PersonaCardProps {
     summary: SeasonSummary;
@@ -10,189 +14,176 @@ interface PersonaCardProps {
 
 export function PersonaCard({ summary }: PersonaCardProps) {
     const { persona } = summary;
-    const [imageError, setImageError] = useState(false);
 
-    // Generate explanation for why this persona was assigned
-    const generatePersonaExplanation = () => {
-        const explanations: { icon: string; text: string }[] = [];
-        
-        // Transfer analysis
-        const transfersPerGW = summary.totalTransfers / 38;
-        const hitsPerGW = (summary.totalTransfersCost / 4) / 38;
-        if (hitsPerGW > 0.5) {
-            explanations.push({
-                icon: '🔄',
-                text: `**High transfer activity**: You averaged ${transfersPerGW.toFixed(1)} transfers per gameweek and took ${(summary.totalTransfersCost / 4).toFixed(0)} hits, showing you're not afraid to reshape your squad.`
-            });
-        } else if (hitsPerGW < 0.1) {
-            explanations.push({
-                icon: '🔄',
-                text: `**Patient approach**: You took minimal hits (${(summary.totalTransfersCost / 4).toFixed(0)}) and averaged ${transfersPerGW.toFixed(1)} transfers per gameweek, showing discipline and patience.`
-            });
+    const spectrums = [
+        {
+            key: 'differential',
+            ...PERSONALITY_SPECTRUMS.DIFFERENTIAL_TEMPLATE,
+            getTooltip: () => ({
+                lowEnd: (
+                    <div className="space-y-1">
+                        <p className="font-semibold text-white">Why {PERSONALITY_SPECTRUMS.DIFFERENTIAL_TEMPLATE.lowEnd.name}?</p>
+                        <p className="text-xs text-white/80">
+                            Calculated by identifying &quot;Template Picks&quot; (players with ≥15% ownership). Your {Math.round(summary.templateOverlap)}% overlap shows you trust the consensus.
+                        </p>
+                    </div>
+                ),
+                highEnd: (
+                    <div className="space-y-1">
+                        <p className="font-semibold text-white">Why {PERSONALITY_SPECTRUMS.DIFFERENTIAL_TEMPLATE.highEnd.name}?</p>
+                        <p className="text-xs text-white/80">
+                            Calculated by identifying &quot;Template Picks&quot; (players with ≥15% ownership). Your low {Math.round(summary.templateOverlap)}% overlap shows you hunt for unique differentials.
+                        </p>
+                    </div>
+                )
+            })
+        },
+        {
+            key: 'analyzer',
+            ...PERSONALITY_SPECTRUMS.ANALYZER_INTUITIVE,
+            getTooltip: () => ({
+                lowEnd: (
+                    <div className="space-y-1">
+                        <p className="font-semibold text-white">Why {PERSONALITY_SPECTRUMS.ANALYZER_INTUITIVE.lowEnd.name}?</p>
+                        <p className="text-xs text-white/80">
+                            Based on your Transfer Efficiency ({summary.netTransferPoints >= 0 ? '+' : ''}{summary.netTransferPoints} pts) and Captaincy Accuracy ({summary.captaincySuccessRate.toFixed(0)}%). You back decisions with data.
+                        </p>
+                    </div>
+                ),
+                highEnd: (
+                    <div className="space-y-1">
+                        <p className="font-semibold text-white">Why {PERSONALITY_SPECTRUMS.ANALYZER_INTUITIVE.highEnd.name}?</p>
+                        <p className="text-xs text-white/80">
+                            Based on your Transfer Efficiency ({summary.netTransferPoints >= 0 ? '+' : ''}{summary.netTransferPoints} pts) and Captaincy Accuracy ({summary.captaincySuccessRate.toFixed(0)}%). You trust your gut over pure stats.
+                        </p>
+                    </div>
+                )
+            })
+        },
+        {
+            key: 'patient',
+            ...PERSONALITY_SPECTRUMS.PATIENT_REACTIVE,
+            getTooltip: () => {
+                const weeks = summary.rankProgression.length;
+                const transfersPerWeek = weeks > 0 ? (summary.totalTransfers / weeks).toFixed(1) : '0';
+                const longTermHolds = summary.patienceMetrics.longTermHoldsCount;
+                const timing = summary.transferTiming;
+                const reactiveTransfers = timing.panicTransfers + timing.deadlineDayTransfers + timing.kneeJerkTransfers;
+
+                return {
+                    lowEnd: (
+                        <div className="space-y-1">
+                            <p className="font-semibold text-white">Why {PERSONALITY_SPECTRUMS.PATIENT_REACTIVE.lowEnd.name}?</p>
+                            <p className="text-xs text-white/80">
+                                {reactiveTransfers > 0 && `You made ${reactiveTransfers} reactive transfers (panic/deadline/knee-jerk). `}
+                                Averaging {transfersPerWeek} transfers per week shows you&apos;re quick to react to the market.
+                            </p>
+                        </div>
+                    ),
+                    highEnd: (
+                        <div className="space-y-1">
+                            <p className="font-semibold text-white">Why {PERSONALITY_SPECTRUMS.PATIENT_REACTIVE.highEnd.name}?</p>
+                            <p className="text-xs text-white/80">
+                                {timing.earlyStrategicTransfers > 0 && `With ${timing.earlyStrategicTransfers} early planned transfers and `}
+                                {longTermHolds} players held for 10+ weeks, you show a patient, methodical strategy.
+                            </p>
+                        </div>
+                    )
+                };
+            }
+        },
+        {
+            key: 'cautious',
+            ...PERSONALITY_SPECTRUMS.CAUTIOUS_AGGRESSIVE,
+            getTooltip: () => ({
+                lowEnd: (
+                    <div className="space-y-1">
+                        <p className="font-semibold text-white">Why {PERSONALITY_SPECTRUMS.CAUTIOUS_AGGRESSIVE.lowEnd.name}?</p>
+                        <p className="text-xs text-white/80">
+                            Determined by hit-taking. Taking {Math.abs(summary.totalTransfersCost / 4).toFixed(0)} hits shows an aggressive pursuit of immediate gains.
+                        </p>
+                    </div>
+                ),
+                highEnd: (
+                    <div className="space-y-1">
+                        <p className="font-semibold text-white">Why {PERSONALITY_SPECTRUMS.CAUTIOUS_AGGRESSIVE.highEnd.name}?</p>
+                        <p className="text-xs text-white/80">
+                            Determined by hit-taking. Taking only {Math.abs(summary.totalTransfersCost / 4).toFixed(0)} hits shows a disciplined, risk-averse approach.
+                        </p>
+                    </div>
+                )
+            })
         }
-        
-        // Transfer efficiency
-        if (summary.netTransferPoints > 30) {
-            explanations.push({
-                icon: '📈',
-                text: `**Transfer master**: Your net transfer impact of +${summary.netTransferPoints} points ranks as excellent, proving your moves paid off handsomely.`
-            });
-        } else if (summary.netTransferPoints < -10) {
-            explanations.push({
-                icon: '📉',
-                text: `**Transfer struggles**: Your net transfer impact of ${summary.netTransferPoints} points suggests your moves didn't quite deliver the value hoped for.`
-            });
-        }
-        
-        // Captaincy
-        if (summary.captaincySuccessRate > 70) {
-            explanations.push({
-                icon: '⚡',
-                text: `**Elite captaincy**: Your ${summary.captaincySuccessRate.toFixed(0)}% captain success rate shows exceptional decision-making when it matters most.`
-            });
-        } else if (summary.captaincySuccessRate < 50) {
-            explanations.push({
-                icon: '⚡',
-                text: `**Captain roulette**: Your ${summary.captaincySuccessRate.toFixed(0)}% captain success rate left significant points on the table (${summary.captaincyPointsLost} pts missed).`
-            });
-        }
-        
-        // Bench management
-        if (summary.benchRegrets > 10) {
-            explanations.push({
-                icon: '😱',
-                text: `**Bench nightmares**: You suffered ${summary.benchRegrets} major bench regrets, leaving ${summary.totalBenchPoints.toFixed(0)} points warming the bench across the season.`
-            });
-        } else if (summary.benchRegrets <= 3) {
-            explanations.push({
-                icon: '🎯',
-                text: `**Bench master**: Only ${summary.benchRegrets} major bench regrets shows you consistently picked the right starting XI.`
-            });
-        }
-        
-        // Template strategy
-        if (summary.templateOverlap > 40) {
-            explanations.push({
-                icon: '🐑',
-                text: `**Template loyalist**: Your ${summary.templateOverlap.toFixed(0)}% template overlap shows you trusted the crowd's wisdom and rode the popular picks.`
-            });
-        } else if (summary.templateOverlap < 20) {
-            explanations.push({
-                icon: '🦄',
-                text: `**Differential king**: Your ${summary.templateOverlap.toFixed(0)}% template overlap proves you marched to your own drum and hunted unique assets.`
-            });
-        }
-        
-        return explanations;
-    };
+    ];
 
     return (
-        <div className="min-h-screen flex flex-col items-center justify-center p-8">
-            <div className="max-w-lg w-full animate-fade-in text-center mb-6">
-                <p className="text-white/40 text-xs tracking-[0.2em] uppercase">
+        <div className="min-h-screen flex flex-col items-center justify-center p-8 relative">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.05),transparent_50%)] pointer-events-none" />
+            
+            <div className="max-w-lg w-full animate-fade-in text-center mb-6 relative z-10">
+                <p className="text-white/40 text-[10px] tracking-[0.3em] uppercase">
                     Your Manager Persona
                 </p>
             </div>
 
             <div className="max-w-lg w-full relative group">
                 {/* Main Card */}
-                <div className="bg-white rounded-[2rem] p-8 text-black shadow-2xl relative z-10 overflow-hidden">
+                <div 
+                    className="bg-white rounded-[2.5rem] p-8 md:p-10 text-black shadow-2xl relative z-10 overflow-hidden border-2"
+                    style={{ borderColor: `${persona.primaryColor}30` }}
+                >
                     {/* Background Pattern */}
-                    <div className="absolute inset-0 opacity-5 pointer-events-none bg-[radial-gradient(circle_at_50%_0%,_rgba(0,0,0,1)_0%,_transparent_70%)]"></div>
+                    <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[radial-gradient(circle_at_50%_0%,_rgba(0,0,0,1)_0%,_transparent_70%)]"></div>
 
                     <div className="text-center relative z-10">
-                        {/* Header */}
+                        <PersonaHeader 
+                            title={persona.title} 
+                            primaryColor={persona.primaryColor} 
+                        />
+                        
+                        <PersonaAvatar 
+                            imageUrl={persona.imageUrl} 
+                            name={persona.name} 
+                            emoji={persona.emoji} 
+                            primaryColor={persona.primaryColor}
+                        />
+
                         <div className="mb-6">
-                            <h2 className="text-[10px] font-bold text-black/40 tracking-[0.2em] uppercase mb-1">
-                                Archetype
-                            </h2>
-                            <h1 className="text-2xl font-black tracking-tighter uppercase leading-none">
-                                {persona.title.toUpperCase()}
-                            </h1>
+                            <PersonaIdentity 
+                                name={persona.name} 
+                                description={persona.description} 
+                            />
+                            <div className="mt-4">
+                                <TraitBadges 
+                                    traits={persona.traits} 
+                                    primaryColor={persona.primaryColor} 
+                                    centered 
+                                />
+                            </div>
                         </div>
 
-                        {/* Avatar */}
-                        <div className="relative w-32 h-32 mx-auto mb-6">
-                            <div className="absolute inset-0 bg-slate-100 rounded-full animate-pulse-slow"></div>
-                            <div className="relative w-full h-full rounded-full bg-slate-50 border-4 border-white shadow-xl overflow-hidden flex items-center justify-center">
-                                {persona.imageUrl && !imageError ? (
-                                    <Image
-                                        src={persona.imageUrl}
-                                        alt={persona.name}
-                                        fill
-                                        className="object-cover"
-                                        onError={() => setImageError(true)}
-                                        sizes="128px"
-                                        priority
+                        <div className="space-y-4 mb-8">
+                            <p className="text-[10px] font-bold text-black/40 uppercase tracking-widest mb-4">Personality Spectrum</p>
+                            {spectrums.map(({ key, getTooltip, ...spectrum }) => {
+                                const score = persona.spectrums[key as keyof typeof persona.spectrums];
+                                return (
+                                    <PersonalitySpectrum
+                                        key={key}
+                                        lowEnd={spectrum.lowEnd}
+                                        highEnd={spectrum.highEnd}
+                                        score={score}
+                                        primaryColor={persona.primaryColor}
+                                        tooltipContent={getTooltip()}
                                     />
-                                ) : (
-                                    <span className="text-6xl">{persona.emoji || '👔'}</span>
-                                )}
-                            </div>
-                            {/* Decorative ring */}
-                            <div className="absolute -inset-2 border border-black/5 rounded-full"></div>
+                                );
+                            })}
                         </div>
-
-                        {/* Name & Quote */}
-                        <h3 className="text-xl font-black uppercase mb-4 text-black/90">
-                            {persona.name}
-                        </h3>
-                        <p className="text-base leading-relaxed text-black/70 mb-8 px-4 font-medium italic">
-                            &ldquo;{persona.description}&rdquo;
-                        </p>
-
-                        {/* Why This Match - Always Visible */}
-                        <div className="mb-8">
-                            <p className="text-xs font-bold text-black/50 tracking-[0.15em] uppercase mb-4 text-center">
-                                Why This Match?
-                            </p>
-                            <div className="space-y-2">
-                                {generatePersonaExplanation().map((item, i) => (
-                                    <div key={i} className="bg-black/[0.02] rounded-lg p-3 border border-black/5 text-left">
-                                        <div className="flex items-start gap-2">
-                                            <span className="text-base shrink-0">{item.icon}</span>
-                                            <p className="text-xs text-black/75 leading-relaxed">
-                                                {item.text.split('**').map((part, j) => 
-                                                    j % 2 === 1 ? <strong key={j} className="font-black text-black/90">{part}</strong> : part
-                                                )}
-                                            </p>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* Memorable Moments */}
-                        {persona.memorableMoments && persona.memorableMoments.length > 0 && (
-                            <div className="mt-8 pt-6 border-t border-black/5">
-                                <p className="text-xs font-bold text-black/50 tracking-[0.15em] uppercase mb-4">
-                                    {persona.memorableMoments.length > 1 ? 'Defining Moments' : 'Your Season Highlight'}
-                                </p>
-                                <div className="space-y-3">
-                                    {persona.memorableMoments.map((moment, i) => (
-                                        <div key={i} className="bg-black/[0.02] rounded-xl p-3 border border-black/5">
-                                            <div className="flex items-start gap-2 text-left">
-                                                <span className="text-lg shrink-0">
-                                                    {moment.includes('benched') ? '😱' : 
-                                                     moment.includes('captained') && moment.includes('but') ? '😭' :
-                                                     moment.includes('captained') ? '🎯' :
-                                                     moment.includes('signed') || moment.includes('played') ? '⭐' : '📈'}
-                                                </span>
-                                                <p className="text-sm text-black/75 leading-relaxed font-medium text-left">
-                                                    {moment}
-                                                </p>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
                     </div>
                 </div>
 
                 {/* Ambient Glow */}
                 <div
-                    className="absolute -inset-10 rounded-[4rem] blur-3xl opacity-20 -z-10 transition-opacity duration-1000"
+                    className="absolute -inset-10 rounded-[4rem] blur-[100px] opacity-20 -z-10 transition-opacity duration-1000"
                     style={{ backgroundColor: persona.primaryColor }}
                 ></div>
             </div>

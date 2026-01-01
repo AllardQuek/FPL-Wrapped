@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { toPng } from "html-to-image";
 import { Share2, Loader2 } from "lucide-react";
 
@@ -46,25 +46,34 @@ export function ShareButton() {
         };
     }, [mouseIdleTimer]);
 
-    const handleShare = async () => {
+    const handleShare = useCallback(async (targetId?: string) => {
         setIsGenerating(true);
         try {
-            // Find the currently visible section
-            const sections = document.querySelectorAll('section');
-            let activeSection = null;
-            let maxVisibility = 0;
+            let elementToCapture: HTMLElement | null = null;
 
-            sections.forEach(section => {
-                const rect = section.getBoundingClientRect();
-                const visibleHeight = Math.min(rect.bottom, window.innerHeight) - Math.max(rect.top, 0);
-                if (visibleHeight > maxVisibility) {
-                    maxVisibility = visibleHeight;
-                    activeSection = section;
-                }
-            });
+            if (targetId) {
+                elementToCapture = document.getElementById(targetId);
+            }
+
+            if (!elementToCapture) {
+                // Find the currently visible section
+                const sections = document.querySelectorAll('section');
+                let activeSection = null;
+                let maxVisibility = 0;
+
+                sections.forEach(section => {
+                    const rect = section.getBoundingClientRect();
+                    const visibleHeight = Math.min(rect.bottom, window.innerHeight) - Math.max(rect.top, 0);
+                    if (visibleHeight > maxVisibility) {
+                        maxVisibility = visibleHeight;
+                        activeSection = section;
+                    }
+                });
+                elementToCapture = activeSection as HTMLElement | null;
+            }
 
             // Fallback to body if no section found (shouldn't happen)
-            const element = activeSection || document.getElementById("wrapped-content") || document.body;
+            const element = elementToCapture || document.getElementById("wrapped-content") || document.body;
 
             if (!element) return;
 
@@ -97,7 +106,7 @@ export function ShareButton() {
             } else {
                 // Fallback to download
                 const link = document.createElement("a");
-                link.download = `FPL-Wrapped-${activeSection ? (activeSection as HTMLElement).id : 'Summary'}.png`;
+                link.download = `FPL-Wrapped-${targetId || (elementToCapture ? (elementToCapture as HTMLElement).id : 'Summary')}.png`;
                 link.href = dataUrl;
                 link.click();
             }
@@ -107,7 +116,17 @@ export function ShareButton() {
         } finally {
             setIsGenerating(false);
         }
-    };
+    }, []);
+
+    // Listen for external share triggers
+    useEffect(() => {
+        const handleExternalTrigger = (e: Event) => {
+            const customEvent = e as CustomEvent;
+            handleShare(customEvent.detail?.sectionId);
+        };
+        window.addEventListener('trigger-share', handleExternalTrigger);
+        return () => window.removeEventListener('trigger-share', handleExternalTrigger);
+    }, [handleShare]);
 
     return (
         <div 
@@ -118,7 +137,7 @@ export function ShareButton() {
             onMouseEnter={() => setIsVisible(true)}
         >
             <button
-                onClick={handleShare}
+                onClick={() => handleShare()}
                 disabled={isGenerating}
                 className="group flex items-center gap-2 bg-[#00ff87] hover:bg-[#00e67a] text-[#0d0015] font-black px-4 py-3 md:px-6 md:py-3 rounded-full shadow-lg shadow-[#00ff87]/20 transition-all hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                 aria-label="Share card"

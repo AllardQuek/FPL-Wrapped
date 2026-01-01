@@ -33,13 +33,13 @@ body {
 
 /* Text selection styling */
 ::selection {
-  background-color: rgba(0, 255, 135, 0.3);
-  color: #ffffff;
+  background-color: var(--accent-secondary);
+  color: var(--background);
 }
 
 ::-moz-selection {
-  background-color: rgba(0, 255, 135, 0.3);
-  color: #ffffff;
+  background-color: var(--accent-secondary);
+  color: var(--background);
 }
 
 /* Ensure text is selectable by default */

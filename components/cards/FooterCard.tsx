@@ -1,6 +1,7 @@
 'use client';
 
 import { getCurrentFPLSeason } from '@/lib/season';
+import Link from 'next/link';
 
 export function FooterCard() {
   const currentSeason = getCurrentFPLSeason();
@@ -61,6 +62,25 @@ export function FooterCard() {
             <p className="text-[12px] text-white/50">
               Made with ⚽
             </p>
+          </div>
+        </div>
+
+        <div className="text-center space-y-6 mt-12 mb-8">
+          <button 
+            onClick={() => window.dispatchEvent(new CustomEvent('trigger-share', { detail: { sectionId: 'summary' } }))}
+            className="inline-block p-1 rounded-full bg-white/5 backdrop-blur-md px-6 py-2 border border-white/10 hover:bg-white/10 transition-colors cursor-pointer"
+          >
+            <p className="text-xs text-white/60 font-medium">
+              Share your Season Summary 📸
+            </p>
+          </button>
+          <div>
+            <Link
+              href="/"
+              className="px-8 py-3 bg-[#00ff87] text-black font-bold rounded-full text-sm hover:scale-105 transition-transform inline-block"
+            >
+              Analyze Another Team
+            </Link>
           </div>
         </div>
 

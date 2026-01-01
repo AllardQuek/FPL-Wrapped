@@ -1,0 +1,37 @@
+'use client';
+
+import { ReactNode } from 'react';
+
+interface WrappedCardLayoutProps {
+  children: ReactNode;
+  sectionNumber: string;
+  sectionTitle?: string;
+  className?: string;
+  centerContent?: boolean;
+}
+
+export function WrappedCardLayout({ 
+  children, 
+  sectionNumber, 
+  sectionTitle,
+  className = "",
+  centerContent = false
+}: WrappedCardLayoutProps) {
+  return (
+    <div className="min-h-screen flex flex-col items-center justify-center p-8">
+      <div className={`max-w-lg w-full ${centerContent ? 'text-center' : ''} ${className}`}>
+        <p className="text-white/40 text-[10px] tracking-[0.3em] uppercase mb-8 text-center">
+          Section {sectionNumber}
+        </p>
+        
+        {sectionTitle && (
+          <h2 className="text-4xl font-bold tracking-tight text-white mb-8 text-center uppercase italic">
+            {sectionTitle}
+          </h2>
+        )}
+
+        {children}
+      </div>
+    </div>
+  );
+}

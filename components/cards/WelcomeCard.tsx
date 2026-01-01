@@ -57,6 +57,13 @@ function ManagerAvatar({ image, name, emoji, isActive, isMystery }: { image: str
           <span className="text-2xl md:text-3xl">{emoji}</span>
         )}
       </div>
+      {!isMystery && (
+        <div className="absolute -top-10 left-1/2 -translate-x-1/2 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-10">
+          <div className="bg-white/95 backdrop-blur-sm text-black text-[10px] font-bold px-3 py-1.5 rounded-lg shadow-lg">
+            {name}
+          </div>
+        </div>
+      )}
       {isMystery && (
         <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 whitespace-nowrap">
           <div className="bg-[#00ff87] text-black text-[8px] md:text-[9px] font-bold px-2 py-0.5 rounded uppercase tracking-wide">
@@ -88,7 +95,7 @@ export function WelcomeCard({ summary }: WelcomeCardProps) {
         </div>
 
         <p className="text-lg md:text-xl font-medium text-white/60 mb-8 max-w-sm mx-auto leading-relaxed">
-          Which manager archetype are you?<br></br> Let&apos;s find out.
+          Which manager persona are you?<br></br> Let&apos;s find out.
         </p>
 
         {/* Mystery Avatar - User's Unknown Persona */}
@@ -105,7 +112,7 @@ export function WelcomeCard({ summary }: WelcomeCardProps) {
 
         {/* All Manager Personas Grid */}
         <div className="max-w-3xl mx-auto">
-          <p className="text-white/50 text-[9px] tracking-[0.3em] uppercase mb-6">16 Manager Archetypes</p>
+          <p className="text-white/50 text-[9px] tracking-[0.3em] uppercase mb-6">16 Manager Personas</p>
           <div className="grid grid-cols-4 md:grid-cols-8 gap-4 md:gap-6 justify-items-center">
             {ALL_PERSONAS.map((p) => (
               <ManagerAvatar

@@ -49,6 +49,7 @@ export function calculateManagerPersona(
   avgBenchPerWeek: number,
   templateOverlap: number,
   captaincyAnalyses: Array<{ captainName?: string; wasSuccessful?: boolean }>,
+  patienceMetrics?: SeasonSummary['patienceMetrics'],
   bestTransfer?: TransferAnalysis | null,
   worstTransfer?: TransferAnalysis | null,
   bestCaptain?: CaptaincyAnalysis | null,
@@ -84,7 +85,9 @@ export function calculateManagerPersona(
     transferEfficiency,
     captaincyEfficiency,
     squadValue,
-    chipPersonality
+    chipPersonality,
+    patienceMetrics,
+    transferTiming
   );
 
   // Detect behavioral signals
@@ -140,6 +143,37 @@ export function calculateManagerPersona(
   );
 }
 
+/**
+ * Calculate the manager's actual position on the 4 personality spectrums (0-1)
+ */
+function calculateManagerSpectrums(metrics: PersonaMetrics): {
+  differential: number;
+  analyzer: number;
+  patient: number;
+  cautious: number;
+} {
+  // 1. Differential (1) vs Template (0)
+  // We use a power function so that 35% overlap is roughly the 0.5 midpoint
+  // 50% overlap will result in ~0.3 score (Template side)
+  const differential = Math.pow(1 - metrics.template, 1.5);
+
+  // 2. Analyzer (0) vs Intuitive (1)
+  // High efficiency and leadership = Analyzer
+  const analyzerScore = (metrics.efficiency + metrics.leadership) / 2;
+  const analyzer = 1 - analyzerScore;
+
+  // 3. Patient (1) vs Reactive (0)
+  // We combine activity (inverse), patience metrics, and transfer timing
+  // High activity = Reactive, High patience = Patient, Early timing = Patient
+  const patient = ( (1 - metrics.activity) + metrics.patience + metrics.timing ) / 3;
+
+  // 4. Cautious (1) vs Aggressive (0)
+  // High chaos (hits) = Aggressive
+  const cautious = 1 - metrics.chaos;
+
+  return { differential, analyzer, patient, cautious };
+}
+
 // ============================================================================
 // HELPER FUNCTIONS
 // ============================================================================
@@ -155,9 +189,46 @@ function calculateMetrics(
   transferEfficiency: number,
   captaincyEfficiency: number,
   squadValue: number,
-  chipPersonality: ChipPersonality
+  chipPersonality: ChipPersonality,
+  patienceMetrics?: SeasonSummary['patienceMetrics'],
+  transferTiming?: any
 ): PersonaMetrics {
   const N = NORMALIZATION;
+
+  // Calculate patience score (0-1)
+  // A score of 1 means high patience (many long-term holds)
+  let patienceScore = 0.5; // Default
+  if (patienceMetrics) {
+    // Normalize longTermHoldsCount (e.g., 5+ is very patient)
+    const holdsScore = Math.min(1, patienceMetrics.longTermHoldsCount / 5);
+    // Normalize avgHoldLength (e.g., 8+ weeks is very patient)
+    const lengthScore = Math.min(1, patienceMetrics.avgHoldLength / 8);
+    patienceScore = (holdsScore + lengthScore) / 2;
+  }
+
+  // Calculate timing score (0-1)
+  // 1 = Early/Planned, 0 = Late/Panic
+  let timingScore = 0.5; // Default
+  if (transferTiming) {
+    const total = (transferTiming.panicTransfers || 0) + 
+                  (transferTiming.deadlineDayTransfers || 0) + 
+                  (transferTiming.midWeekTransfers || 0) + 
+                  (transferTiming.earlyStrategicTransfers || 0);
+    
+    if (total > 0) {
+      const planned = (transferTiming.midWeekTransfers || 0) + (transferTiming.earlyStrategicTransfers || 0);
+      const reactive = (transferTiming.panicTransfers || 0) + (transferTiming.deadlineDayTransfers || 0);
+      
+      // Base score from planned vs reactive
+      let baseTiming = planned / total;
+      
+      // Penalize knee-jerks and late-night reactors
+      const kneeJerkPenalty = Math.min(0.3, ((transferTiming.kneeJerkTransfers || 0) / total) * 0.5);
+      const lateNightPenalty = Math.min(0.2, ((transferTiming.lateNightTransfers || 0) / total) * 0.4);
+      
+      timingScore = Math.max(0, Math.min(1, baseTiming - kneeJerkPenalty - lateNightPenalty));
+    }
+  }
 
   return {
     activity: Math.min(1, totalTransfers / N.TRANSFERS_MAX),
@@ -167,6 +238,8 @@ function calculateMetrics(
     efficiency: Math.max(0, Math.min(1, transferEfficiency / N.EFFICIENCY_MAX)),
     leadership: captaincyEfficiency / 100,
     thrift: Math.max(0, Math.min(1, (N.VALUE_BASELINE - squadValue) / N.VALUE_RANGE)),
+    patience: patienceScore,
+    timing: timingScore,
     chipMastery: chipPersonality.effectivenessScore,
     chipRisk: chipPersonality.riskScore,
   };
@@ -199,7 +272,19 @@ function buildPersonaResult(
     bestChip
   );
 
+  // Calculate manager's actual spectrum scores
+  const managerSpectrums = calculateManagerSpectrums(metrics);
+
+  // Calculate 4-letter personality code based on manager's actual scores
+  const personalityCode = [
+    managerSpectrums.differential >= 0.5 ? 'D' : 'T',
+    managerSpectrums.analyzer >= 0.5 ? 'I' : 'A',
+    managerSpectrums.patient >= 0.5 ? 'P' : 'R',
+    managerSpectrums.cautious >= 0.5 ? 'C' : 'A',
+  ].join('');
+
   return {
+    key: selectedKey,
     name: personaData.name,
     title: personaData.title,
     description: personaData.desc,
@@ -209,6 +294,8 @@ function buildPersonaResult(
     emoji: personaData.emoji,
     imageUrl: getPersonaImagePath(selectedKey),
     memorableMoments: memorableMoments.slice(0, 3),
+    spectrums: managerSpectrums,
+    personalityCode,
   };
 }
 

@@ -160,7 +160,7 @@ export default function Home() {
 
         {/* Footer */}
         <footer className="text-center text-white/40 text-[9px] tracking-[0.3em] uppercase font-bold border-t border-white/10 pt-10 w-full max-w-md">
-          <p className="mb-2">Official FPL API Connection</p>
+          <p className="mb-2">Fantasy Premier Leaguge Wrapped</p>
           <p className="mb-6 text-[#00ff87] normal-case tracking-normal text-sm font-medium">Made with ⚽</p>
           {/* <div className="flex justify-center gap-8 opacity-70">
             <span>Season {currentSeason}</span>

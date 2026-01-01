@@ -45,10 +45,10 @@ export const POSITION_EMOJIS: Record<Position, string> = {
  * - FWD: Brand red (attack, goals, excitement)
  */
 export const POSITION_COLORS: Record<Position, string> = {
-  GKP: '#fbbf24', // amber-500
-  DEF: '#3b82f6', // blue-500
-  MID: '#00ff87', // brand green
-  FWD: '#ff1a75'  // brighter pink-red for better contrast on dark backgrounds
+  GKP: '#b45309', // amber-700 (darker for white text contrast)
+  DEF: '#1d4ed8', // blue-700
+  MID: '#059669', // emerald-600 (deeper green for white text contrast)
+  FWD: '#be123c'  // rose-700
 };
 
 /**

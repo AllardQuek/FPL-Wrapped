@@ -606,6 +606,7 @@ export interface BenchAnalysis {
 }
 
 export interface ManagerPersona {
+  key: string;
   name: string; // e.g. "Pep Guardiola"
   title: string; // e.g. "The Overthinker"
   description: string;
@@ -619,6 +620,24 @@ export interface ManagerPersona {
   traits: string[];
   emoji?: string;
   memorableMoments?: string[]; // Specific one-liner examples: "In GW8 I benched Salah and he hauled for 24 points"
+  spectrums: {
+    differential: number;
+    analyzer: number;
+    patient: number;
+    cautious: number;
+  };
+  personalityCode: string; // 4-letter code like "DIRA" or "TAPC"
+}
+
+export interface TransferTimingAnalysis {
+  panicTransfers: number;
+  deadlineDayTransfers: number;
+  midWeekTransfers: number;
+  earlyStrategicTransfers: number;
+  kneeJerkTransfers: number;
+  avgHoursBeforeDeadline: number;
+  avgLocalHourOfDay: number;
+  lateNightTransfers: number;
 }
 
 export interface SeasonSummary {
@@ -683,6 +702,12 @@ export interface SeasonSummary {
     playerCount: number;
   }[];
   allPlayers: { id: number; web_name: string; team: number }[];
+  transferTiming: TransferTimingAnalysis;
+  patienceMetrics: {
+    longestHeldPlayer: { player: Player; weeks: number } | null;
+    longTermHoldsCount: number;
+    avgHoldLength: number;
+  };
 }
 
 

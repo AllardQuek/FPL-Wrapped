@@ -1,6 +1,6 @@
 import { Player, SeasonSummary } from '../types';
 import { ManagerData } from './types';
-import { analyzeTransfers } from './transfers';
+import { analyzeTransfers, analyzeTransferTiming } from './transfers';
 import { analyzeCaptaincy } from './captaincy';
 import { analyzeBench } from './bench';
 import { analyzeChips } from './chips';
@@ -93,6 +93,60 @@ export function calculateTopContributors(data: ManagerData): { player: Player; p
 }
 
 /**
+ * Calculate patience metrics (longest held player, etc.)
+ */
+export function calculatePatienceMetrics(data: ManagerData): SeasonSummary['patienceMetrics'] {
+    const { picksByGameweek, finishedGameweeks, bootstrap } = data;
+    if (finishedGameweeks.length === 0) {
+        return { longestHeldPlayer: null, longTermHoldsCount: 0, avgHoldLength: 0 };
+    }
+
+    const playerDurations = new Map<number, number>();
+    
+    for (const gw of finishedGameweeks) {
+        const picks = picksByGameweek.get(gw);
+        if (!picks) continue;
+        
+        for (const pick of picks.picks) {
+            playerDurations.set(pick.element, (playerDurations.get(pick.element) || 0) + 1);
+        }
+    }
+
+    let maxWeeks = 0;
+    let longestHeldPlayerId = -1;
+    let totalWeeks = 0;
+    let longTermHoldsCount = 0;
+    const LONG_TERM_THRESHOLD = 10; // 10 weeks is a solid long-term hold
+
+    playerDurations.forEach((weeks, playerId) => {
+        totalWeeks += weeks;
+        if (weeks > maxWeeks) {
+            maxWeeks = weeks;
+            longestHeldPlayerId = playerId;
+        }
+        if (weeks >= LONG_TERM_THRESHOLD) {
+            longTermHoldsCount++;
+        }
+    });
+
+    const avgHoldLength = playerDurations.size > 0 ? totalWeeks / playerDurations.size : 0;
+    
+    let longestHeldPlayer = null;
+    if (longestHeldPlayerId !== -1) {
+        const player = getPlayer(longestHeldPlayerId, bootstrap);
+        if (player) {
+            longestHeldPlayer = { player, weeks: maxWeeks };
+        }
+    }
+
+    return {
+        longestHeldPlayer,
+        longTermHoldsCount,
+        avgHoldLength: Math.round(avgHoldLength * 10) / 10
+    };
+}
+
+/**
  * Generate complete season summary with all analysis
  */
 export function generateSeasonSummary(data: ManagerData): SeasonSummary {
@@ -104,6 +158,8 @@ export function generateSeasonSummary(data: ManagerData): SeasonSummary {
     const benchAnalyses = analyzeBench(data);
     const chipAnalyses = analyzeChips(data);
     const templateOverlap = calculateTemplateOverlap(data);
+    const patienceMetrics = calculatePatienceMetrics(data);
+    const transferTiming = analyzeTransferTiming(data);
 
     // Transfer stats
     const totalTransfers = transferAnalyses.length; // Count actual analyzed transfers (Free Hits excluded, Wildcards consolidated)
@@ -194,6 +250,7 @@ export function generateSeasonSummary(data: ManagerData): SeasonSummary {
         avgBenchPerWeek,
         templateOverlap,
         captaincyAnalyses,  // NEW: Pass captaincy analyses for pattern detection
+        patienceMetrics,
         bestTransfer || undefined,
         worstTransfer || undefined,
         bestCaptainPick || undefined,
@@ -319,11 +376,14 @@ export function generateSeasonSummary(data: ManagerData): SeasonSummary {
         captaincyAnalyses,
         benchAnalyses,
         templateOverlap,
+        patienceMetrics,
         overallDecisionGrade,
         bestGameweek: history.current.reduce((best, gw) => gw.points > best.points ? { event: gw.event, points: gw.points } : best, { event: 0, points: 0 }),
         worstGameweek: history.current.reduce((worst, gw) => gw.points < worst.points ? { event: gw.event, points: gw.points } : worst, { event: 0, points: 1000 }),
         rankProgression: history.current.map(gw => ({ event: gw.event, rank: gw.overall_rank })),
         chipsUsed: history.chips,
-        allPlayers: data.bootstrap.elements.map(p => ({ id: p.id, web_name: p.web_name, team: p.team }))
+        allPlayers: data.bootstrap.elements.map(p => ({ id: p.id, web_name: p.web_name, team: p.team })),
+        transferTiming,
+        patienceMetrics
     };
 }

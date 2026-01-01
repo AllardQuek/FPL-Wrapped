@@ -3,6 +3,7 @@
 import { SeasonSummary } from '@/lib/types';
 import * as TooltipPrimitive from "@radix-ui/react-tooltip";
 import { TrendingUp, TrendingDown, Minus, Info } from 'lucide-react';
+import { WrappedCardLayout } from '@/components/ui/wrapped/WrappedCardLayout';
 
 interface OverviewCardProps {
   summary: SeasonSummary;
@@ -124,22 +125,6 @@ export function OverviewCard({ summary }: OverviewCardProps) {
         </div>
       </div>
     );
-
-    return (
-      <div className="space-y-2">
-        <div className="font-semibold text-white">What This Means</div>
-        <div className="text-white/80 text-[11px] leading-relaxed">
-          {insight}
-        </div>
-        <div className="text-white/60 text-[10px] leading-relaxed pt-1 border-t border-white/10">
-          {strategy}
-        </div>
-        <div className="flex items-center justify-between text-[9px] text-white/40 pt-2 border-t border-white/10">
-          <span>Started</span>
-          <span className="font-mono">{formatValue((currentValue - change))}</span>
-        </div>
-      </div>
-    );
   };
 
   // Calculate rank percentile
@@ -173,126 +158,122 @@ export function OverviewCard({ summary }: OverviewCardProps) {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-8">
-      <div className="max-w-lg w-full text-center">
-        <p className="text-white/40 text-[10px] tracking-[0.3em] uppercase mb-12">Section 01: The Résumé</p>
-
-        <div className="space-y-6">
-          {/* Season Overview Insight */}
-          <div className="bg-white/5 rounded-3xl p-6 mb-8 border border-white/10 backdrop-blur-md">
-            <div className="flex items-center gap-4 text-left">
-              <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center text-xl flex-shrink-0 text-black">
-                {percentile >= 90 ? '🏆' : percentile >= 70 ? '⚡' : percentile >= 50 ? '⚽' : '📊'}
-              </div>
-              <div>
-                <p className="text-xs text-white/50 uppercase tracking-widest font-bold mb-1">Season Overview</p>
-                <p className="text-sm text-white font-medium leading-relaxed italic">
-                  {getSeasonOverviewInsight()}
-                </p>
-              </div>
+    <WrappedCardLayout 
+      sectionNumber="01: The Résumé" 
+      centerContent
+    >
+      <div className="space-y-6">
+        {/* Season Overview Insight */}
+        <div className="bg-white/5 rounded-3xl p-6 mb-8 border border-white/10 backdrop-blur-md">
+          <div className="flex items-center gap-4 text-left">
+            <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center text-xl flex-shrink-0 text-black">
+              {percentile >= 90 ? '🏆' : percentile >= 70 ? '⚡' : percentile >= 50 ? '⚽' : '📊'}
+            </div>
+            <div>
+              <p className="text-xs text-white/50 uppercase tracking-widest font-bold mb-1">Season Overview</p>
+              <p className="text-sm text-white font-medium leading-relaxed italic">
+                {getSeasonOverviewInsight()}
+              </p>
             </div>
           </div>
+        </div>
 
-          {/* Big Number Headline */}
-          <div className="relative inline-block mb-8 w-full">
-            <h2 className="text-[8rem] md:text-[10rem] font-black tracking-tighter text-white opacity-5 select-none leading-none">SCORE</h2>
-            <div className="absolute inset-0 flex flex-col items-center justify-center px-4">
-              <p className="text-xs text-[#00ff87] font-bold tracking-widest uppercase mb-1">Total Points</p>
-              <p className="text-5xl sm:text-6xl md:text-7xl font-bold tracking-tighter text-white">{summary.totalPoints}</p>
-            </div>
+        {/* Big Number Headline */}
+        <div className="relative inline-block mb-8 w-full">
+          <h2 className="text-[8rem] md:text-[10rem] font-black tracking-tighter text-white opacity-5 select-none leading-none">SCORE</h2>
+          <div className="absolute inset-0 flex flex-col items-center justify-center px-4">
+            <p className="text-xs text-[#00ff87] font-bold tracking-widest uppercase mb-1">Total Points</p>
+            <p className="text-5xl sm:text-6xl md:text-7xl font-bold tracking-tighter text-white">{summary.totalPoints}</p>
           </div>
+        </div>
 
-          {/* Stats Row */}
-          <div className="grid grid-cols-2 gap-px bg-white/10 rounded-3xl overflow-hidden border border-white/10 backdrop-blur-md">
-            <div className="bg-white/5 p-6 md:p-8 backdrop-blur-md">
-              <p className="text-[10px] font-bold text-white/30 tracking-widest uppercase mb-2">Final Rank</p>
-              <p className="text-2xl md:text-3xl font-black text-white italic">#{formatRank(summary.overallRank)}</p>
+        {/* Stats Row */}
+        <div className="grid grid-cols-2 gap-px bg-white/10 rounded-3xl overflow-hidden border border-white/10 backdrop-blur-md">
+          <div className="bg-white/5 p-6 md:p-8 backdrop-blur-md">
+            <p className="text-[10px] font-bold text-white/40 tracking-widest uppercase mb-2">Final Rank</p>
+            <p className="text-2xl md:text-3xl font-black text-white italic">#{formatRank(summary.overallRank)}</p>
+          </div>
+          <div className="bg-white/5 p-6 md:p-8 border-l border-white/10 backdrop-blur-md">
+            <div className="flex items-center justify-center gap-1 mb-2">
+              <p className="text-[10px] font-bold text-white/40 tracking-widest uppercase">Overall Grade</p>
+              <TooltipPrimitive.Provider delayDuration={300}>
+                <TooltipPrimitive.Root>
+                  <TooltipPrimitive.Trigger asChild>
+                    <button className="inline-flex items-center justify-center p-0.5 opacity-50 hover:opacity-100 transition-opacity">
+                      <Info className="w-3 h-3 text-white/70" />
+                    </button>
+                  </TooltipPrimitive.Trigger>
+                  <TooltipPrimitive.Portal>
+                    <TooltipPrimitive.Content
+                      side="bottom"
+                      className="z-50 max-w-[280px] rounded-md border border-white/10 bg-[#0d0015]/95 px-3 py-2 text-xs text-white shadow-md animate-in fade-in-0 zoom-in-95 backdrop-blur-sm"
+                      sideOffset={5}
+                    >
+                      {renderOverallGradeTooltip()}
+                      <TooltipPrimitive.Arrow className="fill-white/10" />
+                    </TooltipPrimitive.Content>
+                  </TooltipPrimitive.Portal>
+                </TooltipPrimitive.Root>
+              </TooltipPrimitive.Provider>
             </div>
-            <div className="bg-white/5 p-6 md:p-8 border-l border-white/10 backdrop-blur-md">
-              <div className="flex items-center justify-center gap-1 mb-2">
-                <p className="text-[10px] font-bold text-white/30 tracking-widest uppercase">Overall Grade</p>
+            <p className={`text-2xl md:text-3xl font-black italic ${getGradeColor(summary.overallDecisionGrade)}`}>{summary.overallDecisionGrade}</p>
+          </div>
+        </div>
+
+        {/* Squad Value Card */}
+        {summary.currentSquadValue && (
+          <div className="bg-white/5 rounded-2xl p-6 border border-white/5">
+            <p className="text-[10px] font-bold text-white/40 tracking-widest uppercase mb-3">Squad Value</p>
+            <div className="flex items-end justify-between gap-4">
+              <div className="flex items-baseline gap-3">
+                <p className="text-2xl font-black text-white">{formatValue(summary.currentSquadValue)}</p>
+                <div className={`flex items-center gap-1 ${getTrendColor()}`}>
+                  {getTrendIcon()}
+                  <span className="text-sm font-bold">
+                    {(summary.squadValueChange || 0) >= 0 ? '+' : ''}{formatValue(summary.squadValueChange)}
+                  </span>
+                </div>
+              </div>
+              {getArchetypeInfo() && (
                 <TooltipPrimitive.Provider delayDuration={300}>
                   <TooltipPrimitive.Root>
                     <TooltipPrimitive.Trigger asChild>
-                      <button className="inline-flex items-center justify-center p-0.5 opacity-50 hover:opacity-100 transition-opacity">
-                        <Info className="w-3 h-3 text-white/70" />
+                      <button className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wide border whitespace-nowrap transition-all hover:opacity-80 hover:scale-105 cursor-pointer ${getArchetypeInfo()!.badgeColor}`}>
+                        {getArchetypeInfo()!.badge}
+                        <Info className="w-2.5 h-2.5 opacity-70" />
                       </button>
                     </TooltipPrimitive.Trigger>
                     <TooltipPrimitive.Portal>
                       <TooltipPrimitive.Content
-                        side="bottom"
-                        className="z-50 max-w-[280px] rounded-md border border-white/10 bg-[#0d0015]/95 px-3 py-2 text-xs text-white shadow-md animate-in fade-in-0 zoom-in-95 backdrop-blur-sm"
+                        side="left"
+                        className="z-50 max-w-[260px] rounded-md border border-white/10 bg-[#0d0015]/95 px-3 py-2 text-xs text-white shadow-md animate-in fade-in-0 zoom-in-95 backdrop-blur-sm"
                         sideOffset={5}
                       >
-                        {renderOverallGradeTooltip()}
+                        {renderValueTrendTooltip()}
                         <TooltipPrimitive.Arrow className="fill-white/10" />
                       </TooltipPrimitive.Content>
                     </TooltipPrimitive.Portal>
                   </TooltipPrimitive.Root>
                 </TooltipPrimitive.Provider>
-              </div>
-              <p className={`text-2xl md:text-3xl font-black italic ${getGradeColor(summary.overallDecisionGrade)}`}>{summary.overallDecisionGrade}</p>
+              )}
             </div>
           </div>
+        )}
 
-          {/* Squad Value Card */}
-          {summary.currentSquadValue && (
-            <div className="bg-white/5 rounded-2xl p-6 border border-white/5">
-              <p className="text-[10px] font-bold text-white/30 tracking-widest uppercase mb-3">Squad Value</p>
-              <div className="flex items-end justify-between gap-4">
-                <div className="flex items-baseline gap-3">
-                  <p className="text-2xl font-black text-white">{formatValue(summary.currentSquadValue)}</p>
-                  <div className={`flex items-center gap-1 ${getTrendColor()}`}>
-                    {getTrendIcon()}
-                    <span className="text-sm font-bold">
-                      {(summary.squadValueChange || 0) >= 0 ? '+' : ''}{formatValue(summary.squadValueChange)}
-                    </span>
-                  </div>
-                </div>
-                {getArchetypeInfo() && (
-                  <TooltipPrimitive.Provider delayDuration={300}>
-                    <TooltipPrimitive.Root>
-                      <TooltipPrimitive.Trigger asChild>
-                        <button className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[9px] font-bold tracking-wide border whitespace-nowrap transition-all hover:opacity-80 hover:scale-105 cursor-pointer ${getArchetypeInfo()!.badgeColor}`}>
-                          {getArchetypeInfo()!.badge}
-                          <Info className="w-2.5 h-2.5 opacity-70" />
-                        </button>
-                      </TooltipPrimitive.Trigger>
-                      <TooltipPrimitive.Portal>
-                        <TooltipPrimitive.Content
-                          side="left"
-                          className="z-50 max-w-[260px] rounded-md border border-white/10 bg-[#0d0015]/95 px-3 py-2 text-xs text-white shadow-md animate-in fade-in-0 zoom-in-95 backdrop-blur-sm"
-                          sideOffset={5}
-                        >
-                          {renderValueTrendTooltip()}
-                          <TooltipPrimitive.Arrow className="fill-white/10" />
-                        </TooltipPrimitive.Content>
-                      </TooltipPrimitive.Portal>
-                    </TooltipPrimitive.Root>
-                  </TooltipPrimitive.Provider>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Highlights */}
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1 bg-white/5 rounded-2xl p-6 border border-white/5">
-              <p className="text-[10px] font-bold text-white/30 tracking-widest uppercase mb-1">Peak Form</p>
-              <p className="text-xl font-bold text-[#00ff87]">{summary.bestGameweek.points} PTS</p>
-              <p className="text-[9px] text-white/40 uppercase">Gameweek {summary.bestGameweek.event}</p>
-            </div>
-            <div className="flex-1 bg-white/5 rounded-2xl p-6 border border-white/5">
-              <p className="text-[10px] font-bold text-white/30 tracking-widest uppercase mb-1">Low Point</p>
-              <p className="text-xl font-bold text-[#e90052]">{summary.worstGameweek.points} PTS</p>
-              <p className="text-[9px] text-white/40 uppercase">Gameweek {summary.worstGameweek.event}</p>
-            </div>
+        {/* Highlights */}
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex-1 bg-white/5 rounded-2xl p-6 border border-white/5">
+            <p className="text-[10px] font-bold text-white/40 tracking-widest uppercase mb-1">Peak Form</p>
+            <p className="text-xl font-bold text-[#00ff87]">{summary.bestGameweek.points} PTS</p>
+            <p className="text-[9px] text-white/40 uppercase">Gameweek {summary.bestGameweek.event}</p>
+          </div>
+          <div className="flex-1 bg-white/5 rounded-2xl p-6 border border-white/5">
+            <p className="text-[10px] font-bold text-white/40 tracking-widest uppercase mb-1">Low Point</p>
+            <p className="text-xl font-bold text-[#e90052]">{summary.worstGameweek.points} PTS</p>
+            <p className="text-[9px] text-white/40 uppercase">Gameweek {summary.worstGameweek.event}</p>
           </div>
         </div>
       </div>
-    </div>
+    </WrappedCardLayout>
   );
 }
-
-
-

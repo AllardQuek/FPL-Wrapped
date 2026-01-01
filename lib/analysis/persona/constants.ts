@@ -6,6 +6,78 @@
 import { PersonaDefinition } from './types';
 
 // ============================================================================
+// PERSONALITY SPECTRUMS
+// Four binary dimensions that create 16 unique manager personalities (like MBTI)
+// Each manager has a score (0-1) on each spectrum; >0.5 determines their letter
+// ============================================================================
+
+export const PERSONALITY_SPECTRUMS = {
+  // Spectrum 1: Squad Strategy
+  DIFFERENTIAL_TEMPLATE: {
+    lowEnd: {
+      letter: 'T',
+      name: 'Template',
+      description: 'Follows consensus, trusts popular assets and proven picks',
+      emoji: '🐑',
+    },
+    highEnd: {
+      letter: 'D',
+      name: 'Differential',
+      description: 'Anti-template strategy, hunts unique picks and differentials',
+      emoji: '🦄',
+    },
+  },
+  
+  // Spectrum 2: Decision Basis
+  ANALYZER_INTUITIVE: {
+    lowEnd: {
+      letter: 'A',
+      name: 'Analyzer',
+      description: 'Data-driven and methodical, backs decisions with stats',
+      emoji: '📊',
+    },
+    highEnd: {
+      letter: 'I',
+      name: 'Intuitive',
+      description: 'Gut feel and emotional picks, trusts instinct over data',
+      emoji: '💭',
+    },
+  },
+  
+  // Spectrum 3: Activity Level
+  PATIENT_REACTIVE: {
+    lowEnd: {
+      letter: 'R',
+      name: 'Reactive',
+      description: 'High activity, constantly adjusts squad based on form',
+      emoji: '⚡',
+    },
+    highEnd: {
+      letter: 'P',
+      name: 'Patient',
+      description: 'Low squad churn, holds players through rough patches',
+      emoji: '🧘',
+    },
+  },
+  
+  // Spectrum 4: Risk Tolerance
+  CAUTIOUS_AGGRESSIVE: {
+    lowEnd: {
+      letter: 'A',
+      name: 'Aggressive',
+      description: 'Takes hits freely, chases immediate points aggressively',
+      emoji: '🎲',
+    },
+    highEnd: {
+      letter: 'C',
+      name: 'Cautious',
+      description: 'Avoids hits and risks, plays it safe for long-term gains',
+      emoji: '🛡️',
+    },
+  },
+} as const;
+
+// ============================================================================
 // NORMALIZATION THRESHOLDS
 // Used to normalize raw metrics to 0-1 scale
 // ============================================================================
@@ -156,6 +228,7 @@ export const PERSONA_MAP: Record<string, PersonaDefinition> = {
     traits: ['Rotation Roulette', 'Bald Fraud Energy', 'Makes It Work Anyway'],
     emoji: '🧠',
     weights: { overthink: 1.5, activity: 0.5, efficiency: 0.4, template: 0.3, chaos: -0.5 },
+    spectrums: { differential: 0.25, analyzer: 0.35, patient: 0.1, cautious: 0.65 },
   },
   MOYES: {
     name: 'David Moyes',
@@ -165,6 +238,7 @@ export const PERSONA_MAP: Record<string, PersonaDefinition> = {
     traits: ['Template King', 'Hit-Averse', 'Solid Foundation'],
     emoji: '🛡️',
     weights: { template: 1.2, chaos: -1.5, activity: -0.8, overthink: -0.6, thrift: 0.4 },
+    spectrums: { differential: 0.05, analyzer: 0.4, patient: 0.9, cautious: 0.85 },
   },
   REDKNAPP: {
     name: 'Harry Redknapp',
@@ -174,6 +248,7 @@ export const PERSONA_MAP: Record<string, PersonaDefinition> = {
     traits: ['Hit Specialist', 'High Turnover', 'Deal Maker'],
     emoji: '💸',
     weights: { chaos: 1.5, activity: 1.2, efficiency: -0.3, overthink: 0.3, template: -0.4 },
+    spectrums: { differential: 0.7, analyzer: 0.3, patient: 0.15, cautious: 0.2 },
   },
   MOURINHO: {
     name: 'Jose Mourinho',
@@ -183,6 +258,7 @@ export const PERSONA_MAP: Record<string, PersonaDefinition> = {
     traits: ['Defense First', 'Pragmatic Wins', 'Budget Warrior'],
     emoji: '🚌',
     weights: { chaos: -1.2, efficiency: 0.7, thrift: 0.9, template: 0.5, overthink: -0.7 },
+    spectrums: { differential: 0.25, analyzer: 0.3, patient: 0.75, cautious: 0.7 },
   },
   KLOPP: {
     name: 'Jurgen Klopp',
@@ -192,6 +268,7 @@ export const PERSONA_MAP: Record<string, PersonaDefinition> = {
     traits: ['Differential Hunter', 'High Variance', 'Emotional Picks'],
     emoji: '🎸',
     weights: { template: -1.5, leadership: 0.7, chaos: 0.6, activity: 0.8, efficiency: 0.2 },
+    spectrums: { differential: 0.95, analyzer: 0.3, patient: 0.35, cautious: 0.4 },
   },
   AMORIM: {
     name: 'Ruben Amorim',
@@ -201,6 +278,7 @@ export const PERSONA_MAP: Record<string, PersonaDefinition> = {
     traits: ['Unwavering Vision', 'High ROI', 'Anti-Template Edge'],
     emoji: '🦁',
     weights: { efficiency: 1.3, leadership: 0.6, template: -0.5, activity: 0.3, chaos: -0.4 },
+    spectrums: { differential: 0.75, analyzer: 0.35, patient: 0.6, cautious: 0.55 },
   },
   FERGUSON: {
     name: 'Sir Alex Ferguson',
@@ -210,6 +288,7 @@ export const PERSONA_MAP: Record<string, PersonaDefinition> = {
     traits: ['Elite Captaincy', 'Serial Winner', 'Mental Toughness'],
     emoji: '👑',
     weights: { leadership: 1.5, efficiency: 1.0, overthink: -0.7, chaos: -0.5, template: 0.4 },
+    spectrums: { differential: 0.45, analyzer: 0.4, patient: 0.6, cautious: 0.6 },
   },
   POSTECOGLOU: {
     name: 'Ange Postecoglou',
@@ -219,6 +298,7 @@ export const PERSONA_MAP: Record<string, PersonaDefinition> = {
     traits: ['All-Out Attack', 'Never Backs Down', 'Differential King'],
     emoji: '🦘',
     weights: { chaos: 1.0, template: -1.8, activity: 1.3, overthink: -1.0, efficiency: -0.1 },
+    spectrums: { differential: 0.98, analyzer: 0.15, patient: 0.2, cautious: 0.25 },
   },
   EMERY: {
     name: 'Unai Emery',
@@ -228,6 +308,7 @@ export const PERSONA_MAP: Record<string, PersonaDefinition> = {
     traits: ['Deep Analysis', 'Efficiency Master', 'Calculated Moves'],
     emoji: '📋',
     weights: { efficiency: 1.3, overthink: 0.6, template: 0.4, chaos: -1.0, activity: -0.3 },
+    spectrums: { differential: 0.45, analyzer: 0.1, patient: 0.75, cautious: 0.8 },
   },
   WENGER: {
     name: 'Arsene Wenger',
@@ -237,15 +318,17 @@ export const PERSONA_MAP: Record<string, PersonaDefinition> = {
     traits: ['Differential Scout', 'Beautiful FPL', 'Low Hits'],
     emoji: '🧐',
     weights: { template: -1.8, efficiency: 1.0, chaos: -1.3, thrift: 0.8, activity: -0.2 },
+    spectrums: { differential: 0.8, analyzer: 0.15, patient: 0.8, cautious: 0.75 },
   },
   ANCELOTTI: {
     name: 'Carlo Ancelotti',
     title: 'The Calm Conductor',
     desc: "You stay composed under pressure. Your squad rotates smoothly and you rarely panic. Experience is your edge.",
-    color: '#FFFFFF',
+    color: '#1D428A',
     traits: ['Cool Under Pressure', 'Balanced Approach', 'Veteran Wisdom'],
     emoji: '🤨',
     weights: { template: 0.8, chaos: -1.0, leadership: 1.0, overthink: -0.6, efficiency: 0.6 },
+    spectrums: { differential: 0.3, analyzer: 0.35, patient: 0.55, cautious: 0.65 },
   },
   MARESCA: {
     name: 'Enzo Maresca',
@@ -255,6 +338,7 @@ export const PERSONA_MAP: Record<string, PersonaDefinition> = {
     traits: ['Youth Over Experience', 'Tactical Flexibility', 'Smart Rotation'],
     emoji: '🎯',
     weights: { activity: 1.0, overthink: 0.5, efficiency: 0.7, template: -0.3, chaos: 0.2 },
+    spectrums: { differential: 0.55, analyzer: 0.35, patient: 0.15, cautious: 0.65 },
   },
   ARTETA: {
     name: 'Mikel Arteta',
@@ -264,6 +348,7 @@ export const PERSONA_MAP: Record<string, PersonaDefinition> = {
     traits: ['Trust the Process', 'Efficiency First', 'Elite Template'],
     emoji: '🏗️',
     weights: { efficiency: 1.0, template: 1.3, chaos: -1.2, activity: -0.3, leadership: 0.6 },
+    spectrums: { differential: 0.1, analyzer: 0.2, patient: 0.7, cautious: 0.75 },
   },
   SIMEONE: {
     name: 'Diego Simeone',
@@ -273,6 +358,7 @@ export const PERSONA_MAP: Record<string, PersonaDefinition> = {
     traits: ['Never Surrender', 'Defensive Fortress', 'Budget Master'],
     emoji: '⚔️',
     weights: { template: 0.8, chaos: -1.5, leadership: 0.7, thrift: 1.2, overthink: -0.5 },
+    spectrums: { differential: 0.2, analyzer: 0.4, patient: 0.75, cautious: 0.8 },
   },
   SLOT: {
     name: 'Arne Slot',
@@ -282,6 +368,7 @@ export const PERSONA_MAP: Record<string, PersonaDefinition> = {
     traits: ['Data-Driven', 'Smart Differentials', 'High Efficiency'],
     emoji: '📊',
     weights: { efficiency: 1.4, leadership: 0.9, overthink: 0.3, chaos: -0.8, template: 0.2 },
+    spectrums: { differential: 0.5, analyzer: 0.05, patient: 0.55, cautious: 0.6 },
   },
   TENHAG: {
     name: 'Erik ten Hag',
@@ -291,6 +378,7 @@ export const PERSONA_MAP: Record<string, PersonaDefinition> = {
     traits: ['Constant Rebuild', 'High Potential', 'Inconsistent'],
     emoji: '📉',
     weights: { activity: 1.8, efficiency: -0.8, overthink: 0.6, chaos: 0.7, template: -0.2 },
+    spectrums: { differential: 0.6, analyzer: 0.3, patient: 0.05, cautious: 0.4 },
   },
 } as const;
 

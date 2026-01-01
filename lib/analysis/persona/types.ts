@@ -22,6 +22,10 @@ export interface PersonaMetrics {
   leadership: number;
   /** Budget management (1040-value/60) */
   thrift: number;
+  /** Patience level (long holds/total players) */
+  patience: number;
+  /** Transfer timing (early/late) (0-1, 1 = early/planned, 0 = late/panic) */
+  timing: number;
   /** Chip effectiveness (0-1) */
   chipMastery: number;
   /** Risk-taking in chips (0-1) */
@@ -134,6 +138,21 @@ export interface ChipPersonality {
 }
 
 /**
+ * Personality spectrum scores for each persona (0-1 scale)
+ * Four binary dimensions that create 16 unique combinations (like MBTI)
+ */
+export interface PersonalitySpectrums {
+  /** Differential (0) vs Template (1): Squad strategy */
+  differential: number;
+  /** Analyzer (0) vs Intuitive (1): Decision basis */
+  analyzer: number;
+  /** Patient (0) vs Reactive (1): Activity level */
+  patient: number;
+  /** Cautious (0) vs Aggressive (1): Risk tolerance */
+  cautious: number;
+}
+
+/**
  * Persona definition with weights for scoring
  */
 export interface PersonaDefinition {
@@ -144,6 +163,7 @@ export interface PersonaDefinition {
   traits: string[];
   emoji: string;
   weights: Partial<PersonaMetrics>;
+  spectrums: PersonalitySpectrums;
 }
 
 /**

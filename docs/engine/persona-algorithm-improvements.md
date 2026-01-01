@@ -107,6 +107,38 @@ if (template < 0.4) → Block: Moyes, Arteta, Simeone
 
 ---
 
+## Phase 3: Centroid-Based Scoring & Timing Integration
+
+### ✅ 6. Centroid-Based Scoring
+**Issue**: Heavy clustering on "Unai Emery" (5/8 test managers) due to score saturation and overlapping weights.
+**Solution**: Transitioned to a hybrid model combining deterministic weights with **Euclidean Distance** in a 4D personality space.
+
+**4D Personality Space**:
+1. **Differential vs. Template**: How much the manager deviates from the crowd.
+2. **Analyzer vs. Intuitive**: Data-driven planning vs. gut-feel/reactive moves.
+3. **Patient vs. Reactive**: Willingness to wait vs. urgency to act.
+4. **Cautious vs. Aggressive**: Risk aversion vs. hit-taking/bold moves.
+
+**Vector Gravity**:
+Behavioral signals now act as "gravity," pulling the manager's 4D vector toward specific poles:
+- `earlyPlanner` → Pulls toward **Analyzer** and **Patient**.
+- `kneeJerker` → Pulls toward **Reactive**.
+- `hitAddict` → Pulls toward **Aggressive**.
+
+**Distance Multiplier**:
+Final scores are adjusted by a distance-based multiplier: $1 / (1 + distance^2)$. This ensures that even if two personas have similar weights, the one whose "personality centroid" is closer to the manager's actual behavior wins.
+
+### ✅ 7. Transfer Timing Integration
+**Issue**: Managers were being classified as "methodical" (Emery) just for having high efficiency, regardless of *when* they made moves.
+**Solution**: Added `transferTiming` as a core metric.
+- **Early Strategic**: Moves made >48h before deadline.
+- **Panic/Deadline**: Moves made <3h before deadline.
+- **Late Night**: Moves made between 11 PM and 4 AM.
+
+**Impact**: Emery is now strictly reserved for `earlyPlanners` with high rank, while Mourinho/Redknapp capture the "Deadline Day" specialists.
+
+---
+
 ## Clear Archetype Examples
 
 ### 🧠 **Pep Guardiola - The Bald Genius**
@@ -202,6 +234,36 @@ With these changes, persona distribution should look like:
 - **Others**: Remaining distribution
 
 **Key**: No single persona should exceed 30% of the user base.
+
+---
+
+## Phase 3: Centroid-Based Scoring (The "Emery Fix")
+
+In the final refinement, we moved from a purely additive/multiplicative scoring system to a **Centroid-Based Vector Model**.
+
+### Rationale for the Shift
+The previous system suffered from "Emery Gravity." Because Unai Emery was defined as the "Balanced/Methodical" persona, he became the default for any manager who didn't have extreme outliers. In a weighted system, "average" scores across multiple categories often summed up to favor the most "average" persona.
+
+### The 4D Personality Space
+We now map every manager into a 4-dimensional vector space:
+1.  **Differential (D)**: High ownership vs. low ownership preference.
+2.  **Analyzer (A)**: Statistical efficiency and captaincy accuracy.
+3.  **Patient (P)**: Transfer timing and hit-taking behavior.
+4.  **Cautious (C)**: Risk aversion and template adherence.
+
+### Vector Gravity
+Instead of just checking if a metric is "high," we use **Behavioral Signals** to pull the manager's vector toward specific poles:
+-   `earlyPlanner` pulls the vector toward **Patient**.
+-   `kneeJerker` pulls the vector away from **Patient**.
+-   `templateSlave` pulls the vector toward **Cautious**.
+-   `maverick` pulls the vector toward **Differential**.
+
+### Distance-Based Selection
+The final persona is selected by calculating the **Euclidean Distance** between the manager's 4D vector and each persona's "Ideal Centroid."
+-   **Primary Selection**: The persona with the highest score (boosted by proximity).
+-   **Tie-Breaking**: If scores are close, the persona with the shortest geometric distance to the manager's behavior wins.
+
+This ensures that a manager is assigned to the persona they *most closely resemble* in character, not just the one whose weights happened to sum the highest.
 
 ---
 

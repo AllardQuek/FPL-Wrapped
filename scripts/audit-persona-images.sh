@@ -4,7 +4,7 @@
 # Usage: bash scripts/audit-persona-images.sh
 
 PERSONA_DIR="public/images/personas"
-PERSONA_FILE="lib/analysis/persona.ts"
+PERSONA_FILE="lib/analysis/persona/index.ts"
 
 echo "🎭 Persona Image Audit"
 echo "================================================"

@@ -101,7 +101,7 @@ export function applyBehavioralBoosts(
 
   // Rotation pain is exclusive Pep signal
   if (signals.rotationPain) {
-    scores['PEP'] = (scores['PEP'] || 0) * 3.0;
+    scores['PEP'] = (scores['PEP'] || 0) * 2.0;
   }
 
   // Knee-jerk reactive behavior
@@ -154,6 +154,58 @@ export function applyBehavioralBoosts(
   if (signals.consistent && metrics.thrift > 0.4) {
     scores['SIMEONE'] = (scores['SIMEONE'] || 0) * 2.1;
     scores['MOURINHO'] = (scores['MOURINHO'] || 0) * 1.9;
+  }
+
+  // Transfer Timing Boosts
+  if (signals.panicBuyer || signals.deadlineDayScrambler) {
+    scores['REDKNAPP'] = (scores['REDKNAPP'] || 0) * 2.2;
+    scores['MOURINHO'] = (scores['MOURINHO'] || 0) * 2.0;
+    scores['TENHAG'] = (scores['TENHAG'] || 0) * 1.8;
+    
+    // Mourinho is the "Special One" who waits for the right moment
+    if (metrics.efficiency > 0.6 && metrics.chaos < 0.1) {
+      scores['MOURINHO'] = (scores['MOURINHO'] || 0) * 2.5;
+    }
+
+    // Penalty for methodical personas
+    scores['EMERY'] = (scores['EMERY'] || 0) * 0.4;
+    scores['ARTETA'] = (scores['ARTETA'] || 0) * 0.4;
+    scores['WENGER'] = (scores['WENGER'] || 0) * 0.5;
+    scores['SLOT'] = (scores['SLOT'] || 0) * 0.6;
+  }
+
+  if (signals.kneeJerker) {
+    scores['KLOPP'] = (scores['KLOPP'] || 0) * 2.2;
+    scores['POSTECOGLOU'] = (scores['POSTECOGLOU'] || 0) * 2.0;
+    scores['REDKNAPP'] = (scores['REDKNAPP'] || 0) * 1.8;
+    
+    // Methodical managers don't knee-jerk
+    scores['EMERY'] = (scores['EMERY'] || 0) * 0.5;
+    scores['ANCELOTTI'] = (scores['ANCELOTTI'] || 0) * 0.6;
+  }
+
+  // Differential Hunter Boosts
+  if (metrics.template < 0.4) {
+    scores['KLOPP'] = (scores['KLOPP'] || 0) * 2.2;
+    scores['POSTECOGLOU'] = (scores['POSTECOGLOU'] || 0) * 2.5;
+    scores['WENGER'] = (scores['WENGER'] || 0) * 2.0;
+    scores['REDKNAPP'] = (scores['REDKNAPP'] || 0) * 1.6;
+  }
+
+  if (metrics.template < 0.25) {
+    scores['POSTECOGLOU'] = (scores['POSTECOGLOU'] || 0) * 3.0;
+    scores['KLOPP'] = (scores['KLOPP'] || 0) * 2.5;
+  }
+
+  // Slot Data-Driven Boost
+  if (metrics.leadership > 0.6 && metrics.efficiency > 0.4) {
+    scores['SLOT'] = (scores['SLOT'] || 0) * 2.2;
+  }
+
+  if (signals.lateNightReactor) {
+    scores['REDKNAPP'] = (scores['REDKNAPP'] || 0) * 1.9;
+    scores['TENHAG'] = (scores['TENHAG'] || 0) * 1.7;
+    scores['MOURINHO'] = (scores['MOURINHO'] || 0) * 1.6;
   }
 
   // Ancelotti patterns
@@ -222,6 +274,69 @@ export function applyBehavioralBoosts(
     scores['REDKNAPP'] = (scores['REDKNAPP'] || 0) * 2.3;   // Classic wheeler-dealer
     scores['TENHAG'] = (scores['TENHAG'] || 0) * 2.0;       // Burning cash on rebuilds
   }
+}
+
+/**
+ * Calculate the manager's 4D personality vector with behavioral gravity applied
+ */
+export function calculateManagerVector(
+  metrics: PersonaMetrics,
+  signals: BehavioralSignals
+) {
+  // 1. Calculate base spectrums
+  const vector = {
+    differential: Math.pow(1 - metrics.template, 1.5),
+    analyzer: 1 - (metrics.efficiency + metrics.leadership) / 2,
+    patient: ((1 - metrics.activity) + metrics.patience + metrics.timing) / 3,
+    cautious: 1 - metrics.chaos,
+  };
+
+  // 2. Apply vector gravity (signals pull the vector)
+  if (signals.earlyPlanner) {
+    vector.analyzer = Math.max(0, vector.analyzer - 0.15);
+    vector.patient = Math.min(1, vector.patient + 0.15);
+  }
+  if (signals.panicBuyer || signals.deadlineDayScrambler) {
+    vector.patient = Math.max(0, vector.patient - 0.2);
+  }
+  if (signals.kneeJerker) {
+    vector.patient = Math.max(0, vector.patient - 0.25);
+    vector.analyzer = Math.min(1, vector.analyzer + 0.1);
+  }
+  if (signals.hitAddict) {
+    vector.cautious = Math.max(0, vector.cautious - 0.3);
+  }
+  if (signals.disciplined) {
+    vector.cautious = Math.min(1, vector.cautious + 0.2);
+  }
+
+  return vector;
+}
+
+/**
+ * Apply centroid-based scoring to adjust scores based on personality distance
+ */
+export function applyCentroidScoring(
+  scores: Record<string, number>,
+  metrics: PersonaMetrics,
+  signals: BehavioralSignals
+): void {
+  const managerVector = calculateManagerVector(metrics, signals);
+
+  // Calculate distance to each persona and adjust score
+  Object.entries(PERSONA_MAP).forEach(([key, persona]) => {
+    const p = persona.spectrums;
+    const distance = Math.sqrt(
+      Math.pow(managerVector.differential - p.differential, 2) +
+      Math.pow(managerVector.analyzer - p.analyzer, 2) +
+      Math.pow(managerVector.patient - p.patient, 2) +
+      Math.pow(managerVector.cautious - p.cautious, 2)
+    );
+
+    // Distance-based multiplier: 1 / (1 + distance^2)
+    const distanceMultiplier = 1 / (1 + Math.pow(distance, 2));
+    scores[key] = (scores[key] || 0) * (distanceMultiplier * 1.5);
+  });
 }
 
 /**
@@ -508,8 +623,8 @@ export function filterEligiblePersonas(
         return currentRank <= R.TOP_100K && metrics.efficiency > 0.60 && metrics.leadership > 0.55;
 
       case 'EMERY':
-        return currentRank <= R.TOP_300K || signals.earlyPlanner || 
-          (signals.disciplined && metrics.efficiency > 0.65);
+        return (currentRank <= R.TOP_150K && signals.earlyPlanner) || 
+          (signals.earlyPlanner && signals.disciplined && metrics.efficiency > 0.55);
 
       case 'REDKNAPP':
         return metrics.chaos > 0.35 && metrics.activity > 0.5;
@@ -518,9 +633,8 @@ export function filterEligiblePersonas(
         return metrics.chaos < 0.12 && metrics.activity < 0.45 && metrics.template > 0.5;
 
       case 'KLOPP':
-        return (metrics.template < 0.25 && metrics.activity > 0.60 && metrics.chaos > 0.10) ||
-          (metrics.template < 0.30 && metrics.activity > 0.75 && metrics.chaos > 0.15) ||
-          (signals.boomBust && metrics.template < 0.35 && metrics.activity > 0.55);
+        return (metrics.template < 0.35 && metrics.activity > 0.50 && metrics.chaos > 0.05) ||
+          (signals.boomBust && metrics.template < 0.45 && metrics.activity > 0.45);
 
       case 'POSTECOGLOU':
         return (metrics.template < 0.30 && metrics.activity > 0.60) ||
@@ -531,8 +645,8 @@ export function filterEligiblePersonas(
         return metrics.overthink > 0.60 && metrics.efficiency < 0.95;
 
       case 'WENGER':
-        return (metrics.template < 0.35 && metrics.chaos < 0.15 && metrics.efficiency > 0.4) ||
-          (metrics.template < 0.40 && metrics.chaos < 0.10 && signals.disciplined);
+        return (metrics.template < 0.45 && metrics.chaos < 0.20 && metrics.efficiency > 0.35) ||
+          (metrics.template < 0.50 && metrics.chaos < 0.15 && signals.disciplined);
 
       case 'ARTETA':
         return metrics.template > 0.65 && metrics.efficiency > 0.5;
@@ -545,8 +659,8 @@ export function filterEligiblePersonas(
         return metrics.chaos < 0.12 && metrics.thrift > 0.45;
 
       case 'AMORIM':
-        return (metrics.efficiency > 0.75 && signals.longTermBacker && metrics.activity < 0.50) ||
-          (metrics.efficiency > 0.80 && metrics.activity < 0.45 && metrics.chaos < 0.10);
+        return (metrics.efficiency > 0.60 && signals.longTermBacker && metrics.activity < 0.60) ||
+          (metrics.efficiency > 0.65 && metrics.activity < 0.55 && metrics.chaos < 0.10);
 
       case 'TENHAG':
         return metrics.activity > 0.70;
@@ -627,14 +741,35 @@ export function selectBestPersona(
     return competitivePersonas[0][0];
   }
 
-  // Use behavioral matches to differentiate
-  const personaMatches = competitivePersonas.map(([key]) => ({
-    key,
-    matchStrength: calculateMatchStrength(key, signals, metrics),
-  }));
+  // Calculate manager vector for distance tie-breaking
+  const managerVector = calculateManagerVector(metrics, signals);
+
+  // Use behavioral matches and centroid distance to differentiate
+  const personaMatches = competitivePersonas.map(([key]) => {
+    const persona = PERSONA_MAP[key as keyof typeof PERSONA_MAP];
+    const p = persona.spectrums;
+    const distance = Math.sqrt(
+      Math.pow(managerVector.differential - p.differential, 2) +
+      Math.pow(managerVector.analyzer - p.analyzer, 2) +
+      Math.pow(managerVector.patient - p.patient, 2) +
+      Math.pow(managerVector.cautious - p.cautious, 2)
+    );
+
+    return {
+      key,
+      matchStrength: calculateMatchStrength(key, signals, metrics),
+      distance,
+    };
+  });
 
   personaMatches.sort((a, b) => {
+    // 1. Primary: Behavioral match strength
     if (b.matchStrength !== a.matchStrength) return b.matchStrength - a.matchStrength;
+    
+    // 2. Secondary: Centroid distance (closer is better)
+    if (Math.abs(a.distance - b.distance) > 0.05) return a.distance - b.distance;
+    
+    // 3. Tertiary: Raw score
     const scoreA = competitivePersonas.find(([k]) => k === a.key)?.[1] || 0;
     const scoreB = competitivePersonas.find(([k]) => k === b.key)?.[1] || 0;
     return scoreB - scoreA;

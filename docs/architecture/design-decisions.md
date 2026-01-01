@@ -98,6 +98,18 @@ This audit trail allows users to review specific decisions and learn from subopt
   - Scrollable content area with custom scrollbar styling
   - ESC key and backdrop click to close
 
+## 5. Persona Algorithm Evolution: Centroid-Based Scoring
+
+**Context**: In Phase 2, the algorithm suffered from "score saturation." A single persona (Unai Emery) was being assigned to 60%+ of managers because its multiplicative weights were too easy to trigger simultaneously.
+
+**Decision**: Transitioned to a hybrid model combining deterministic weights with **Euclidean Distance** in a 4D personality space.
+
+**Rationale**:
+- **4D Personality Space**: By mapping managers to four spectrums (Differential, Analyzer, Patient, Cautious), we mimic real-world psychometric testing. This is more robust than simple point-addition because it looks at the *shape* of the manager's behavior rather than just the magnitude of individual stats.
+- **Vector Gravity**: Pure metrics (like `templateOverlap`) don't capture intent. Behavioral signals (like `earlyPlanner`) provide the "intent" that pulls the manager's identity toward a specific archetype. This allows us to distinguish between a manager who is "template" because they are lazy vs. one who is "template" because they are a methodical optimizer (Arteta).
+- **Nearest Neighbor Classification**: Using Euclidean distance as a tie-breaker ensures that when two personas are mathematically close in score, we select the one whose "ideal profile" is physically closest to the manager's 4D vector.
+- **Transfer Timing as a Differentiator**: Added `transferTiming` (Early vs. Panic) as a core metric. This was the "missing link" in differentiating methodical planners (Emery) from reactive pragmatists (Mourinho).
+
 **Visual Design in Modals**:
 - **Accuracy Modal**: 
   - Summary stats card at top

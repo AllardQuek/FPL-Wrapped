@@ -5,6 +5,7 @@
  * modules to determine a manager's FPL persona based on their playing style.
  */
 
+import { BehavioralSignals, CaptainPattern } from './types';
 import {
   ManagerPersona,
   TransferAnalysis,
@@ -26,11 +27,13 @@ import { analyzeChipPersonality } from './chips';
 import {
   calculateBaseScores,
   applyBehavioralBoosts,
+  applyCentroidScoring,
   applyRankBoosts,
   applyCaptainPatternBoosts,
   applyTransferTimingBoosts,
   applyExtremeMetricBoosts,
   applyChipPersonalityBoosts,
+  calculateManagerVector,
   filterEligiblePersonas,
   applyDealBreakers,
   selectBestPersona,
@@ -113,6 +116,7 @@ export function calculateManagerPersona(
   applyTransferTimingBoosts(scores, behavioralSignals);
   applyExtremeMetricBoosts(scores, metrics, behavioralSignals);
   applyChipPersonalityBoosts(scores, behavioralSignals, metrics);
+  applyCentroidScoring(scores, metrics, behavioralSignals);
 
   // Filter and select persona
   const eligiblePersonas = filterEligiblePersonas(
@@ -136,6 +140,7 @@ export function calculateManagerPersona(
   return buildPersonaResult(
     selectedPersonaKey,
     metrics,
+    behavioralSignals,
     bestTransfer,
     worstBench,
     bestCaptain,
@@ -144,36 +149,6 @@ export function calculateManagerPersona(
   );
 }
 
-/**
- * Calculate the manager's actual position on the 4 personality spectrums (0-1)
- */
-function calculateManagerSpectrums(metrics: PersonaMetrics): {
-  differential: number;
-  analyzer: number;
-  patient: number;
-  cautious: number;
-} {
-  // 1. Differential (1) vs Template (0)
-  // We use a power function so that 35% overlap is roughly the 0.5 midpoint
-  // 50% overlap will result in ~0.3 score (Template side)
-  const differential = Math.pow(1 - metrics.template, 1.5);
-
-  // 2. Analyzer (0) vs Intuitive (1)
-  // High efficiency and leadership = Analyzer
-  const analyzerScore = (metrics.efficiency + metrics.leadership) / 2;
-  const analyzer = 1 - analyzerScore;
-
-  // 3. Patient (1) vs Reactive (0)
-  // We combine activity (inverse), patience metrics, and transfer timing
-  // High activity = Reactive, High patience = Patient, Early timing = Patient
-  const patient = ( (1 - metrics.activity) + metrics.patience + metrics.timing ) / 3;
-
-  // 4. Cautious (1) vs Aggressive (0)
-  // High chaos (hits) = Aggressive
-  const cautious = 1 - metrics.chaos;
-
-  return { differential, analyzer, patient, cautious };
-}
 
 // ============================================================================
 // HELPER FUNCTIONS
@@ -251,6 +226,7 @@ function calculateMetrics(
 function buildPersonaResult(
   selectedKey: string,
   metrics: PersonaMetrics,
+  signals: BehavioralSignals,
   bestTransfer?: TransferAnalysis | null,
   worstBench?: BenchAnalysis | null,
   bestCaptain?: CaptaincyAnalysis | null,
@@ -273,14 +249,14 @@ function buildPersonaResult(
   );
 
   // Calculate manager's actual spectrum scores
-  const managerSpectrums = calculateManagerSpectrums(metrics);
+  const managerVector = calculateManagerVector(metrics, signals);
 
   // Calculate 4-letter personality code based on manager's actual scores
   const personalityCode = [
-    managerSpectrums.differential >= 0.5 ? 'D' : 'T',
-    managerSpectrums.analyzer >= 0.5 ? 'I' : 'A',
-    managerSpectrums.patient >= 0.5 ? 'P' : 'R',
-    managerSpectrums.cautious >= 0.5 ? 'C' : 'A',
+    managerVector.differential >= 0.5 ? 'D' : 'T',
+    managerVector.analyzer >= 0.5 ? 'I' : 'A',
+    managerVector.patient >= 0.5 ? 'P' : 'R',
+    managerVector.cautious >= 0.5 ? 'C' : 'A',
   ].join('');
 
   return {
@@ -296,7 +272,7 @@ function buildPersonaResult(
     emoji: personaData.emoji,
     imageUrl: getPersonaImagePath(selectedKey),
     memorableMoments: memorableMoments.slice(0, 3),
-    spectrums: managerSpectrums,
+    spectrums: managerVector,
     personalityCode,
   };
 }

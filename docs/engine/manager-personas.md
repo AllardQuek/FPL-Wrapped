@@ -1,7 +1,7 @@
 # FPL Manager Personas - Complete Reference
 
-> **Master Source**: `/lib/analysis/persona.ts`  
-> **Last Updated**: December 31, 2025  
+> **Master Source**: `lib/analysis/persona/index.ts`  
+> **Last Updated**: January 1, 2026  
 > **Total Active Personas**: 16
 
 ---
@@ -56,28 +56,50 @@ To ground these personas, we use:
 
 ---
 
+## The Scoring Engine: 4D Personality Space
+
+As of Phase 3, the algorithm uses a hybrid model combining deterministic weights with **Euclidean Distance** in a 4D personality space. This prevents "score saturation" and ensures that managers are assigned to the persona that most closely matches their behavioral profile.
+
+### The 4 Dimensions
+1.  **Differential (D) vs. Template (T)**: How much you deviate from the crowd.
+2.  **Analyzer (A) vs. Intuitive (I)**: Data-driven planning vs. gut-feel/reactive moves.
+3.  **Patient (P) vs. Reactive (R)**: Willingness to wait vs. urgency to act.
+4.  **Cautious (C) vs. Aggressive (A)**: Risk aversion vs. hit-taking/bold moves.
+
+### Vector Gravity
+Behavioral signals act as "gravity," pulling your 4D vector toward specific poles:
+- **Early Planner**: Pulls toward **Analyzer** and **Patient**.
+- **Knee-Jerker**: Pulls toward **Reactive**.
+- **Hit Addict**: Pulls toward **Aggressive**.
+- **Panic Buyer**: Pulls toward **Reactive**.
+
+### Centroid Matching
+Each of the 16 personas has a pre-defined "centroid" (ideal coordinate) in this 4D space. The final selection favors the persona whose centroid is closest to your actual behavior.
+
+---
+
 ## Eligibility Criteria (Hard Gates)
 
 To ensure accurate persona assignments, each persona has minimum eligibility requirements. These "hard gates" prevent nonsensical assignments (e.g., getting "The GOAT" with poor captaincy).
 
 | Persona | Minimum Requirements |
 |---------|---------------------|
-| **The GOAT** | Efficiency > 60% AND Leadership > 70% |
-| **The Wheeler-Dealer** | Chaos > 30% AND Activity > 60% |
-| **The Reliable** | Chaos < 15% AND Activity < 50% |
-| **Heavy Metal FPL** | Template < 60% |
-| **The All-Outer** | Template < 50% AND Activity > 50% |
-| **The Bald Genius** | Overthink > 50% |
-| **The Professor** | Template < 50% AND Chaos < 20% |
-| **The Process Manager** | Template > 60% |
-| **The Special One** | Chaos < 20% AND Thrift > 30% |
-| **The Warrior** | Chaos < 15% AND Thrift > 40% |
-| **The Stubborn One** | Efficiency > 60% |
-| **The Optimizer** | Efficiency > 60% AND Leadership > 60% |
-| **The Methodical** | Efficiency > 60% AND Chaos < 30% |
+| **The GOAT** | Rank <= 10k OR (Efficiency > 65% AND Leadership > 75% AND Rank <= 50k) |
+| **The Wheeler-Dealer** | Chaos > 35% AND Activity > 50% |
+| **The Reliable** | Chaos < 12% AND Activity < 45% AND Template > 50% |
+| **Heavy Metal FPL** | Template < 35% AND Activity > 50% |
+| **The All-Outer** | Template < 30% AND Activity > 60% |
+| **The Bald Genius** | Overthink > 60% |
+| **The Professor** | Template < 45% AND Chaos < 20% |
+| **The Process Manager** | Template > 65% AND Efficiency > 50% |
+| **The Special One** | Chaos < 15% AND Thrift > 35% |
+| **The Warrior** | Chaos < 12% AND Thrift > 45% |
+| **The Stubborn One** | Efficiency > 60% AND Long-Term Backer |
+| **The Optimizer** | Rank <= 100k AND Efficiency > 60% AND Leadership > 55% |
+| **The Methodical** | (Rank <= 150k AND Early Planner) OR (Early Planner AND Disciplined) |
 | **The Rebuilder** | Activity > 70% |
-| **The Calm Conductor** | No hard gates (flexible persona) |
-| **The System Builder** | No hard gates (flexible persona) |
+| **The Calm Conductor** | Chaos < 30% AND Leadership > 50% |
+| **The System Builder** | Activity between 35% and 75% |
 
 **Note**: If no personas meet their eligibility criteria (rare edge case), the system falls back to scoring all personas to ensure every user gets assigned one.
 
@@ -308,8 +330,9 @@ The following personas were removed and are no longer in the codebase:
 
 ## Implementation Files
 
-- **Persona Logic**: `/lib/analysis/persona.ts`
-- **Image Mapping**: `/lib/constants/persona-images.ts`
-- **Type Definitions**: `/lib/types.ts` (ManagerPersona interface)
-- **UI Component**: `/components/cards/PersonaCard.tsx`
-- **Image Assets**: `/public/images/personas/`
+- **Persona Logic**: `lib/analysis/persona/index.ts`
+- **Scoring Engine**: `lib/analysis/persona/scoring.ts`
+- **Image Mapping**: `lib/constants/persona-images.ts`
+- **Type Definitions**: `lib/types.ts` (ManagerPersona interface)
+- **UI Component**: `components/cards/PersonaCard.tsx`
+- **Image Assets**: `public/images/personas/`

@@ -253,3 +253,29 @@ if (metrics.template < 0.20) {  // Ultra-contrarian (< 20% template)
 - **Manager 205286**: Arsene Wenger (most contrarian + minimal hits + high overthink but not maxed efficiency)
 - **Manager 1685942**: Arsene Wenger or Jurgen Klopp (contrarian + zero hits)
 - **Manager 7486369**: Could stay Pep (highest bench regret at 11.61) OR Wenger (contrarian)
+
+---
+
+## Phase 3 Resolution: The "Emery Gravity" Problem
+
+**Date**: January 1, 2026  
+**Issue**: After Phase 2 fixes, the clustering shifted from Pep to **Unai Emery** (5/8 managers).  
+**Root Cause**: Emery's weights (Efficiency + Early Planning) were too dominant for any competent manager.
+
+### Final Solution: Centroid-Based Scoring
+We moved away from purely additive scoring to a **4D Personality Space** model.
+
+**Why this works**:
+1.  **Intent over Magnitude**: Instead of just rewarding "High Efficiency," we look at *when* it happened (Timing) and *how* it fits the manager's risk profile (Cautious vs. Aggressive).
+2.  **Tie-Breaking with Distance**: When scores are close, we calculate the Euclidean distance to the persona's "ideal" 4D coordinate. This breaks ties in a way that feels "human."
+3.  **Vector Gravity**: Signals like `kneeJerker` now physically pull the manager's vector away from "Methodical" personas (Emery) and toward "Reactive" ones (Redknapp).
+
+**Final Distribution (Verified)**:
+- **Allard Q**: Carlo Ancelotti (Balanced, high-efficiency veteran)
+- **wong minamino**: Jose Mourinho (Pragmatic, defense-first)
+- **JYi Lye**: Arne Slot (Data-driven optimizer)
+- **Edwin Chua**: Carlo Ancelotti (Balanced)
+- **Andre Ho**: Jurgen Klopp (Differential hunter)
+- **Samay Sagar**: Pep Guardiola (Rotation roulette)
+
+**Conclusion**: The algorithm now successfully differentiates between "Good at FPL" (Ferguson/Slot) and "Methodical at FPL" (Emery/Arteta).

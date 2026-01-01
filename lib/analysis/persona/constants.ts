@@ -84,13 +84,13 @@ export const PERSONALITY_SPECTRUMS = {
 
 export const NORMALIZATION = {
   /** Max transfers for full activity score */
-  TRANSFERS_MAX: 80,
+  TRANSFERS_MAX: 60,
   /** Max hits for full chaos score */
-  HITS_MAX: 30,
+  HITS_MAX: 20,
   /** Max avg bench points per week for full overthink score */
   BENCH_POINTS_MAX: 15,
   /** Max efficiency points for full score */
-  EFFICIENCY_MAX: 15,
+  EFFICIENCY_MAX: 300,
   /** Squad value baseline */
   VALUE_BASELINE: 1040,
   /** Squad value range for thrift calculation */
@@ -112,11 +112,11 @@ export const SIGNAL_THRESHOLDS = {
   DISCIPLINED_MIN_TRANSFERS: 20,
 
   /** Min avg squad value for rotation pain */
-  ROTATION_PAIN_MIN_VALUE: 1020,
+  ROTATION_PAIN_MIN_VALUE: 1025,
   /** Min avg bench points for rotation pain */
-  ROTATION_PAIN_MIN_BENCH: 9,
+  ROTATION_PAIN_MIN_BENCH: 11,
   /** Min high bench GWs (10+) for rotation pain */
-  ROTATION_PAIN_MIN_HIGH_GWS: 5,
+  ROTATION_PAIN_MIN_HIGH_GWS: 8,
 
   /** Max avg bench points to be bench master */
   BENCH_MASTER_MAX_BENCH: 7,
@@ -229,7 +229,7 @@ export const PERSONA_MAP: Record<string, PersonaDefinition> = {
     color: '#6CABDD',
     traits: ['Rotation Roulette', 'Bald Fraud Energy', 'Makes It Work Anyway'],
     emoji: '🧠',
-    weights: { overthink: 1.5, activity: 0.5, efficiency: 0.4, template: 0.3, chaos: -0.5 },
+    weights: { overthink: 1.5, activity: 0.5, efficiency: 0.4, template: 0.3, chaos: -0.5, timing: -0.4 },
     spectrums: { differential: 0.25, analyzer: 0.35, patient: 0.1, cautious: 0.65 },
   },
   MOYES: {
@@ -241,7 +241,7 @@ export const PERSONA_MAP: Record<string, PersonaDefinition> = {
     color: '#800000',
     traits: ['Template King', 'Hit-Averse', 'Solid Foundation'],
     emoji: '🛡️',
-    weights: { template: 1.2, chaos: -1.5, activity: -0.8, overthink: -0.6, thrift: 0.4 },
+    weights: { template: 1.2, chaos: -1.5, activity: -0.8, overthink: -0.6, thrift: 0.4, timing: -0.5 },
     spectrums: { differential: 0.05, analyzer: 0.4, patient: 0.9, cautious: 0.85 },
   },
   REDKNAPP: {
@@ -253,7 +253,7 @@ export const PERSONA_MAP: Record<string, PersonaDefinition> = {
     color: '#0000FF',
     traits: ['Hit Specialist', 'High Turnover', 'Deal Maker'],
     emoji: '💸',
-    weights: { chaos: 1.5, activity: 1.2, efficiency: -0.3, overthink: 0.3, template: -0.4 },
+    weights: { chaos: 1.5, activity: 1.2, efficiency: -0.3, overthink: 0.3, template: -0.4, timing: -1.2 },
     spectrums: { differential: 0.7, analyzer: 0.3, patient: 0.15, cautious: 0.2 },
   },
   MOURINHO: {
@@ -265,7 +265,7 @@ export const PERSONA_MAP: Record<string, PersonaDefinition> = {
     color: '#132257',
     traits: ['Defense First', 'Pragmatic Wins', 'Budget Warrior'],
     emoji: '🚌',
-    weights: { chaos: -1.2, efficiency: 0.7, thrift: 0.9, template: 0.5, overthink: -0.7 },
+    weights: { chaos: -1.2, efficiency: 0.7, thrift: 0.9, template: 0.5, overthink: -0.7, timing: -0.3 },
     spectrums: { differential: 0.25, analyzer: 0.3, patient: 0.75, cautious: 0.7 },
   },
   KLOPP: {
@@ -277,7 +277,7 @@ export const PERSONA_MAP: Record<string, PersonaDefinition> = {
     color: '#C8102E',
     traits: ['Differential Hunter', 'High Variance', 'Emotional Picks'],
     emoji: '🎸',
-    weights: { template: -1.5, leadership: 0.7, chaos: 0.6, activity: 0.8, efficiency: 0.2 },
+    weights: { template: -1.5, leadership: 0.7, chaos: 0.6, activity: 0.8, efficiency: 0.2, timing: -0.8 },
     spectrums: { differential: 0.95, analyzer: 0.3, patient: 0.35, cautious: 0.4 },
   },
   AMORIM: {
@@ -289,7 +289,7 @@ export const PERSONA_MAP: Record<string, PersonaDefinition> = {
     color: '#005CAB',
     traits: ['Unwavering Vision', 'High ROI', 'Anti-Template Edge'],
     emoji: '🦁',
-    weights: { efficiency: 1.3, leadership: 0.6, template: -0.5, activity: 0.3, chaos: -0.4 },
+    weights: { efficiency: 1.3, leadership: 0.6, template: -0.5, activity: 0.3, chaos: -0.4, timing: 0.8 },
     spectrums: { differential: 0.75, analyzer: 0.35, patient: 0.6, cautious: 0.55 },
   },
   FERGUSON: {
@@ -301,7 +301,7 @@ export const PERSONA_MAP: Record<string, PersonaDefinition> = {
     color: '#DA291C',
     traits: ['Elite Captaincy', 'Serial Winner', 'Mental Toughness'],
     emoji: '👑',
-    weights: { leadership: 1.5, efficiency: 1.0, overthink: -0.7, chaos: -0.5, template: 0.4 },
+    weights: { leadership: 1.5, efficiency: 1.0, overthink: -0.7, chaos: -0.5, template: 0.4, timing: 0.5 },
     spectrums: { differential: 0.45, analyzer: 0.4, patient: 0.6, cautious: 0.6 },
   },
   POSTECOGLOU: {
@@ -313,7 +313,7 @@ export const PERSONA_MAP: Record<string, PersonaDefinition> = {
     color: '#0B0E1E',
     traits: ['All-Out Attack', 'Never Backs Down', 'Differential King'],
     emoji: '🦘',
-    weights: { chaos: 1.0, template: -1.8, activity: 1.3, overthink: -1.0, efficiency: -0.1 },
+    weights: { chaos: 1.0, template: -1.8, activity: 1.3, overthink: -1.0, efficiency: -0.1, timing: -1.0 },
     spectrums: { differential: 0.98, analyzer: 0.15, patient: 0.2, cautious: 0.25 },
   },
   EMERY: {
@@ -325,7 +325,7 @@ export const PERSONA_MAP: Record<string, PersonaDefinition> = {
     color: '#7B003A',
     traits: ['Deep Analysis', 'Efficiency Master', 'Calculated Moves'],
     emoji: '📋',
-    weights: { efficiency: 1.3, overthink: 0.6, template: 0.4, chaos: -1.0, activity: -0.3 },
+    weights: { efficiency: 1.3, overthink: 0.6, template: 0.4, chaos: -1.0, activity: -0.3, timing: 1.5 },
     spectrums: { differential: 0.45, analyzer: 0.1, patient: 0.75, cautious: 0.8 },
   },
   WENGER: {
@@ -337,7 +337,7 @@ export const PERSONA_MAP: Record<string, PersonaDefinition> = {
     color: '#EF0107',
     traits: ['Differential Scout', 'Beautiful FPL', 'Low Hits'],
     emoji: '🧐',
-    weights: { template: -1.8, efficiency: 1.0, chaos: -1.3, thrift: 0.8, activity: -0.2 },
+    weights: { template: -1.8, efficiency: 1.0, chaos: -1.3, thrift: 0.8, activity: -0.2, timing: 1.2 },
     spectrums: { differential: 0.8, analyzer: 0.15, patient: 0.8, cautious: 0.75 },
   },
   ANCELOTTI: {
@@ -349,7 +349,7 @@ export const PERSONA_MAP: Record<string, PersonaDefinition> = {
     color: '#1D428A',
     traits: ['Cool Under Pressure', 'Balanced Approach', 'Veteran Wisdom'],
     emoji: '🤨',
-    weights: { template: 0.8, chaos: -1.0, leadership: 1.0, overthink: -0.6, efficiency: 0.6 },
+    weights: { template: 0.8, chaos: -1.0, leadership: 1.0, overthink: -0.6, efficiency: 0.6, timing: 0.7 },
     spectrums: { differential: 0.3, analyzer: 0.35, patient: 0.55, cautious: 0.65 },
   },
   MARESCA: {
@@ -361,7 +361,7 @@ export const PERSONA_MAP: Record<string, PersonaDefinition> = {
     color: '#034694',
     traits: ['Youth Over Experience', 'Tactical Flexibility', 'Smart Rotation'],
     emoji: '🎯',
-    weights: { activity: 1.0, overthink: 0.5, efficiency: 0.7, template: -0.3, chaos: 0.2 },
+    weights: { activity: 1.0, overthink: 0.5, efficiency: 0.7, template: -0.3, chaos: 0.2, timing: 0.4 },
     spectrums: { differential: 0.55, analyzer: 0.35, patient: 0.15, cautious: 0.65 },
   },
   ARTETA: {
@@ -373,7 +373,7 @@ export const PERSONA_MAP: Record<string, PersonaDefinition> = {
     color: '#EF0107',
     traits: ['Trust the Process', 'Efficiency First', 'Elite Template'],
     emoji: '🏗️',
-    weights: { efficiency: 1.0, template: 1.3, chaos: -1.2, activity: -0.3, leadership: 0.6 },
+    weights: { efficiency: 1.0, template: 1.3, chaos: -1.2, activity: -0.3, leadership: 0.6, timing: 1.2 },
     spectrums: { differential: 0.1, analyzer: 0.2, patient: 0.7, cautious: 0.75 },
   },
   SIMEONE: {
@@ -385,7 +385,7 @@ export const PERSONA_MAP: Record<string, PersonaDefinition> = {
     color: '#CB3524',
     traits: ['Never Surrender', 'Defensive Fortress', 'Budget Master'],
     emoji: '⚔️',
-    weights: { template: 0.8, chaos: -1.5, leadership: 0.7, thrift: 1.2, overthink: -0.5 },
+    weights: { template: 0.8, chaos: -1.5, leadership: 0.7, thrift: 1.2, overthink: -0.5, timing: 0.3 },
     spectrums: { differential: 0.2, analyzer: 0.4, patient: 0.75, cautious: 0.8 },
   },
   SLOT: {
@@ -397,7 +397,7 @@ export const PERSONA_MAP: Record<string, PersonaDefinition> = {
     color: '#D00027',
     traits: ['Data-Driven', 'Smart Differentials', 'High Efficiency'],
     emoji: '📊',
-    weights: { efficiency: 1.4, leadership: 0.9, overthink: 0.3, chaos: -0.8, template: 0.2 },
+    weights: { efficiency: 1.4, leadership: 0.9, overthink: 0.3, chaos: -0.8, template: 0.2, timing: 1.0 },
     spectrums: { differential: 0.5, analyzer: 0.05, patient: 0.55, cautious: 0.6 },
   },
   TENHAG: {
@@ -409,7 +409,7 @@ export const PERSONA_MAP: Record<string, PersonaDefinition> = {
     color: '#DA291C',
     traits: ['Constant Rebuild', 'High Potential', 'Inconsistent'],
     emoji: '📉',
-    weights: { activity: 1.8, efficiency: -0.8, overthink: 0.6, chaos: 0.7, template: -0.2 },
+    weights: { activity: 1.8, efficiency: -0.8, overthink: 0.6, chaos: 0.7, template: -0.2, timing: -1.5 },
     spectrums: { differential: 0.6, analyzer: 0.3, patient: 0.05, cautious: 0.4 },
   },
 } as const;
@@ -425,4 +425,6 @@ export const METRIC_TO_TRAIT: Record<string, string> = {
   efficiency: 'Net Transfer Impact',
   leadership: 'Captain Accuracy',
   thrift: 'Budget Optimizer',
+  timing: 'Transfer Timing',
+  patience: 'Transfer Patience',
 } as const;

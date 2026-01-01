@@ -180,9 +180,10 @@ Deploy to Vercel with one click:
 
 ## Documentation
 
-- **[Manager Personas Reference](docs/manager-personas.md)** - Complete guide to all 16 manager personas with quick reference table, scoring weights, and UX integration
-- **[Design Decisions & Technical Architecture](docs/design-decisions.md)** - Deep dive into caching, persona logic, and methodology
-- **[Next.js vs Vite Discussion](docs/nextjs-vite.md)** - Architectural reasoning for choosing Next.js
+- **[Documentation Index](docs/DOCUMENTATION_INDEX.md)** - Central hub for all project documentation
+- **[Manager Personas Reference](docs/engine/manager-personas.md)** - Complete guide to all 16 manager personas with quick reference table, scoring weights, and UX integration
+- **[Design Decisions & Technical Architecture](docs/architecture/design-decisions.md)** - Deep dive into caching, persona logic, and methodology
+- **[Next.js vs Vite Discussion](docs/architecture/nextjs-vite.md)** - Architectural reasoning for choosing Next.js
 
 ## Disclaimer
 

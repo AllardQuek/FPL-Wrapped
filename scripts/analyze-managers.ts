@@ -5,7 +5,6 @@
  * the classification algorithm and identify areas for improvement.
  */
 
-export {};
 
 const managers = [
   205286,    // Original test manager
@@ -52,18 +51,18 @@ async function analyzeManager(managerId: number) {
     console.log(`   Total Transfers: ${summary.totalTransfers}`);
     console.log(`   Hits Taken: ${summary.hitsTaken ?? 'N/A'}`);
     console.log(`   Total Hit Cost: ${summary.hitsTaken ? `-${summary.hitsTaken * 4} pts` : 'N/A'}`);
-    console.log(`   Transfer Efficiency: ${summary.transferEfficiency?.toFixed(1) ?? 'N/A'}%`);
+    console.log(`   Transfer Efficiency: ${summary.transferEfficiency?.toFixed(1) ?? 'N/A'} pts`);
     console.log(`   Transfer Grade: ${summary.transferGrade || 'N/A'}`);
     if (summary.bestTransfer) {
-      console.log(`   Best Transfer: ${summary.bestTransfer.playerIn.web_name} (GW${summary.bestTransfer.gameweek})`);
+      console.log(`   Best Transfer: ${summary.bestTransfer.playerIn.web_name} (GW${summary.bestTransfer.transfer.event})`);
     }
     console.log();
 
     console.log('👑 CAPTAINCY ANALYSIS:');
     console.log(`   Captaincy Efficiency: ${summary.captaincyEfficiency?.toFixed(1) ?? 'N/A'}%`);
     console.log(`   Captaincy Grade: ${summary.captaincyGrade || 'N/A'}`);
-    if (summary.bestCaptain) {
-      console.log(`   Best Captain: ${summary.bestCaptain.player.web_name} (GW${summary.bestCaptain.gameweek}, ${summary.bestCaptain.points} pts)`);
+    if (summary.bestCaptainPick) {
+      console.log(`   Best Captain: ${summary.bestCaptainPick.captainName} (GW${summary.bestCaptainPick.gameweek}, ${summary.bestCaptainPick.captainPoints} pts)`);
     }
     console.log();
 
@@ -73,12 +72,12 @@ async function analyzeManager(managerId: number) {
     console.log(`   Bench Grade: ${summary.benchGrade || 'N/A'}`);
     console.log();
 
-    if (summary.chips && Array.isArray(summary.chips)) {
+    if (summary.chipAnalyses && Array.isArray(summary.chipAnalyses)) {
       console.log('💎 CHIPS USED:');
-      const chipsUsed = summary.chips.filter((c: { used: boolean }) => c.used);
+      const chipsUsed = summary.chipAnalyses.filter((c: { used: boolean }) => c.used);
       if (chipsUsed.length > 0) {
-        chipsUsed.forEach((chip: { name: string; gameweek: number; pointsGained: number }) => {
-          console.log(`   GW${chip.gameweek}: ${chip.name} (+${chip.pointsGained} pts)`);
+        chipsUsed.forEach((chip: { name: string; event: number; pointsGained: number }) => {
+          console.log(`   GW${chip.event}: ${chip.name} (+${chip.pointsGained} pts)`);
         });
       } else {
         console.log('   No chips used yet');
@@ -115,6 +114,19 @@ async function analyzeManager(managerId: number) {
         const bar = '█'.repeat(Math.round(item.score / 10)) + '░'.repeat(10 - Math.round(item.score / 10));
         console.log(`   ${item.trait.padEnd(25)} ${bar} ${item.score}/${item.maxScore}`);
       });
+    }
+    console.log();
+
+    console.log('🕒 TRANSFER TIMING:');
+    if (summary.transferTiming) {
+      const t = summary.transferTiming;
+      console.log(`   Early Strategic: ${t.earlyStrategicTransfers}`);
+      console.log(`   Mid-Week:        ${t.midWeekTransfers}`);
+      console.log(`   Deadline Day:    ${t.deadlineDayTransfers}`);
+      console.log(`   Panic (<3h):     ${t.panicTransfers}`);
+      console.log(`   Knee-Jerk:       ${t.kneeJerkTransfers}`);
+      console.log(`   Late Night:      ${t.lateNightTransfers}`);
+      console.log(`   Avg Hours Before: ${t.avgHoursBeforeDeadline.toFixed(1)}h`);
     }
     console.log();
 

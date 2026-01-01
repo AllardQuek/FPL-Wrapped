@@ -15,7 +15,6 @@ declare -A EXPECTED_IMAGES=(
   ["MOURINHO"]="jose-mourinho-special-one.jpg"
   ["KLOPP"]="jurgen-klopp-heavy-metal.jpg"
   ["AMORIM"]="ruben-amorim-stubborn-one.jpg"
-  ["DYCHE"]="sean-dyche-survivalist.jpg"
   ["FERGUSON"]="alex-ferguson-goat.jpg"
   ["POSTECOGLOU"]="ange-postecoglou-all-outer.jpg"
   ["EMERY"]="unai-emery-methodical.jpg"

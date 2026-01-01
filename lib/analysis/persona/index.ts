@@ -34,6 +34,7 @@ import {
   applyExtremeMetricBoosts,
   applyChipPersonalityBoosts,
   calculateManagerVector,
+  calculatePersonalityCode,
   filterEligiblePersonas,
   applyDealBreakers,
   selectBestPersona,
@@ -81,6 +82,7 @@ export function calculateManagerPersona(
   );
 
   // Calculate normalized metrics
+  const currentGW = history.current.length || 1;
   const metrics = calculateMetrics(
     totalTransfers,
     totalHits,
@@ -90,6 +92,7 @@ export function calculateManagerPersona(
     captaincyEfficiency,
     squadValue,
     chipPersonality,
+    currentGW,
     patienceMetrics,
     transferTiming
   );
@@ -133,7 +136,8 @@ export function calculateManagerPersona(
   const selectedPersonaKey = selectBestPersona(
     validPersonas,
     behavioralSignals,
-    metrics
+    metrics,
+    currentRank
   );
 
   // Build and return persona result
@@ -166,10 +170,15 @@ function calculateMetrics(
   captaincyEfficiency: number,
   squadValue: number,
   chipPersonality: ChipPersonality,
+  currentGW: number,
   patienceMetrics?: SeasonSummary['patienceMetrics'],
   transferTiming?: TransferTiming
 ): PersonaMetrics {
   const N = NORMALIZATION;
+
+  // Dynamic normalization based on weeks passed
+  const dynamicTransfersMax = Math.max(5, N.TRANSFERS_PER_GW_MAX * currentGW);
+  const dynamicHitsMax = Math.max(2, N.HITS_PER_GW_MAX * currentGW);
 
   // Calculate patience score (0-1)
   // A score of 1 means high patience (many long-term holds)
@@ -185,6 +194,7 @@ function calculateMetrics(
   // Calculate timing score (0-1)
   // 1 = Early/Planned, 0 = Late/Panic
   let timingScore = 0.5; // Default
+  let timingRisk = 0.5; // Default
   if (transferTiming) {
     const total = (transferTiming.panicTransfers || 0) + 
                   (transferTiming.deadlineDayTransfers || 0) + 
@@ -202,12 +212,19 @@ function calculateMetrics(
       const lateNightPenalty = Math.min(0.2, ((transferTiming.lateNightTransfers || 0) / total) * 0.4);
       
       timingScore = Math.max(0, Math.min(1, baseTiming - kneeJerkPenalty - lateNightPenalty));
+
+      // Calculate timing risk (Aggressive vs Cautious)
+      // 1 = Aggressive (Early), 0 = Cautious (Late)
+      const earlyRisk = ((transferTiming.kneeJerkTransfers || 0) * 1.0 + 
+                        (transferTiming.earlyStrategicTransfers || 0) * 0.7 +
+                        (transferTiming.midWeekTransfers || 0) * 0.3) / total;
+      timingRisk = Math.min(1, earlyRisk);
     }
   }
 
   return {
-    activity: Math.min(1, totalTransfers / N.TRANSFERS_MAX),
-    chaos: Math.min(1, totalHits / N.HITS_MAX),
+    activity: Math.min(1, totalTransfers / dynamicTransfersMax),
+    chaos: Math.min(1, totalHits / dynamicHitsMax),
     overthink: Math.min(1, avgBenchPerWeek / N.BENCH_POINTS_MAX),
     template: templateOverlap / 100,
     efficiency: Math.max(0, Math.min(1, transferEfficiency / N.EFFICIENCY_MAX)),
@@ -215,6 +232,7 @@ function calculateMetrics(
     thrift: Math.max(0, Math.min(1, (N.VALUE_BASELINE - squadValue) / N.VALUE_RANGE)),
     patience: patienceScore,
     timing: timingScore,
+    timingRisk: timingRisk,
     chipMastery: chipPersonality.effectivenessScore,
     chipRisk: chipPersonality.riskScore,
   };
@@ -252,12 +270,7 @@ function buildPersonaResult(
   const managerVector = calculateManagerVector(metrics, signals);
 
   // Calculate 4-letter personality code based on manager's actual scores
-  const personalityCode = [
-    managerVector.differential >= 0.5 ? 'D' : 'T',
-    managerVector.analyzer >= 0.5 ? 'I' : 'A',
-    managerVector.patient >= 0.5 ? 'P' : 'R',
-    managerVector.cautious >= 0.5 ? 'C' : 'A',
-  ].join('');
+  const managerCode = calculatePersonalityCode(managerVector);
 
   return {
     key: selectedKey,
@@ -273,7 +286,8 @@ function buildPersonaResult(
     imageUrl: getPersonaImagePath(selectedKey),
     memorableMoments: memorableMoments.slice(0, 3),
     spectrums: managerVector,
-    personalityCode,
+    personalityCode: managerCode, // The manager's actual code
+    canonicalCode: personaData.personalityCode, // The persona's official code
   };
 }
 

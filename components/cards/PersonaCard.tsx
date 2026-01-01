@@ -39,12 +39,12 @@ export function PersonaCard({ summary }: PersonaCardProps) {
             })
         },
         {
-            key: 'analyzer',
-            ...PERSONALITY_SPECTRUMS.ANALYZER_INTUITIVE,
+            key: 'logical',
+            ...PERSONALITY_SPECTRUMS.LOGICAL_INTUITIVE,
             getTooltip: () => ({
                 lowEnd: (
                     <div className="space-y-1">
-                        <p className="font-semibold text-white">Why {PERSONALITY_SPECTRUMS.ANALYZER_INTUITIVE.lowEnd.name}?</p>
+                        <p className="font-semibold text-white">Why {PERSONALITY_SPECTRUMS.LOGICAL_INTUITIVE.lowEnd.name}?</p>
                         <p className="text-xs text-white/80">
                             Based on your Transfer Efficiency ({summary.netTransferPoints >= 0 ? '+' : ''}{summary.netTransferPoints} pts) and Captaincy Accuracy ({summary.captaincySuccessRate.toFixed(0)}%). You back decisions with data.
                         </p>
@@ -52,7 +52,7 @@ export function PersonaCard({ summary }: PersonaCardProps) {
                 ),
                 highEnd: (
                     <div className="space-y-1">
-                        <p className="font-semibold text-white">Why {PERSONALITY_SPECTRUMS.ANALYZER_INTUITIVE.highEnd.name}?</p>
+                        <p className="font-semibold text-white">Why {PERSONALITY_SPECTRUMS.LOGICAL_INTUITIVE.highEnd.name}?</p>
                         <p className="text-xs text-white/80">
                             Based on your Transfer Efficiency ({summary.netTransferPoints >= 0 ? '+' : ''}{summary.netTransferPoints} pts) and Captaincy Accuracy ({summary.captaincySuccessRate.toFixed(0)}%). You trust your gut over pure stats.
                         </p>
@@ -139,6 +139,7 @@ export function PersonaCard({ summary }: PersonaCardProps) {
                         <PersonaHeader 
                             title={persona.title} 
                             primaryColor={persona.primaryColor} 
+                            code={persona.canonicalCode}
                         />
                         
                         <PersonaAvatar 
@@ -179,6 +180,37 @@ export function PersonaCard({ summary }: PersonaCardProps) {
                                     />
                                 );
                             })}
+                            <div className="flex flex-col items-center justify-center pt-4 gap-1">
+                                <div className="flex items-center gap-2">
+                                    <span 
+                                        className="px-1.5 py-0.5 rounded text-[10px] font-black tracking-wider"
+                                        style={{ 
+                                            backgroundColor: `${persona.primaryColor}15`,
+                                            color: persona.primaryColor,
+                                            border: `1px solid ${persona.primaryColor}30`,
+                                        }}
+                                        title="Your Natural Personality Code"
+                                    >
+                                        {persona.personalityCode}
+                                    </span>
+                                    {persona.personalityCode !== persona.canonicalCode && (
+                                        <>
+                                            <span className="text-[10px] font-bold text-black/20">→</span>
+                                            <span 
+                                                className="px-1.5 py-0.5 rounded text-[10px] font-black tracking-wider bg-black text-white"
+                                                title="Assigned Persona Code"
+                                            >
+                                                {persona.canonicalCode}
+                                            </span>
+                                        </>
+                                    )}
+                                </div>
+                                <p className="text-[8px] font-bold text-black/30 uppercase tracking-tighter">
+                                    {persona.personalityCode === persona.canonicalCode 
+                                        ? 'Canonical Match' 
+                                        : 'Behavioral Alignment'}
+                                </p>
+                            </div>
                         </div>
                     </div>
                 </div>

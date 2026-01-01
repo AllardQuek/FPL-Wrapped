@@ -62,9 +62,34 @@ As of Phase 3, the algorithm uses a hybrid model combining deterministic weights
 
 ### The 4 Dimensions
 1.  **Differential (D) vs. Template (T)**: How much you deviate from the crowd.
-2.  **Analyzer (A) vs. Intuitive (I)**: Data-driven planning vs. gut-feel/reactive moves.
+2.  **Intuitive (I) vs. Analyzer (A)**: Gut-feel/high-variance moves vs. data-driven planning.
 3.  **Patient (P) vs. Reactive (R)**: Willingness to wait vs. urgency to act.
 4.  **Cautious (C) vs. Aggressive (A)**: Risk aversion vs. hit-taking/bold moves.
+
+### Personality Code Mapping (1:1)
+
+Each of the 16 possible combinations of these traits maps to a unique manager persona. This ensures that every "Personality Report" in the UI feels distinct.
+
+> **Note on UI Display**: In the "Wrapped" experience, the 4-letter code displayed next to a persona (e.g., `Harry Redknapp [TARA]`) represents the **Manager's actual personality DNA**, not the persona's ideal code. This allows users to see how they deviate from the "pure" version of their assigned manager.
+
+| Code | Persona | Manager | Dimension Breakdown |
+| :--- | :--- | :--- | :--- |
+| **TAPC** | **The Reliable** | David Moyes | Template, Analyzer, Patient, Cautious |
+| **TAPA** | **The Process Manager** | Mikel Arteta | Template, Analyzer, Patient, Aggressive |
+| **TIPC** | **The Calm Conductor** | Carlo Ancelotti | Template, Intuitive, Patient, Cautious |
+| **TIPA** | **The Warrior** | Diego Simeone | Template, Intuitive, Patient, Aggressive |
+| **TARC** | **The Bald Genius** | Pep Guardiola | Template, Analyzer, Reactive, Cautious |
+| **TARA** | **The System Builder** | Enzo Maresca | Template, Analyzer, Reactive, Aggressive |
+| **TIRC** | **The Special One** | Jose Mourinho | Template, Intuitive, Reactive, Cautious |
+| **TIRA** | **The Rebuilder** | Erik ten Hag | Template, Intuitive, Reactive, Aggressive |
+| **DAPC** | **The GOAT** | Sir Alex Ferguson | Differential, Analyzer, Patient, Cautious |
+| **DAPA** | **The Optimizer** | Arne Slot | Differential, Analyzer, Patient, Aggressive |
+| **DIPC** | **The Stubborn One** | Ruben Amorim | Differential, Intuitive, Patient, Cautious |
+| **DIPA** | **The Professor** | Arsene Wenger | Differential, Intuitive, Patient, Aggressive |
+| **DARC** | **The Methodical** | Unai Emery | Differential, Analyzer, Reactive, Cautious |
+| **DARA** | **Heavy Metal FPL** | Jurgen Klopp | Differential, Analyzer, Reactive, Aggressive |
+| **DIRC** | **The Wheeler-Dealer** | Harry Redknapp | Differential, Intuitive, Reactive, Cautious |
+| **DIRA** | **The All-Outer** | Ange Postecoglou | Differential, Intuitive, Reactive, Aggressive |
 
 ### Vector Gravity
 Behavioral signals act as "gravity," pulling your 4D vector toward specific poles:

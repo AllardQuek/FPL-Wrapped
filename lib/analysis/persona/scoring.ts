@@ -283,31 +283,51 @@ export function calculateManagerVector(
   metrics: PersonaMetrics,
   signals: BehavioralSignals
 ) {
-  // 1. Calculate base spectrums
+  // 1. Calculate base spectrums with data-driven binary thresholds
   const vector = {
-    differential: Math.pow(1 - metrics.template, 1.5),
-    analyzer: 1 - (metrics.efficiency + metrics.leadership) / 2,
-    patient: ((1 - metrics.activity) + metrics.patience + metrics.timing) / 3,
-    cautious: 1 - metrics.chaos,
+    // Template vs Differential: Threshold at 45% template
+    differential: metrics.template < 0.45 ? 0.75 : 0.25,
+    
+    // Logical vs iNtuitive: Combined efficiency + leadership threshold at 1.2
+    logical: (metrics.efficiency + metrics.leadership) > 1.2 ? 0.25 : 0.75,
+    
+    // Reactive vs Patient: Activity threshold at 0.55
+    patient: metrics.activity < 0.55 ? 0.75 : 0.25,
+    
+    // Aggressive vs Cautious: Zero hits AND low risk = Cautious
+    cautious: (metrics.chaos === 0 && metrics.chipRisk < 0.4) ? 0.75 : 0.25,
+    
+    // Raw metrics for debugging
+    chaos: metrics.chaos,
+    chipRisk: metrics.chipRisk,
+    timingRisk: metrics.timingRisk,
   };
 
-  // 2. Apply vector gravity (signals pull the vector)
-  if (signals.earlyPlanner) {
-    vector.analyzer = Math.max(0, vector.analyzer - 0.15);
-    vector.patient = Math.min(1, vector.patient + 0.15);
+  // 2. Apply binary flips based on strong behavioral signals
+  if (signals.earlyPlanner && metrics.activity < 0.65) {
+    vector.patient = 0.75;
+    if (metrics.efficiency > 0.6) vector.logical = 0.25;
   }
+  
   if (signals.panicBuyer || signals.deadlineDayScrambler) {
-    vector.patient = Math.max(0, vector.patient - 0.2);
+    vector.patient = 0.25;
   }
+  
   if (signals.kneeJerker) {
-    vector.patient = Math.max(0, vector.patient - 0.25);
-    vector.analyzer = Math.min(1, vector.analyzer + 0.1);
+    vector.patient = 0.25;
+    vector.cautious = 0.25;
   }
-  if (signals.hitAddict) {
-    vector.cautious = Math.max(0, vector.cautious - 0.3);
+  
+  if (signals.disciplined && metrics.chaos < 0.1) {
+    vector.cautious = 0.75;
   }
-  if (signals.disciplined) {
-    vector.cautious = Math.min(1, vector.cautious + 0.2);
+  
+  if (signals.hitAddict || signals.chipGambler) {
+    vector.cautious = 0.25;
+  }
+  
+  if (signals.rotationPain && metrics.overthink > 0.65) {
+    vector.differential = 0.25;
   }
 
   return vector;
@@ -328,7 +348,7 @@ export function applyCentroidScoring(
     const p = persona.spectrums;
     const distance = Math.sqrt(
       Math.pow(managerVector.differential - p.differential, 2) +
-      Math.pow(managerVector.analyzer - p.analyzer, 2) +
+      Math.pow(managerVector.logical - p.logical, 2) +
       Math.pow(managerVector.patient - p.patient, 2) +
       Math.pow(managerVector.cautious - p.cautious, 2)
     );
@@ -352,25 +372,25 @@ export function applyRankBoosts(
 
   // Top 10k = THE GOAT
   if (currentRank <= R.ELITE) {
-    scores['FERGUSON'] = (scores['FERGUSON'] || 0) * 5.0;
+    scores['FERGUSON'] = (scores['FERGUSON'] || 0) * 10.0;
     scores['SLOT'] = (scores['SLOT'] || 0) * 2.2;
   }
   // Top 50k
   else if (currentRank <= R.TOP_50K) {
-    scores['FERGUSON'] = (scores['FERGUSON'] || 0) * 4.2;
+    scores['FERGUSON'] = (scores['FERGUSON'] || 0) * 8.0;
     scores['SLOT'] = (scores['SLOT'] || 0) * 3.0;
     scores['EMERY'] = (scores['EMERY'] || 0) * 2.5;
   }
   // Top 0.1%
   else if (topPercentile <= 0.1) {
-    scores['FERGUSON'] = (scores['FERGUSON'] || 0) * 4.0;
+    scores['FERGUSON'] = (scores['FERGUSON'] || 0) * 7.0;
     scores['SLOT'] = (scores['SLOT'] || 0) * 2.6;
     scores['EMERY'] = (scores['EMERY'] || 0) * 2.2;
   }
   // Top 1%
   else if (topPercentile <= 1.0) {
     scores['SLOT'] = (scores['SLOT'] || 0) * 2.8;
-    scores['FERGUSON'] = (scores['FERGUSON'] || 0) * 2.5;
+    scores['FERGUSON'] = (scores['FERGUSON'] || 0) * 5.0;
     scores['EMERY'] = (scores['EMERY'] || 0) * 2.5;
     scores['AMORIM'] = (scores['AMORIM'] || 0) * 1.8;
   }
@@ -617,60 +637,59 @@ export function filterEligiblePersonas(
     switch (key) {
       case 'FERGUSON':
         return currentRank <= R.ELITE || 
-          (metrics.efficiency > 0.65 && metrics.leadership > 0.75 && currentRank <= R.TOP_50K);
+          (metrics.efficiency > 0.60 && metrics.leadership > 0.60 && currentRank <= R.TOP_50K);
 
       case 'SLOT':
         return currentRank <= R.TOP_100K && metrics.efficiency > 0.60 && metrics.leadership > 0.55;
 
       case 'EMERY':
-        return (currentRank <= R.TOP_150K && signals.earlyPlanner) || 
-          (signals.earlyPlanner && signals.disciplined && metrics.efficiency > 0.55);
+        return (currentRank <= R.TOP_300K) || 
+          (signals.earlyPlanner || signals.disciplined || metrics.efficiency > 0.50);
 
       case 'REDKNAPP':
-        return metrics.chaos > 0.35 && metrics.activity > 0.5;
+        return metrics.chaos > 0.25 || metrics.activity > 0.4;
 
       case 'MOYES':
-        return metrics.chaos < 0.12 && metrics.activity < 0.45 && metrics.template > 0.5;
+        return metrics.chaos < 0.30 && metrics.activity < 0.70;
 
       case 'KLOPP':
-        return (metrics.template < 0.35 && metrics.activity > 0.50 && metrics.chaos > 0.05) ||
-          (signals.boomBust && metrics.template < 0.45 && metrics.activity > 0.45);
+        return (metrics.template < 0.55 && metrics.activity > 0.30) ||
+          (signals.boomBust && metrics.template < 0.60);
 
       case 'POSTECOGLOU':
-        return (metrics.template < 0.30 && metrics.activity > 0.60) ||
-          (metrics.template < 0.40 && metrics.activity > 0.80 && metrics.chaos > 0.10) ||
-          (signals.earlyAggression && metrics.template < 0.45);
+        return (metrics.template < 0.50 && metrics.activity > 0.40) ||
+          (signals.earlyAggression && metrics.template < 0.60);
 
       case 'PEP':
-        return metrics.overthink > 0.60 && metrics.efficiency < 0.95;
+        return metrics.overthink > 0.35 || metrics.template > 0.40;
 
       case 'WENGER':
-        return (metrics.template < 0.45 && metrics.chaos < 0.20 && metrics.efficiency > 0.35) ||
-          (metrics.template < 0.50 && metrics.chaos < 0.15 && signals.disciplined);
+        return (metrics.template < 0.65 && metrics.chaos < 0.35) ||
+          (metrics.template < 0.70 && signals.disciplined);
 
       case 'ARTETA':
-        return metrics.template > 0.65 && metrics.efficiency > 0.5;
+        return metrics.template > 0.45 && metrics.efficiency > 0.3;
 
       case 'MOURINHO':
-        return (metrics.chaos < 0.15 && metrics.thrift > 0.35) ||
-          (metrics.chaos < 0.10 && metrics.template > 0.50);
+        return (metrics.chaos < 0.35 && metrics.thrift > 0.20) ||
+          (metrics.chaos < 0.30 && metrics.template > 0.35);
 
       case 'SIMEONE':
-        return metrics.chaos < 0.12 && metrics.thrift > 0.45;
+        return metrics.chaos < 0.30 && metrics.thrift > 0.25;
 
       case 'AMORIM':
-        return (metrics.efficiency > 0.60 && signals.longTermBacker && metrics.activity < 0.60) ||
-          (metrics.efficiency > 0.65 && metrics.activity < 0.55 && metrics.chaos < 0.10);
+        return (metrics.efficiency > 0.40 && signals.longTermBacker) ||
+          (metrics.efficiency > 0.45 && metrics.chaos < 0.30);
 
       case 'TENHAG':
-        return metrics.activity > 0.70;
+        return metrics.activity > 0.45 || (metrics.activity > 0.35 && metrics.chaos > 0.15);
 
       case 'ANCELOTTI':
-        return (metrics.chaos < 0.3 && metrics.leadership > 0.5) ||
-          (metrics.leadership > 0.60 && metrics.template > 0.45 && metrics.template < 0.70);
+        return (metrics.chaos < 0.4 && metrics.leadership > 0.4) ||
+          (metrics.leadership > 0.50 && metrics.template > 0.35 && metrics.template < 0.80);
 
       case 'MARESCA':
-        return metrics.activity > 0.35 && metrics.activity < 0.75;
+        return metrics.activity > 0.25 && metrics.activity < 0.85;
 
       default:
         return true;
@@ -720,62 +739,66 @@ export function applyDealBreakers(
 // ============================================================================
 
 /**
+ * Calculate the 4-letter personality code based on a vector
+ */
+export function calculatePersonalityCode(vector: PersonalitySpectrums): string {
+  return [
+    vector.differential >= 0.5 ? 'D' : 'T',
+    vector.logical >= 0.5 ? 'N' : 'L',
+    vector.patient >= 0.5 ? 'P' : 'R',
+    vector.cautious >= 0.5 ? 'C' : 'A',
+  ].join('');
+}
+
+/**
  * Select the best persona from competitive candidates
+ * Combines Code Match, Behavioral Insights, and Proximity
  */
 export function selectBestPersona(
   validPersonas: Array<[string, number]>,
   signals: BehavioralSignals,
-  metrics: PersonaMetrics
+  metrics: PersonaMetrics,
+  currentRank: number
 ): string {
-  // Sort by score
-  const sortedPersonas = validPersonas.sort((a, b) => b[1] - a[1]);
-  const topScore = sortedPersonas[0][1];
-
-  // Find competitive personas (within 10% of top)
-  const competitiveThreshold = topScore * 0.90;
-  const competitivePersonas = sortedPersonas.filter(
-    ([, score]) => score >= competitiveThreshold
-  );
-
-  if (competitivePersonas.length <= 1) {
-    return competitivePersonas[0][0];
-  }
-
-  // Calculate manager vector for distance tie-breaking
+  // 1. Calculate the manager's 4D vector and resulting code
   const managerVector = calculateManagerVector(metrics, signals);
+  const managerCode = calculatePersonalityCode(managerVector);
 
-  // Use behavioral matches and centroid distance to differentiate
-  const personaMatches = competitivePersonas.map(([key]) => {
+  // 2. Score each eligible persona based on multiple factors
+  const personaScores = validPersonas.map(([key, baseScore]) => {
     const persona = PERSONA_MAP[key as keyof typeof PERSONA_MAP];
     const p = persona.spectrums;
+    
+    // Factor A: Canonical Code Match (Dominant factor - natural personality drives assignment)
+    const isCanonicalMatch = persona.personalityCode === managerCode;
+    const codeMatchScore = isCanonicalMatch ? 50 : 0;
+
+    // Factor B: Euclidean Distance (Proximity in 4D space)
     const distance = Math.sqrt(
       Math.pow(managerVector.differential - p.differential, 2) +
-      Math.pow(managerVector.analyzer - p.analyzer, 2) +
+      Math.pow(managerVector.logical - p.logical, 2) +
       Math.pow(managerVector.patient - p.patient, 2) +
       Math.pow(managerVector.cautious - p.cautious, 2)
     );
+    const proximityScore = (2 - distance) * 5; // Max distance is 2, so this is 0-10
+
+    // Factor C: Behavioral Match Strength (Influential but shouldn't override natural code)
+    const matchStrength = calculateMatchStrength(key, signals, metrics, currentRank);
+
+    // Factor D: Base Score (Rank boosts, extreme metric boosts from previous steps)
+    // We normalize the base score a bit so it doesn't overwhelm the code match
+    const normalizedBaseScore = Math.min(20, baseScore);
 
     return {
       key,
-      matchStrength: calculateMatchStrength(key, signals, metrics),
-      distance,
+      totalScore: codeMatchScore + proximityScore + matchStrength + normalizedBaseScore,
     };
   });
 
-  personaMatches.sort((a, b) => {
-    // 1. Primary: Behavioral match strength
-    if (b.matchStrength !== a.matchStrength) return b.matchStrength - a.matchStrength;
-    
-    // 2. Secondary: Centroid distance (closer is better)
-    if (Math.abs(a.distance - b.distance) > 0.05) return a.distance - b.distance;
-    
-    // 3. Tertiary: Raw score
-    const scoreA = competitivePersonas.find(([k]) => k === a.key)?.[1] || 0;
-    const scoreB = competitivePersonas.find(([k]) => k === b.key)?.[1] || 0;
-    return scoreB - scoreA;
-  });
+  // 3. Sort by total score
+  personaScores.sort((a, b) => b.totalScore - a.totalScore);
 
-  return personaMatches[0].key;
+  return personaScores[0].key;
 }
 
 /**
@@ -784,11 +807,14 @@ export function selectBestPersona(
 function calculateMatchStrength(
   key: string,
   signals: BehavioralSignals,
-  metrics: PersonaMetrics
+  metrics: PersonaMetrics,
+  currentRank: number
 ): number {
   let matchStrength = 0;
+  const R = RANK_THRESHOLDS;
 
   // Strong behavioral matches (3 points)
+  if (key === 'FERGUSON' && currentRank <= R.TOP_50K && metrics.efficiency > 0.7) matchStrength += 5;
   if (key === 'TENHAG' && signals.constantTinkerer && metrics.activity > 0.75) matchStrength += 3;
   if (key === 'REDKNAPP' && signals.hitAddict && metrics.chaos > 0.4) matchStrength += 3;
   if (key === 'WENGER' && metrics.template < 0.20 && signals.disciplined) matchStrength += 3;

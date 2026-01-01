@@ -624,11 +624,15 @@ export interface ManagerPersona {
   memorableMoments?: string[]; // Specific one-liner examples: "In GW8 I benched Salah and he hauled for 24 points"
   spectrums: {
     differential: number;
-    analyzer: number;
+    logical: number;
     patient: number;
     cautious: number;
+    chaos?: number;
+    chipRisk?: number;
+    timingRisk?: number;
   };
-  personalityCode: string; // 4-letter code like "DIRA" or "TAPC"
+  personalityCode: string; // The manager's actual 4-letter code (e.g. "DIRA")
+  canonicalCode: string; // The persona's official 4-letter code (e.g. "TAPC")
 }
 
 export interface TransferTimingAnalysis {

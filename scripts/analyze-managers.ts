@@ -36,9 +36,10 @@ async function analyzeManager(managerId: number) {
     console.log(`MANAGER ID: ${managerId} - ${summary.managerName}`);
     console.log(`${'='.repeat(80)}`);
 
-    console.log(`\n🎯 ASSIGNED PERSONA: ${summary.persona.name}`);
-    console.log(`   Full Title: ${summary.persona.fullName || 'N/A'}`);
-    console.log(`   Archetype: ${summary.persona.archetype || 'N/A'}`);
+    console.log(`\n🎯 ASSIGNED PERSONA: ${summary.persona.name} [${summary.persona.canonicalCode}]`);
+    console.log(`   Natural Code: ${summary.persona.personalityCode} ${summary.persona.personalityCode === summary.persona.canonicalCode ? '✓' : '→ ' + summary.persona.canonicalCode}`);
+    console.log(`   Full Title: ${summary.persona.title || 'N/A'}`);
+    console.log(`   Vector: D=${summary.persona.spectrums.differential.toFixed(2)} L=${summary.persona.spectrums.logical.toFixed(2)} P=${summary.persona.spectrums.patient.toFixed(2)} C=${summary.persona.spectrums.cautious.toFixed(2)}`);
     console.log();
 
     console.log('📊 OVERALL PERFORMANCE:');
@@ -135,6 +136,7 @@ async function analyzeManager(managerId: number) {
       managerId,
       name: summary.managerName,
       persona: summary.persona.name,
+      personalityCode: summary.persona.personalityCode,
       personaTitle: summary.persona.title,
       personaDescription: summary.persona.description,
       totalPoints: summary.totalPoints,
@@ -148,6 +150,13 @@ async function analyzeManager(managerId: number) {
       benchGrade: summary.benchGrade,
       templateOverlap: summary.templateOverlap,
       overallDecisionGrade: summary.overallDecisionGrade,
+      hitsTaken: summary.hitsTaken,
+      naturalCode: summary.persona.personalityCode,
+      assignedCode: summary.persona.canonicalCode,
+      vectorD: summary.persona.spectrums.differential,
+      vectorL: summary.persona.spectrums.logical,
+      vectorP: summary.persona.spectrums.patient,
+      vectorC: summary.persona.spectrums.cautious,
     };
 
   } catch (error) {
@@ -188,9 +197,10 @@ async function main() {
 
   console.log('� PERSONA DISTRIBUTION:');
   personaGroups.forEach((group, persona) => {
-    console.log(`   ${persona}: ${group.length} manager(s)`);
+    const code = group[0].personalityCode;
+    console.log(`   ${persona} [${code}]: ${group.length} manager(s)`);
     group.forEach(m => {
-      console.log(`      - ${m.name} (ID: ${m.managerId})`);
+      console.log(`      - ${m.name.padEnd(20)} (ID: ${m.managerId.toString().padEnd(8)}) Rank: ${m.overallRank.toLocaleString().padStart(10)}`);
     });
   });
   console.log();

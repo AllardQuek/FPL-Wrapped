@@ -8,24 +8,26 @@ import { FPLBootstrap, ChipAnalysis } from '../../types';
  * Normalized metrics (0-1 scale) used for persona scoring
  */
 export interface PersonaMetrics {
-  /** Transfer activity level (transfers/80) */
+  /** Transfer activity level (normalized by weeks passed) */
   activity: number;
-  /** Hit-taking frequency (hits/30) */
+  /** Hit-taking frequency (normalized by weeks passed) */
   chaos: number;
   /** Bench points regret (avgBench/15) */
   overthink: number;
   /** Template adherence (overlap/100) */
   template: number;
-  /** Transfer efficiency (points gained/15) */
+  /** Transfer efficiency (points gained/300) */
   efficiency: number;
   /** Captaincy success rate (success/100) */
   leadership: number;
   /** Budget management (1040-value/60) */
   thrift: number;
-  /** Patience level (long holds/total players) */
+  /** Patience level (0-1) */
   patience: number;
   /** Transfer timing (early/late) (0-1, 1 = early/planned, 0 = late/panic) */
   timing: number;
+  /** Risk taken by transferring early (0-1, 1 = high risk/early, 0 = low risk/late) */
+  timingRisk: number;
   /** Chip effectiveness (0-1) */
   chipMastery: number;
   /** Risk-taking in chips (0-1) */
@@ -142,13 +144,13 @@ export interface ChipPersonality {
  * Four binary dimensions that create 16 unique combinations (like MBTI)
  */
 export interface PersonalitySpectrums {
-  /** Differential (0) vs Template (1): Squad strategy */
+  /** Template (0) vs Differential (1): Squad strategy */
   differential: number;
-  /** Analyzer (0) vs Intuitive (1): Decision basis */
-  analyzer: number;
-  /** Patient (0) vs Reactive (1): Activity level */
+  /** Logical (0) vs iNtuitive (1): Decision basis */
+  logical: number;
+  /** Reactive (0) vs Patient (1): Activity level */
   patient: number;
-  /** Cautious (0) vs Aggressive (1): Risk tolerance */
+  /** Aggressive (0) vs Cautious (1): Risk tolerance */
   cautious: number;
 }
 
@@ -166,6 +168,8 @@ export interface PersonaDefinition {
   emoji: string;
   weights: Partial<PersonaMetrics>;
   spectrums: PersonalitySpectrums;
+  /** The 4-letter personality code (e.g., 'TAPC') */
+  personalityCode: string;
 }
 
 /**

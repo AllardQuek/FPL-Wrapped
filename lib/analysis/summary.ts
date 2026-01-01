@@ -106,7 +106,7 @@ export function generateSeasonSummary(data: ManagerData): SeasonSummary {
     const templateOverlap = calculateTemplateOverlap(data);
 
     // Transfer stats
-    const totalTransfers = transfers.length;
+    const totalTransfers = transferAnalyses.length; // Count actual analyzed transfers (Free Hits excluded, Wildcards consolidated)
     const totalTransfersCost = history.current.reduce(
         (sum, gw) => sum + gw.event_transfers_cost,
         0

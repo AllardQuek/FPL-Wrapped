@@ -5,6 +5,7 @@ import { getCurrentFPLSeason } from '@/lib/season';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useState } from 'react';
+import { InfoTooltip } from '@/components/ui/Tooltip';
 
 interface SummaryCardProps {
   summary: SeasonSummary;
@@ -63,10 +64,10 @@ export function SummaryCard({ summary }: SummaryCardProps) {
             {/* Final Rank & Total Points - Mobile */}
             <div className="w-full text-center px-4">
               <p className="text-[10px] font-bold text-black/30 tracking-widest uppercase mb-1">Final Rank</p>
-              <p className="text-xl font-black tracking-tighter italic mb-3">#{summary.overallRank.toLocaleString()}</p>
+              <p className="text-2xl font-black tracking-tighter italic mb-4 text-black/90">#{summary.overallRank.toLocaleString()}</p>
               
               <p className="text-[10px] font-bold text-black/30 tracking-widest uppercase mb-1">Total Points</p>
-              <p className="text-xl font-black tracking-tighter text-green-600">{summary.totalPoints.toLocaleString()}</p>
+              <p className="text-3xl font-black tracking-tighter text-black/90">{summary.totalPoints.toLocaleString()}</p>
             </div>
           </div>
 
@@ -107,10 +108,10 @@ export function SummaryCard({ summary }: SummaryCardProps) {
             {/* Final Rank & Total Points - Desktop absolute position */}
             <div className="absolute top-10 right-10 text-right flex-shrink-0">
               <p className="text-[10px] font-bold text-black/30 tracking-widest uppercase mb-1">Final Rank</p>
-              <p className="text-2xl font-black tracking-tighter italic mb-3">#{summary.overallRank.toLocaleString()}</p>
+              <p className="text-3xl font-black tracking-tighter italic mb-4 text-black/90">#{summary.overallRank.toLocaleString()}</p>
               
               <p className="text-[10px] font-bold text-black/30 tracking-widest uppercase mb-1">Total Points</p>
-              <p className="text-2xl font-black tracking-tighter text-green-600">{summary.totalPoints.toLocaleString()}</p>
+              <p className="text-4xl font-black tracking-tighter text-black/90">{summary.totalPoints.toLocaleString()}</p>
             </div>
           </div>
 
@@ -119,110 +120,85 @@ export function SummaryCard({ summary }: SummaryCardProps) {
             <p className="text-[9px] font-bold text-black/30 tracking-[0.15em] uppercase mb-4 text-center">Season {currentSeason} Performance</p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {/* Transfer Impact */}
-              <div className="bg-black/[0.02] rounded-xl p-4 border border-black/5">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <span className="text-lg">🔄</span>
-                    <p className="text-[10px] font-bold text-black/50 uppercase tracking-wide">Transfer Impact</p>
-                  </div>
-                  <span className={`text-[9px] font-black px-2 py-0.5 rounded ${
-                    summary.transferGrade === 'A' ? 'bg-green-500/20 text-green-700' :
-                    summary.transferGrade === 'B' ? 'bg-blue-500/20 text-blue-700' :
-                    summary.transferGrade === 'C' ? 'bg-yellow-500/20 text-yellow-700' :
-                    summary.transferGrade === 'D' ? 'bg-orange-500/20 text-orange-700' :
-                    'bg-red-500/20 text-red-700'
-                  }`}>
-                    {summary.transferGrade}
-                  </span>
+              <div className="bg-black/[0.02] rounded-xl p-5 border border-black/5">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-xl">🔄</span>
+                  <p className="text-[11px] font-bold text-black/40 uppercase tracking-wide">Transfer Impact</p>
                 </div>
-                <p className={`text-xl font-black mb-2 ${
-                  summary.netTransferPoints >= 20 ? 'text-green-600' :
-                  summary.netTransferPoints >= 0 ? 'text-green-600/70' :
-                  'text-red-600'
+                <p className={`text-3xl font-black ${
+                  summary.netTransferPoints >= 50 ? 'text-[#059669]' :
+                  summary.netTransferPoints >= 0 ? 'text-black/90' :
+                  summary.netTransferPoints <= -20 ? 'text-[#e90052]' :
+                  'text-black/90'
                 }`}>
                   {summary.netTransferPoints >= 0 ? '+' : ''}{summary.netTransferPoints} pts
-                </p>
-                <p className="text-[10px] text-black/60 font-medium">
-                  {summary.totalTransfers} transfers • {(summary.totalTransfersCost / 4).toFixed(0)} hits taken
                 </p>
               </div>
 
               {/* Captaincy */}
-              <div className="bg-black/[0.02] rounded-xl p-4 border border-black/5">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <span className="text-lg">⚡</span>
-                    <p className="text-[10px] font-bold text-black/50 uppercase tracking-wide">Captaincy</p>
-                  </div>
-                  <span className={`text-[9px] font-black px-2 py-0.5 rounded ${
-                    summary.captaincyGrade === 'A' ? 'bg-green-500/20 text-green-700' :
-                    summary.captaincyGrade === 'B' ? 'bg-blue-500/20 text-blue-700' :
-                    summary.captaincyGrade === 'C' ? 'bg-yellow-500/20 text-yellow-700' :
-                    summary.captaincyGrade === 'D' ? 'bg-orange-500/20 text-orange-700' :
-                    'bg-red-500/20 text-red-700'
-                  }`}>
-                    {summary.captaincyGrade}
-                  </span>
+              <div className="bg-black/[0.02] rounded-xl p-5 border border-black/5">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-xl">⚡</span>
+                  <p className="text-[11px] font-bold text-black/40 uppercase tracking-wide">Captaincy Success</p>
                 </div>
-                <p className={`text-xl font-black mb-2 ${
-                  summary.captaincySuccessRate >= 70 ? 'text-green-600' :
-                  summary.captaincySuccessRate >= 50 ? 'text-blue-600' :
-                  'text-orange-600'
+                <p className={`text-3xl font-black ${
+                  summary.captaincySuccessRate >= 80 ? 'text-[#059669]' :
+                  summary.captaincySuccessRate <= 30 ? 'text-[#e90052]' :
+                  'text-black/90'
                 }`}>
-                  {summary.captaincySuccessRate.toFixed(0)}% success rate
-                </p>
-                <p className="text-[10px] text-black/60 font-medium">
-                  {summary.totalCaptaincyPoints} pts earned • {summary.captaincyPointsLost} pts missed
+                  {summary.captaincySuccessRate.toFixed(0)}%
                 </p>
               </div>
 
               {/* Bench Management */}
-              <div className="bg-black/[0.02] rounded-xl p-4 border border-black/5">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <span className="text-lg">😱</span>
-                    <p className="text-[10px] font-bold text-black/50 uppercase tracking-wide">Bench Management</p>
-                  </div>
-                  <span className={`text-[9px] font-black px-2 py-0.5 rounded ${
-                    summary.benchGrade === 'A' ? 'bg-green-500/20 text-green-700' :
-                    summary.benchGrade === 'B' ? 'bg-blue-500/20 text-blue-700' :
-                    summary.benchGrade === 'C' ? 'bg-yellow-500/20 text-yellow-700' :
-                    summary.benchGrade === 'D' ? 'bg-orange-500/20 text-orange-700' :
-                    'bg-red-500/20 text-red-700'
-                  }`}>
-                    {summary.benchGrade}
-                  </span>
+              <div className="bg-black/[0.02] rounded-xl p-5 border border-black/5">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-xl">😱</span>
+                  <p className="text-[11px] font-bold text-black/40 uppercase tracking-wide">Bench Regrets</p>
                 </div>
-                <p className={`text-xl font-black mb-2 ${
-                  summary.benchRegrets <= 3 ? 'text-green-600' :
-                  summary.benchRegrets <= 6 ? 'text-blue-600' :
-                  summary.benchRegrets <= 10 ? 'text-orange-600' :
-                  'text-red-600'
+                <p className={`text-3xl font-black ${
+                  summary.benchRegrets <= 2 ? 'text-[#059669]' :
+                  summary.benchRegrets >= 15 ? 'text-[#e90052]' :
+                  'text-black/90'
                 }`}>
-                  {summary.benchRegrets} bench regrets
-                </p>
-                <p className="text-[10px] text-black/60 font-medium">
-                  {summary.totalBenchPoints.toFixed(0)} pts left on bench
+                  {summary.benchRegrets}
                 </p>
               </div>
 
               {/* Template Strategy */}
-              <div className="bg-black/[0.02] rounded-xl p-4 border border-black/5">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <span className="text-lg">
-                      {summary.templateOverlap >= 30 ? '🐑' : 
-                       summary.templateOverlap >= 20 ? '⚖️' : '🦄'}
-                    </span>
-                    <p className="text-[10px] font-bold text-black/50 uppercase tracking-wide">Template Strategy</p>
-                  </div>
+              <div className="bg-black/[0.02] rounded-xl p-5 border border-black/5">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-xl">
+                    {summary.templateOverlap >= 30 ? '🐑' : 
+                     summary.templateOverlap >= 20 ? '⚖️' : '🦄'}
+                  </span>
+                  <p className="text-[11px] font-bold text-black/40 uppercase tracking-wide">Template Overlap</p>
+                  <InfoTooltip
+                    content={
+                      <div className="space-y-2">
+                        <p className="font-semibold text-white">How is this calculated?</p>
+                        <div className="space-y-1 text-white/80">
+                          <p><strong>Template Player</strong> = Any player with ≥15% ownership</p>
+                          <p className="text-xs text-white/60 italic">e.g., Salah, Haaland, premium defenders</p>
+                        </div>
+                        <div className="pt-2 border-t border-white/20">
+                          <p className="text-white/90 font-mono text-xs">
+                            Template Overlap % = <br/>
+                            (Template players in your squad / Total squad slots) × 100
+                          </p>
+                        </div>
+                        <div className="pt-2 space-y-1 text-xs">
+                          <p className="text-white/70">📊 Measured across all finished gameweeks</p>
+                          <p className="text-white/70">• <strong>30%+</strong>: Template-heavy (following the crowd)</p>
+                          <p className="text-white/70">• <strong>20-30%</strong>: Balanced approach</p>
+                          <p className="text-white/70">• <strong>&lt;20%</strong>: Differential picks (unique strategy)</p>
+                        </div>
+                      </div>
+                    }
+                  />
                 </div>
-                <p className="text-xl font-black text-black/80 mb-2">
-                  {summary.templateOverlap.toFixed(0)}% template overlap
-                </p>
-                <p className="text-[10px] text-black/60 font-medium">
-                  {summary.templateOverlap >= 30 ? 'Template-heavy squad approach' : 
-                   summary.templateOverlap >= 20 ? 'Balanced squad strategy' : 'Differential king approach'}
+                <p className="text-3xl font-black text-black/90">
+                  {summary.templateOverlap.toFixed(0)}%
                 </p>
               </div>
             </div>

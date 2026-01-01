@@ -221,7 +221,18 @@ export function CaptaincyCard({ summary }: CaptaincyCardProps) {
           <div className="bg-white/5 rounded-2xl p-6 border border-white/5">
             <div className="flex items-center gap-2 mb-1">
               <p className="text-[10px] font-bold text-white/30 tracking-widest uppercase">Season Best</p>
-              <InfoTooltip content="Your highest-scoring captain choice of the season." />
+              <InfoTooltip 
+                maxWidth="max-w-[260px]"
+                content={
+                  <div className="space-y-2">
+                    <p className="font-semibold text-white">Season Best Captain</p>
+                    <p>Your highest-scoring captain choice across all gameweeks this season.</p>
+                    <div className="pt-2 border-t border-white/20">
+                      <p className="text-white/70 text-xs">Points shown include the captain multiplier (2x).</p>
+                    </div>
+                  </div>
+                } 
+              />
             </div>
             {summary.bestCaptainPick ? (
               <div>

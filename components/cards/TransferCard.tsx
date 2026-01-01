@@ -15,6 +15,17 @@ interface PointsHistoryEntry {
   out: number;
 }
 
+// Shared tooltip component for chip handling information
+const ChipHandlingNotes = () => (
+  <div className="pt-2 border-t border-white/20 space-y-1">
+    <p className="text-white/80 font-medium">Chip Handling:</p>
+    <ul className="space-y-1 pl-3">
+      <li className="text-white/70">• <span className="text-white/90">Free Hit transfers excluded</span> (temporary moves)</li>
+      <li className="text-white/70">• <span className="text-white/90">Wildcard transfers</span> counted as net changes only (before vs after)</li>
+    </ul>
+  </div>
+);
+
 export function TransferCard({ summary }: TransferCardProps) {
   const netImpact = summary.netTransferPoints - summary.totalTransfersCost;
   const [activeIdx, setActiveIdx] = useState(0);
@@ -74,7 +85,16 @@ export function TransferCard({ summary }: TransferCardProps) {
           <div className="bg-white/5 rounded-2xl p-6 border border-white/5 text-center flex flex-col items-center">
             <div className="flex items-center gap-1 mb-1 justify-center">
               <p className="text-[9px] font-bold text-white/30 tracking-widest uppercase">Net Impact</p>
-              <InfoTooltip content="Your total 'Transfer Profit'. This is the cumulative points gained from all players bought vs. those sold, across their entire time in your team, minus transfer costs (hits). Note: Wildcard transfers compare target squad against predicted performance of previous team." />
+              <InfoTooltip 
+                maxWidth="max-w-[280px]"
+                content={
+                  <div className="space-y-2">
+                    <p className="font-semibold text-white">Total Transfer Profit</p>
+                    <p>Cumulative points gained from all players bought vs. those sold, across their entire time in your team, minus transfer costs (hits).</p>
+                    <ChipHandlingNotes />
+                  </div>
+                } 
+              />
             </div>
             <p className={`text-2xl font-black ${netImpact >= 0 ? 'text-[#00ff87]' : 'text-[#e90052]'}`}>
               {netImpact > 0 ? '+' : ''}{netImpact}
@@ -84,7 +104,22 @@ export function TransferCard({ summary }: TransferCardProps) {
           <div className="bg-white/5 rounded-2xl p-6 border border-white/5 text-center flex flex-col items-center">
             <div className="flex items-center gap-1 mb-1 justify-center">
               <p className="text-[9px] font-bold text-white/30 tracking-widest uppercase">Avg. Impact</p>
-              <InfoTooltip content="Total net points gained per transfer compared to the player sold, averaged across all moves. This is the CUMULATIVE profit over the entire time you held the player, not a weekly average." />
+              <InfoTooltip 
+                maxWidth="max-w-[280px]"
+                content={
+                  <div className="space-y-2">
+                    <p className="font-semibold text-white">Average Points Per Transfer</p>
+                    <p>Total net points gained per transfer compared to the player sold, averaged across all moves.</p>
+                    <div className="pt-2 border-t border-white/20 space-y-1">
+                      <p className="text-white/80 font-medium">Key Note:</p>
+                      <ul className="space-y-1 pl-3">
+                        <li className="text-white/70">• <span className="text-white/90">Cumulative profit</span> over entire ownership period (not per week)</li>
+                      </ul>
+                    </div>
+                    <ChipHandlingNotes />
+                  </div>
+                } 
+              />
             </div>
             <p className="text-2xl font-black text-[#00ff87]">
               {(netImpact / Math.max(1, summary.totalTransfers)).toFixed(1)}
@@ -366,7 +401,15 @@ export function TransferCard({ summary }: TransferCardProps) {
                         <div className="bg-white/5 p-4 rounded-[24px] border border-white/5 text-center flex flex-col justify-center min-w-[100px]">
                           <div className="flex items-center gap-1 mb-1 justify-center">
                             <p className="text-[9px] font-black text-white/30 uppercase tracking-widest">Win Rate</p>
-                            <InfoTooltip content="Percentage of gameweeks where your new player outscored the one you sold." />
+                            <InfoTooltip 
+                              maxWidth="max-w-[240px]"
+                              content={
+                                <div className="space-y-2">
+                                  <p className="font-semibold text-white">Transfer Win Rate</p>
+                                  <p>Percentage of gameweeks where your new player outscored the one you sold.</p>
+                                </div>
+                              } 
+                            />
                           </div>
                           <p className={`text-2xl font-black ${(activeTransfer.winRate ?? dominanceRate) >= 50 ? 'text-[#37ffef]' : 'text-[#ff6b9d]'}`}>
                             {activeTransfer.winRate ?? dominanceRate}<span className="text-lg ml-0.5">%</span>
@@ -375,7 +418,18 @@ export function TransferCard({ summary }: TransferCardProps) {
                         <div className="bg-white/5 p-4 rounded-[24px] border border-white/5 text-center flex flex-col justify-center min-w-[100px]">
                           <div className="flex items-center gap-1 mb-1 justify-center">
                             <p className="text-[9px] font-black text-white/30 uppercase tracking-widest">PPG Diff</p>
-                            <InfoTooltip content="Points Per Gameweek differential. How many more points your new player averaged each week vs the one you sold." />
+                            <InfoTooltip 
+                              maxWidth="max-w-[260px]"
+                              content={
+                                <div className="space-y-2">
+                                  <p className="font-semibold text-white">Points Per Game Differential</p>
+                                  <p>How many more points per gameweek your new player averaged vs the one you sold.</p>
+                                  <div className="pt-2 border-t border-white/20">
+                                    <p className="text-white/70 text-xs">Calculated over the ownership period only.</p>
+                                  </div>
+                                </div>
+                              } 
+                            />
                           </div>
                           <p className={`text-2xl font-black ${(activeTransfer.ppgDifferential ?? (activeTransfer.pointsGained / Math.max(1, activeTransfer.gameweeksHeld))) >= 0 ? 'text-[#37ffef]' : 'text-[#ff6b9d]'}`}>
                             {(activeTransfer.ppgDifferential ?? (activeTransfer.pointsGained / Math.max(1, activeTransfer.gameweeksHeld))).toFixed(1)}
@@ -384,7 +438,18 @@ export function TransferCard({ summary }: TransferCardProps) {
                         <div className="bg-white/5 p-4 rounded-[24px] border border-white/5 text-center flex flex-col justify-center min-w-[100px]">
                           <div className="flex items-center gap-1 mb-1 justify-center">
                             <p className="text-[9px] font-black text-white/30 uppercase tracking-widest">Net Gain</p>
-                            <InfoTooltip content="Total points gained minus any hit cost. The true ROI of this transfer." />
+                            <InfoTooltip 
+                              maxWidth="max-w-[240px]"
+                              content={
+                                <div className="space-y-2">
+                                  <p className="font-semibold text-white">Net Gain After Hit</p>
+                                  <p>Total points gained minus any hit cost incurred.</p>
+                                  <div className="pt-2 border-t border-white/20">
+                                    <p className="text-white/70 text-xs">The true ROI of this transfer decision.</p>
+                                  </div>
+                                </div>
+                              } 
+                            />
                           </div>
                           <p className={`text-2xl font-black ${(activeTransfer.netGainAfterHit ?? activeTransfer.pointsGained) >= 0 ? 'text-[#37ffef]' : 'text-[#ff6b9d]'}`}>
                             {(activeTransfer.netGainAfterHit ?? activeTransfer.pointsGained) > 0 ? '+' : ''}{activeTransfer.netGainAfterHit ?? activeTransfer.pointsGained}
@@ -393,7 +458,15 @@ export function TransferCard({ summary }: TransferCardProps) {
                         <div className="bg-white/5 p-4 rounded-[24px] border border-white/5 text-center flex flex-col justify-center min-w-[100px]">
                           <div className="flex items-center gap-1 mb-1 justify-center">
                             <p className="text-[9px] font-black text-white/30 uppercase tracking-widest">Best Run</p>
-                            <InfoTooltip content="Longest streak of consecutive weeks where your new player outscored the old one." />
+                            <InfoTooltip 
+                              maxWidth="max-w-[260px]"
+                              content={
+                                <div className="space-y-2">
+                                  <p className="font-semibold text-white">Best Winning Streak</p>
+                                  <p>Longest consecutive run of gameweeks where your new player outscored the one you sold.</p>
+                                </div>
+                              } 
+                            />
                           </div>
                           <p className="text-2xl font-black text-white">
                             {activeTransfer.bestStreak ?? 0}<span className="text-lg ml-0.5 text-white/50">wks</span>

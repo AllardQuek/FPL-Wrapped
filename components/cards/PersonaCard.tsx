@@ -7,6 +7,7 @@ import { PersonaAvatar } from './persona/PersonaAvatar';
 import { PersonaIdentity } from './persona/PersonaIdentity';
 import { PersonalitySpectrum } from './summary/PersonalitySpectrum';
 import { TraitBadges } from './summary/TraitBadges';
+import { SharedImageFooter } from '../ui/wrapped/SharedImageFooter';
 
 interface PersonaCardProps {
     summary: SeasonSummary;
@@ -117,16 +118,17 @@ export function PersonaCard({ summary }: PersonaCardProps) {
     ];
 
     return (
-        <div className="min-h-screen flex flex-col items-center justify-center p-4 relative">
+        <div className="min-h-screen flex flex-col items-center p-4 relative">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.05),transparent_50%)] pointer-events-none" />
             
-            <div className="max-w-lg w-full animate-fade-in text-center mb-4 relative z-10">
-                <p className="text-white/40 text-[10px] tracking-[0.3em] uppercase">
-                    Your Manager Persona
-                </p>
-            </div>
+            <div className="flex-1 flex flex-col justify-center w-full max-w-lg">
+                <div className="animate-fade-in text-center mb-4 relative z-10">
+                    <p className="text-white/40 text-[10px] tracking-[0.3em] uppercase">
+                        Your Manager Persona
+                    </p>
+                </div>
 
-            <div className="max-w-lg w-full relative group">
+                <div className="relative group">
                 {/* Main Card */}
                 <div 
                     className="bg-white rounded-[2.5rem] p-6 md:p-8 text-black shadow-2xl relative z-10 overflow-hidden border-2"
@@ -190,6 +192,8 @@ export function PersonaCard({ summary }: PersonaCardProps) {
                     style={{ backgroundColor: persona.primaryColor }}
                 ></div>
             </div>
+            </div>
+            <SharedImageFooter />
         </div>
     );
 }

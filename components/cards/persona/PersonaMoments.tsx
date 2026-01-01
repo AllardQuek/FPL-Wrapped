@@ -29,10 +29,10 @@ export function PersonaMoments({ moments, primaryColor }: PersonaMomentsProps) {
                                 className="w-10 h-10 text-xl rounded-full flex items-center justify-center shrink-0"
                                 style={{ backgroundColor: `${primaryColor}10` }}
                             >
-                                {moment.includes('benched') ? '😱' : 
-                                 moment.includes('captained') && moment.includes('but') ? '😭' :
-                                 moment.includes('captained') ? '🎯' :
-                                 moment.includes('signed') || moment.includes('played') ? '⭐' : '📈'}
+                                {moment.toLowerCase().includes('benched') ? '😱' : 
+                                 moment.toLowerCase().includes('but') ? '😭' :
+                                 moment.toLowerCase().includes('captained') ? '🎯' :
+                                 moment.toLowerCase().includes('signed') || moment.toLowerCase().includes('played') ? '⭐' : '📈'}
                             </div>
                             <p className="text-base text-black/80 leading-relaxed font-medium text-left pt-0.5">
                                 {moment}

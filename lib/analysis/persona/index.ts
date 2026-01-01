@@ -149,7 +149,8 @@ export function calculateManagerPersona(
     worstBench,
     bestCaptain,
     worstCaptain,
-    bestChip
+    bestChip,
+    worstTransfer
   );
 }
 
@@ -249,7 +250,8 @@ function buildPersonaResult(
   worstBench?: BenchAnalysis | null,
   bestCaptain?: CaptaincyAnalysis | null,
   worstCaptain?: CaptaincyAnalysis | null,
-  bestChip?: ChipAnalysis
+  bestChip?: ChipAnalysis,
+  worstTransfer?: TransferAnalysis | null
 ): ManagerPersona {
   const personaData = PERSONA_MAP[selectedKey];
 
@@ -263,7 +265,8 @@ function buildPersonaResult(
     worstBench,
     bestCaptain,
     worstCaptain,
-    bestChip
+    bestChip,
+    worstTransfer
   );
 
   // Calculate manager's actual spectrum scores
@@ -351,32 +354,47 @@ function generateMemorableMoments(
   worstBench?: BenchAnalysis | null,
   bestCaptain?: CaptaincyAnalysis | null,
   worstCaptain?: CaptaincyAnalysis | null,
-  bestChip?: ChipAnalysis
+  bestChip?: ChipAnalysis,
+  worstTransfer?: TransferAnalysis | null
 ): string[] {
-  const moments: string[] = [];
-
-  if (bestTransfer && bestTransfer.pointsGained > 10) {
-    moments.push(
-      `GW${bestTransfer.ownedGWRange.start}: Signed ${bestTransfer.playerIn.web_name} and gained ${bestTransfer.pointsGained} points`
-    );
+  interface Moment {
+    text: string;
+    isBad: boolean;
+    score: number;
   }
+  
+  const potentialMoments: Moment[] = [];
 
   if (worstBench && worstBench.missedPoints > 15) {
-    moments.push(
-      `GW${worstBench.gameweek}: Benched ${worstBench.bestBenchPick?.player.web_name} who scored ${worstBench.bestBenchPick?.points} points`
-    );
-  }
-
-  if (bestCaptain && bestCaptain.captainPoints > 20) {
-    moments.push(
-      `GW${bestCaptain.gameweek}: Captained ${bestCaptain.captainName} and he hauled ${bestCaptain.captainPoints} points`
-    );
+    potentialMoments.push({
+      text: `GW${worstBench.gameweek}: Benched ${worstBench.bestBenchPick?.player.web_name} who scored ${worstBench.bestBenchPick?.points} points`,
+      isBad: true,
+      score: worstBench.missedPoints
+    });
   }
 
   if (worstCaptain && worstCaptain.pointsLeftOnTable > 15) {
-    moments.push(
-      `GW${worstCaptain.gameweek}: Captained ${worstCaptain.captainName} (${worstCaptain.captainPoints}pts) but ${worstCaptain.bestPickName} had ${worstCaptain.bestPickPoints} points`
-    );
+    potentialMoments.push({
+      text: `GW${worstCaptain.gameweek}: Captained ${worstCaptain.captainName} (${worstCaptain.captainPoints}pts) but ${worstCaptain.bestPickName} had ${worstCaptain.bestPickPoints} points`,
+      isBad: true,
+      score: worstCaptain.pointsLeftOnTable
+    });
+  }
+
+  if (worstTransfer && worstTransfer.pointsGained < -10) {
+    potentialMoments.push({
+      text: `GW${worstTransfer.ownedGWRange.start}: Signed ${worstTransfer.playerIn.web_name} but lost ${Math.abs(worstTransfer.pointsGained)} points vs ${worstTransfer.playerOut.web_name}`,
+      isBad: true,
+      score: Math.abs(worstTransfer.pointsGained)
+    });
+  }
+
+  if (bestCaptain && bestCaptain.captainPoints > 20) {
+    potentialMoments.push({
+      text: `GW${bestCaptain.gameweek}: Captained ${bestCaptain.captainName} and he hauled ${bestCaptain.captainPoints} points`,
+      isBad: false,
+      score: bestCaptain.captainPoints
+    });
   }
 
   if (bestChip && bestChip.used && bestChip.pointsGained > 15) {
@@ -386,10 +404,28 @@ function generateMemorableMoments(
       freehit: 'Free Hit',
       wildcard: 'Wildcard',
     };
-    moments.push(
-      `GW${bestChip.event}: Played ${chipNames[bestChip.name]} and gained ${bestChip.pointsGained} points`
-    );
+    potentialMoments.push({
+      text: `GW${bestChip.event}: Played ${chipNames[bestChip.name]} and gained ${bestChip.pointsGained} points`,
+      isBad: false,
+      score: bestChip.pointsGained
+    });
   }
 
-  return moments;
+  if (bestTransfer && bestTransfer.pointsGained > 10) {
+    potentialMoments.push({
+      text: `GW${bestTransfer.ownedGWRange.start}: Signed ${bestTransfer.playerIn.web_name} and gained ${bestTransfer.pointsGained} points`,
+      isBad: false,
+      score: bestTransfer.pointsGained
+    });
+  }
+
+  return potentialMoments
+    .sort((a, b) => {
+      // Bad events first
+      if (a.isBad && !b.isBad) return -1;
+      if (!a.isBad && b.isBad) return 1;
+      // Then by score descending
+      return b.score - a.score;
+    })
+    .map(m => m.text);
 }

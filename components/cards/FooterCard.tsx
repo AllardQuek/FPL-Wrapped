@@ -2,13 +2,14 @@
 
 import { getCurrentFPLSeason } from '@/lib/season';
 import Link from 'next/link';
+import { SharedImageFooter } from '../ui/wrapped/SharedImageFooter';
 
 export function FooterCard() {
   const currentSeason = getCurrentFPLSeason();
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-8">
-      <div className="max-w-2xl w-full">
+    <div className="min-h-screen flex flex-col items-center p-8">
+      <div className="flex-1 flex flex-col justify-center max-w-2xl w-full">
         {/* Header */}
         {/* <div className="text-center mb-8">
           <h2 className="text-3xl font-bold tracking-tight text-white mb-2">THANKS FOR VISITING</h2>
@@ -91,6 +92,7 @@ export function FooterCard() {
           </p>
         </div>
       </div>
+      <SharedImageFooter />
     </div>
   );
 }

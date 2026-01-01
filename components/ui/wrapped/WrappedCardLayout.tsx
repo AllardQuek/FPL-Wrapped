@@ -1,6 +1,7 @@
 'use client';
 
 import { ReactNode } from 'react';
+import { SharedImageFooter } from './SharedImageFooter';
 
 interface WrappedCardLayoutProps {
   children: ReactNode;
@@ -18,8 +19,8 @@ export function WrappedCardLayout({
   centerContent = false
 }: WrappedCardLayoutProps) {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-8">
-      <div className={`max-w-lg w-full ${centerContent ? 'text-center' : ''} ${className}`}>
+    <div className="min-h-screen flex flex-col items-center p-8">
+      <div className={`flex-1 flex flex-col justify-center w-full max-w-lg ${centerContent ? 'text-center' : ''} ${className}`}>
         <p className="text-white/40 text-[10px] tracking-[0.3em] uppercase mb-8 text-center">
           Section {sectionNumber}
         </p>
@@ -32,6 +33,8 @@ export function WrappedCardLayout({
 
         {children}
       </div>
+
+      <SharedImageFooter />
     </div>
   );
 }

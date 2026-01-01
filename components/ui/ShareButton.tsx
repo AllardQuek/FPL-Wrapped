@@ -100,7 +100,7 @@ export function ShareButton() {
             if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
                 await navigator.share({
                     title: 'My FPL Wrapped',
-                    text: 'Check out my FPL Season Summary!',
+                    text: 'Check out my FPL Season Summary! See yours at https://fpl-wrapped-season.vercel.app/',
                     files: [file],
                 });
             } else {

@@ -4,6 +4,7 @@ import { SeasonSummary } from '@/lib/types';
 import { getCurrentFPLSeason } from '@/lib/season';
 import Image from 'next/image';
 import { useState } from 'react';
+import { SharedImageFooter } from '../ui/wrapped/SharedImageFooter';
 
 interface WelcomeCardProps {
   summary: SeasonSummary;
@@ -80,11 +81,11 @@ export function WelcomeCard({ summary }: WelcomeCardProps) {
   const { persona } = summary;
   
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-8 overflow-hidden">
+    <div className="min-h-screen flex flex-col items-center p-8 overflow-hidden">
       {/* Background Accent */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[500px] bg-[#00ff87]/5 blur-[120px] rounded-full -z-10"></div>
 
-      <div className="text-center animate-fade-in">
+      <div className="flex-1 flex flex-col justify-center text-center animate-fade-in">
         <p className="text-white/40 text-[10px] tracking-[0.5em] uppercase mb-12">Premier League Season Review</p>
 
         <div className="relative inline-block mb-12">
@@ -126,6 +127,7 @@ export function WelcomeCard({ summary }: WelcomeCardProps) {
           </div>
         </div>
       </div>
+      <SharedImageFooter />
     </div>
   );
 }

@@ -7,6 +7,7 @@ import { DecisionSpotlightHeader } from './transfers/DecisionSpotlightHeader';
 import { EfficiencyReport } from './transfers/EfficiencyReport';
 import { TransferChart } from './transfers/TransferChart';
 import { WhatIfSimulator } from './transfers/WhatIfSimulator';
+import { SharedImageFooter } from '../ui/wrapped/SharedImageFooter';
 
 interface TransferCardProps {
   summary: SeasonSummary;
@@ -59,8 +60,8 @@ export function TransferCard({ summary }: TransferCardProps) {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-8">
-      <div className="max-w-4xl w-full">
+    <div className="min-h-screen flex flex-col items-center p-8">
+      <div className="flex-1 flex flex-col justify-center max-w-4xl w-full">
         <p className="text-white/40 text-[10px] tracking-[0.3em] uppercase mb-4 text-center">Section 02: Transfer Strategy</p>
         <h2 className="text-4xl font-bold tracking-tight text-white mb-8 text-center uppercase italic">Transfers</h2>
 
@@ -137,6 +138,7 @@ export function TransferCard({ summary }: TransferCardProps) {
           </div>
         )}
       </div>
+      <SharedImageFooter />
     </div>
   );
 }

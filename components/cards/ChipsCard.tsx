@@ -3,6 +3,7 @@
 import { SeasonSummary } from '@/lib/types';
 import { PersonaInsight } from './chips/PersonaInsight';
 import { ChipCardItem } from './chips/ChipCardItem';
+import { SharedImageFooter } from '../ui/wrapped/SharedImageFooter';
 
 interface ChipsCardProps {
     summary: SeasonSummary;
@@ -20,8 +21,8 @@ export function ChipsCard({ summary }: ChipsCardProps) {
     });
 
     return (
-        <div className="min-h-screen flex flex-col items-center justify-center p-8">
-            <div className="max-w-4xl w-full">
+        <div className="min-h-screen flex flex-col items-center p-8">
+            <div className="flex-1 flex flex-col justify-center max-w-4xl w-full">
                 <p className="text-white/40 text-[10px] tracking-[0.3em] uppercase mb-4 text-center">Section 03: Power Plays</p>
                 <h2 className="text-4xl font-bold tracking-tight text-white mb-12 text-center uppercase italic">Chip Strategy</h2>
 
@@ -49,6 +50,7 @@ export function ChipsCard({ summary }: ChipsCardProps) {
                     </div>
                 </div>
             </div>
+            <SharedImageFooter />
         </div>
     );
 }

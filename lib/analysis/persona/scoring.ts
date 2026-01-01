@@ -181,6 +181,47 @@ export function applyBehavioralBoosts(
   if (signals.constantTinkerer && metrics.efficiency > 0.45) {
     scores['REDKNAPP'] = (scores['REDKNAPP'] || 0) * 1.8;
   }
+
+  // Squad value management patterns
+  // VALUE BUILDING GENIUS - smart business over time
+  if (signals.valueBuildingGenius) {
+    scores['AMORIM'] = (scores['AMORIM'] || 0) * 2.2;      // Shrewd long-term builder
+    scores['WENGER'] = (scores['WENGER'] || 0) * 2.0;      // Finds gems, builds value
+    scores['MOURINHO'] = (scores['MOURINHO'] || 0) * 1.8;  // Smart budget management
+    scores['MARESCA'] = (scores['MARESCA'] || 0) * 1.6;    // Youth talent scouting
+  }
+
+  // BURNING VALUE - aggressive spending or poor business
+  if (signals.burningValue) {
+    scores['REDKNAPP'] = (scores['REDKNAPP'] || 0) * 2.0;   // Loses value on deals
+    scores['TENHAG'] = (scores['TENHAG'] || 0) * 1.9;       // Constant rebuilding costs
+    scores['POSTECOGLOU'] = (scores['POSTECOGLOU'] || 0) * 1.7; // All-in mentality
+  }
+
+  // BANK HOARDER - cautious, planning mode
+  if (signals.bankHoarder) {
+    scores['EMERY'] = (scores['EMERY'] || 0) * 2.1;         // Methodical planner
+    scores['ANCELOTTI'] = (scores['ANCELOTTI'] || 0) * 1.8; // Patient conductor
+    scores['ARTETA'] = (scores['ARTETA'] || 0) * 1.6;       // Process-driven
+  }
+
+  // FULLY INVESTED - maximizing value on pitch
+  if (signals.fullyInvested) {
+    scores['SLOT'] = (scores['SLOT'] || 0) * 1.9;           // Optimizer mindset
+    scores['WENGER'] = (scores['WENGER'] || 0) * 1.7;       // Efficiency focus
+    scores['MARESCA'] = (scores['MARESCA'] || 0) * 1.6;     // Squad depth utilization
+  }
+
+  // Combined signals for extra flavor
+  if (signals.valueBuildingGenius && signals.fullyInvested && metrics.efficiency > 0.6) {
+    scores['WENGER'] = (scores['WENGER'] || 0) * 2.5;       // Perfect professor profile
+    scores['SLOT'] = (scores['SLOT'] || 0) * 2.2;           // Elite optimizer
+  }
+
+  if (signals.burningValue && signals.fullyInvested && metrics.chaos > 0.3) {
+    scores['REDKNAPP'] = (scores['REDKNAPP'] || 0) * 2.3;   // Classic wheeler-dealer
+    scores['TENHAG'] = (scores['TENHAG'] || 0) * 2.0;       // Burning cash on rebuilds
+  }
 }
 
 /**

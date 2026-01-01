@@ -229,15 +229,73 @@ export function generateSeasonSummary(data: ManagerData): SeasonSummary {
         playerCount: positionPoints.get(position)?.playerIds.size || 0
     }));
 
+    // Get current squad value from latest gameweek
+    const currentSquadValue = history.current[history.current.length - 1]?.value ?? 1000;
+    const hitsTaken = totalTransfersCost / 4;
+
+    // Calculate squad value trend
+    const valueProgression = history.current.map(gw => ({
+        event: gw.event,
+        value: gw.value
+    }));
+    const firstValue = valueProgression[0]?.value ?? 1000;
+    const lastValue = currentSquadValue;
+    const squadValueChange = lastValue - firstValue;
+    const avgGrowthPerGW = valueProgression.length > 1 
+        ? squadValueChange / valueProgression.length 
+        : 0;
+    
+    let squadValueTrend: 'rising' | 'stable' | 'falling';
+    if (avgGrowthPerGW >= 1.5) {
+        squadValueTrend = 'rising';
+    } else if (avgGrowthPerGW <= -0.5) {
+        squadValueTrend = 'falling';
+    } else {
+        squadValueTrend = 'stable';
+    }
+
+    // Determine squad value archetype
+    let squadValueArchetype: 'value-builder' | 'bank-hoarder' | 'fully-invested' | 'value-burner' | null = null;
+    
+    if (avgGrowthPerGW >= 2.0) {
+        squadValueArchetype = 'value-builder'; // Consistent value growth
+    } else if (avgGrowthPerGW <= -1.0) {
+        squadValueArchetype = 'value-burner'; // Losing value through churn
+    } else if (currentSquadValue > 1040) {
+        // High squad value but not rapidly growing - likely holding bank
+        squadValueArchetype = 'bank-hoarder';
+    } else if (currentSquadValue >= 990 && currentSquadValue <= 1010 && totalTransfers > 25) {
+        // Normal value range with high activity - fully invested strategy
+        squadValueArchetype = 'fully-invested';
+    }
+
+    // Calculate overall decision grade based on component grades
+    const gradeToScore = { 'A': 4, 'B': 3, 'C': 2, 'D': 1, 'F': 0 };
+    const scoreToGrade = { 4: 'A', 3: 'B', 2: 'C', 1: 'D', 0: 'F' } as const;
+    
+    const avgScore = Math.round(
+        (gradeToScore[transferGrade] + gradeToScore[captaincyGrade] + gradeToScore[benchGrade]) / 3
+    );
+    const overallDecisionGrade = scoreToGrade[avgScore as keyof typeof scoreToGrade] || 'C';
+
     return {
         managerId: managerInfo.id,
         managerName: `${managerInfo.player_first_name} ${managerInfo.player_last_name}`,
         teamName: managerInfo.name,
         totalPoints: history.current[history.current.length - 1]?.total_points ?? 0,
         overallRank: history.current[history.current.length - 1]?.overall_rank ?? 0,
+        currentSquadValue,
+        squadValueTrend,
+        squadValueChange,
+        valueProgression,
+        squadValueArchetype,
+        hitsTaken,
         totalTransfers,
         totalTransfersCost,
         netTransferPoints,
+        transferEfficiency, // Add transfer efficiency metric
+        captaincyEfficiency, // Add captaincy efficiency metric
+        avgPointsOnBench: avgBenchPerWeek, // Add avg bench points
         bestTransfer,
         worstTransfer,
         transferGrade,
@@ -261,7 +319,7 @@ export function generateSeasonSummary(data: ManagerData): SeasonSummary {
         captaincyAnalyses,
         benchAnalyses,
         templateOverlap,
-        overallDecisionGrade: 'A',
+        overallDecisionGrade,
         bestGameweek: history.current.reduce((best, gw) => gw.points > best.points ? { event: gw.event, points: gw.points } : best, { event: 0, points: 0 }),
         worstGameweek: history.current.reduce((worst, gw) => gw.points < worst.points ? { event: gw.event, points: gw.points } : worst, { event: 0, points: 1000 }),
         rankProgression: history.current.map(gw => ({ event: gw.event, rank: gw.overall_rank })),

@@ -87,6 +87,16 @@ export interface BehavioralSignals {
   contrarian: boolean;
   /** Chips used when everyone does */
   templateChipper: boolean;
+
+  // Squad value patterns
+  /** Squad value consistently increasing (smart business) */
+  valueBuildingGenius: boolean;
+  /** Squad value declining (burning value) */
+  burningValue: boolean;
+  /** High average bank balance (>1.5m) */
+  bankHoarder: boolean;
+  /** Low average bank balance (<0.5m, fully invested) */
+  fullyInvested: boolean;
 }
 
 /**

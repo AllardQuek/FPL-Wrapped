@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { getCurrentFPLSeason } from '@/lib/season';
+import { PERSONA_MAP } from '@/lib/analysis/persona/constants';
+import { getPersonaImagePath } from '@/lib/constants/persona-images';
 import Image from 'next/image';
 
 export default function Home() {
@@ -39,36 +41,12 @@ export default function Home() {
     router.push(`/wrapped/${id}`);
   };
 
-  const featuredPersonas = [
-    { 
-      name: "Pep Guardiola", 
-      title: "The Bald Genius", 
-      emoji: "🧠",
-      image: "/images/personas/pep-guardiola-bald-genius.jpg",
-      color: "#6CABDD"
-    },
-    { 
-      name: "Sir Alex Ferguson", 
-      title: "The GOAT", 
-      emoji: "👑",
-      image: "/images/personas/alex-ferguson-goat.jpg",
-      color: "#DA291C"
-    },
-    { 
-      name: "Ruben Amorim", 
-      title: "The Stubborn One", 
-      emoji: "🦁",
-      image: "/images/personas/ruben-amorim-stubborn-one.jpg",
-      color: "#005CAB"
-    },
-    { 
-      name: "Mikel Arteta", 
-      title: "The Process Manager", 
-      emoji: "🏗️",
-      image: "/images/personas/mikel-arteta-process-manager.jpg",
-      color: "#EF0107"
-    },
-  ];
+  // Featured personas from constants
+  const featuredPersonaKeys = ['PEP', 'AMORIM', 'ARTETA'] as const;
+  const featuredPersonas = featuredPersonaKeys.map(key => ({
+    ...PERSONA_MAP[key],
+    image: getPersonaImagePath(key),
+  }));
 
   return (
     <main className="min-h-screen flex flex-col items-center justify-center px-4 relative overflow-x-hidden py-10 md:py-16">
@@ -137,7 +115,7 @@ export default function Home() {
         </div>
 
         <p className="text-center text-white/50 text-[12px] font-bold uppercase tracking-[0.4em] mb-4 md:mb-6">
-          Match with 16 legendary managers
+          Match with 16 top managers including
         </p>
 
         {/* Persona Quick Row - Improved Readability */}
@@ -156,20 +134,20 @@ export default function Home() {
                 </div>
                 <div>
                   <p className="text-[10px] font-black tracking-widest text-[#00ff87] uppercase leading-none mb-1">{p.title}</p>
-                  <h3 className="text-xs md:text-sm font-black text-white uppercase">{p.name.split(' ')[0]}</h3>
+                  <h3 className="text-xs md:text-sm font-black text-white uppercase">{p.name.split(' ').slice(1).join(' ')}</h3>
                 </div>
               </div>
             ))}
           </div>
-          
+          <p className="text-center text-white/30 text-[10px] font-medium uppercase tracking-wider mt-5">and more</p>
         </div>
 
         {/* Value Props */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12 w-full max-w-4xl px-4 animate-slide-in delay-600 opacity-0 mb-12 md:mb-16" style={{ animationFillMode: 'forwards' }}>
           {[
-            { title: "Bench Regret", desc: "Every point you left in the dugout. Every wrong team selection." },
-            { title: "Transfer Impact", desc: "Net points from every move. See which deals actually paid off." },
-            { title: "What-If Engine", desc: "Simulate any transfer. See what could have been." }
+            { title: "Behavioral Signals", desc: "Discover if you're a panic buyer, deadline scrambler, or knee-jerker." },
+            { title: "Template Overlap", desc: "See how contrarian or template you are compared to millions of managers." },
+            { title: "Transfer Timing", desc: "Early planner or late-night reactor? Your decision patterns revealed." }
           ].map((feat, i) => (
             <div key={i} className="text-center md:text-left flex flex-col md:block items-center">
               <h4 className="text-white text-xs font-black uppercase tracking-widest mb-2 italic">{feat.title}</h4>

@@ -105,6 +105,17 @@ export const SIGNAL_THRESHOLDS = {
   CHIP_CONTRARIAN_THRESHOLD: 0.3,
   /** Template chipper popularity threshold */
   CHIP_TEMPLATE_THRESHOLD: 0.7,
+
+  /** Min squad value growth per GW for value building */
+  VALUE_BUILDING_GROWTH: 2.0,
+  /** Max squad value growth per GW (declining value) */
+  BURNING_VALUE_DECLINE: -1.0,
+  /** High bank balance threshold (in 10s) */
+  BANK_HOARDER_THRESHOLD: 15,
+  /** Low bank balance threshold (in 10s) - fully invested */
+  FULLY_INVESTED_THRESHOLD: 5,
+  /** Min GWs to analyze for bank patterns */
+  MIN_GWS_BANK_ANALYSIS: 10,
 } as const;
 
 // ============================================================================

@@ -654,6 +654,13 @@ export interface SeasonSummary {
   // Overall
   overallDecisionGrade: 'A' | 'B' | 'C' | 'D' | 'F';
 
+  // Squad Value
+  currentSquadValue: number;
+  squadValueTrend: 'rising' | 'stable' | 'falling';
+  squadValueChange: number;
+  valueProgression: { event: number; value: number }[];
+  squadValueArchetype?: 'value-builder' | 'bank-hoarder' | 'fully-invested' | 'value-burner' | null;
+
   // Persona
   persona: ManagerPersona;
   templateOverlap: number;

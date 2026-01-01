@@ -40,6 +40,7 @@ export function detectBehavioralSignals(
   detectPerformancePatterns(signals, finishedGWs);
   detectTransferTimingPatterns(signals, transferTiming);
   detectChipPersonalityPatterns(signals, chipPersonality);
+  detectSquadValuePatterns(signals, finishedGWs, data);
 
   return signals;
 }
@@ -83,6 +84,12 @@ function createDefaultSignals(): BehavioralSignals {
     strategicChipper: false,
     contrarian: false,
     templateChipper: false,
+
+    // Squad value patterns
+    valueBuildingGenius: false,
+    burningValue: false,
+    bankHoarder: false,
+    fullyInvested: false,
   };
 }
 
@@ -322,6 +329,75 @@ function detectChipPersonalityPatterns(
   signals.strategicChipper = chipPersonality.isStrategic;
   signals.contrarian = chipPersonality.popularityScore < T.CHIP_CONTRARIAN_THRESHOLD;
   signals.templateChipper = chipPersonality.popularityScore > T.CHIP_TEMPLATE_THRESHOLD;
+}
+
+/**
+ * Detect squad value management patterns
+ * Analyzes value trends and bank balance behavior
+ */
+function detectSquadValuePatterns(
+  signals: BehavioralSignals,
+  finishedGWs: GWHistory[],
+  data: ManagerData
+): void {
+  const T = SIGNAL_THRESHOLDS;
+  
+  if (finishedGWs.length < T.MIN_GWS_BANK_ANALYSIS) return;
+
+  // 1. SQUAD VALUE TREND ANALYSIS
+  const valueProgression = finishedGWs.map(gw => gw.value);
+  const firstValue = valueProgression[0];
+  const lastValue = valueProgression[valueProgression.length - 1];
+  const avgGrowthPerGW = (lastValue - firstValue) / valueProgression.length;
+
+  signals.valueBuildingGenius = avgGrowthPerGW >= T.VALUE_BUILDING_GROWTH;
+  signals.burningValue = avgGrowthPerGW <= T.BURNING_VALUE_DECLINE;
+
+  // 2. BANK BALANCE ANALYSIS
+  // Calculate bank by subtracting all player current values from team value
+  // Note: This requires bootstrap data which should be available via data.bootstrap
+  try {
+    const playerValues = new Map<number, number>();
+    
+    // Build current player value map from bootstrap
+    if (data.bootstrap?.elements) {
+      data.bootstrap.elements.forEach((player: any) => {
+        playerValues.set(player.id, player.now_cost);
+      });
+    }
+
+    // Calculate bank balance for each GW where we have picks data
+    const bankBalances: number[] = [];
+    
+    if (data.picks) {
+      data.picks.forEach((gwPicks: any) => {
+        if (gwPicks.picks && gwPicks.entry_history) {
+          const teamValue = gwPicks.entry_history.value; // Total team value including bank
+          
+          // Sum current player values
+          let squadValue = 0;
+          gwPicks.picks.forEach((pick: any) => {
+            squadValue += playerValues.get(pick.element) || 0;
+          });
+          
+          // Bank = team value - squad value (both in units of 10)
+          const bank = teamValue - squadValue;
+          bankBalances.push(bank);
+        }
+      });
+    }
+
+    // Analyze bank patterns if we have data
+    if (bankBalances.length >= T.MIN_GWS_BANK_ANALYSIS) {
+      const avgBank = bankBalances.reduce((sum, b) => sum + b, 0) / bankBalances.length;
+      
+      signals.bankHoarder = avgBank >= T.BANK_HOARDER_THRESHOLD;
+      signals.fullyInvested = avgBank <= T.FULLY_INVESTED_THRESHOLD;
+    }
+  } catch (error) {
+    // If bank calculation fails, skip those signals
+    // They'll remain false from createDefaultSignals
+  }
 }
 
 /**

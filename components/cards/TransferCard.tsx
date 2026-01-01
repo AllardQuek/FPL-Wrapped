@@ -28,6 +28,37 @@ const ChipHandlingNotes = () => (
 
 export function TransferCard({ summary }: TransferCardProps) {
   const netImpact = summary.netTransferPoints - summary.totalTransfersCost;
+  
+  // Transfer philosophy insight
+  const getTransferPhilosophyInsight = () => {
+    const hitsCount = summary.totalTransfersCost / 4; // Each hit costs 4 points
+    const avgImpact = netImpact / Math.max(1, summary.totalTransfers);
+    
+    if (summary.totalTransfers < 15) {
+      return `Conservative approach. You trust your squad and only move when absolutely necessary.`;
+    } else if (summary.totalTransfers > 40) {
+      if (netImpact > 50) {
+        return `High-octane strategy paying off. Aggressive, calculated churn that's delivering results.`;
+      } else {
+        return `Reactive management. Chasing points through constant changes. Sometimes it works, sometimes it doesn't.`;
+      }
+    } else if (hitsCount > 8) {
+      if (netImpact > 0) {
+        return `Calculated risk-taker. Success requires bold moves, yours mostly paid off.`;
+      } else {
+        return `Overactive tinkering. The hits are stacking up. Sometimes patience beats panic.`;
+      }
+    } else if (avgImpact > 2) {
+      return `Surgical precision. Well-timed, high-impact moves that maximize every transfer.`;
+    } else if (netImpact > 20) {
+      return `Solid trading instincts. You've built points through smart, steady moves throughout the season.`;
+    } else if (netImpact > 0) {
+      return `Functional approach. You're doing enough, not spectacular, but effective and consistent.`;
+    } else {
+      return `Mistimed moves. Sometimes the market moves against you. It happens to everyone.`;
+    }
+  };
+
   const [activeIdx, setActiveIdx] = useState(0);
   const [isWhatIf, setIsWhatIf] = useState(false);
   const [p1Search, setP1Search] = useState('');
@@ -74,6 +105,23 @@ export function TransferCard({ summary }: TransferCardProps) {
       <div className="max-w-4xl w-full">
         <p className="text-white/40 text-[10px] tracking-[0.3em] uppercase mb-4 text-center">Section 02: Transfer Strategy</p>
         <h2 className="text-4xl font-bold tracking-tight text-white mb-8 text-center uppercase italic">Transfers</h2>
+
+        {/* Transfer Philosophy Insight */}
+        <div className="bg-white/5 rounded-3xl p-6 mb-8 border border-white/10 backdrop-blur-md">
+          <div className="flex items-center gap-4 text-left">
+            <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center text-xl flex-shrink-0 text-black">
+              {summary.totalTransfers < 15 ? '🛡️' : 
+               summary.totalTransfers > 40 ? '⚡' : 
+               netImpact > 20 ? '🎯' : '♟️'}
+            </div>
+            <div>
+              <p className="text-xs text-white/50 uppercase tracking-widest font-bold mb-1">Transfer Philosophy</p>
+              <p className="text-sm text-white font-medium leading-relaxed italic">
+                {getTransferPhilosophyInsight()}
+              </p>
+            </div>
+          </div>
+        </div>
 
         {/* Stats Grid */}
         <div className="grid grid-cols-3 gap-3 mb-10 text-left">

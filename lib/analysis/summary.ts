@@ -9,30 +9,48 @@ import { calculateGrade, getPlayer, getPlayerPointsInGameweek } from './utils';
 import { ELEMENT_TYPE_TO_POSITION, type Position } from '@/lib/constants/positions';
 
 /**
- * Calculate the template overlap percentage of the manager's team
+ * Calculate the template overlap percentage of the manager's team.
+ * 
+ * The "template" is defined as any player with ownership >= 15% (selected_by_percent).
+ * This represents highly-owned players that most managers have. We calculate what 
+ * percentage of the manager's squad (across all finished gameweeks) consists of 
+ * these template picks.
+ * 
+ * @returns Percentage (0-100) representing template overlap
  */
 export function calculateTemplateOverlap(data: ManagerData): number {
     const { bootstrap, picksByGameweek, finishedGameweeks } = data;
     if (finishedGameweeks.length === 0) return 0;
 
-    let totalOwnershipSum = 0;
-    let totalPlayersCount = 0;
+    // Template threshold: players with 15%+ ownership are considered "template picks"
+    const TEMPLATE_OWNERSHIP_THRESHOLD = 15.0;
+
+    // Build set of template player IDs (ownership >= 15%)
+    const templatePlayerIds = new Set(
+        bootstrap.elements
+            .filter(p => parseFloat(p.selected_by_percent) >= TEMPLATE_OWNERSHIP_THRESHOLD)
+            .map(p => p.id)
+    );
+    
+    // Count how many of the manager's squad slots are template picks
+    let totalTemplateMatches = 0;
+    let totalSquadSlots = 0;
 
     for (const gw of finishedGameweeks) {
         const picks = picksByGameweek.get(gw);
-        if (!picks) continue;
+        if (!picks || !picks.picks || picks.picks.length === 0) continue;
 
-        const starters = picks.picks.filter((p) => p.position <= 11);
-        for (const pick of starters) {
-            const player = getPlayer(pick.element, bootstrap);
-            if (player) {
-                totalOwnershipSum += parseFloat(player.selected_by_percent);
-                totalPlayersCount++;
+        // Check all 15 squad members
+        totalSquadSlots += picks.picks.length;
+
+        for (const pick of picks.picks) {
+            if (templatePlayerIds.has(pick.element)) {
+                totalTemplateMatches++;
             }
         }
     }
 
-    return totalPlayersCount > 0 ? totalOwnershipSum / totalPlayersCount : 0;
+    return totalSquadSlots > 0 ? (totalTemplateMatches / totalSquadSlots) * 100 : 0;
 }
 
 /**

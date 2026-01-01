@@ -357,25 +357,47 @@ export function TransferCard({ summary }: TransferCardProps) {
                             <>
                               &ldquo;By transferring in <span className="text-white font-bold">{activeTransfer.playerIn.web_name}</span> for <span className="text-white font-bold">{activeTransfer.playerOut.web_name}</span>,
                               you yielded a <span className="text-[#37ffef] font-black not-italic text-2xl">{activeTransfer.pointsGained} point surplus</span>.
-                              <span className="text-white/80 font-bold not-italic"> {activeTransfer.playerIn.web_name} dominated this matchup in {dominanceRate}% of appearances.</span>&rdquo;
+                              <span className="text-white/80 font-bold not-italic"> {activeTransfer.playerIn.web_name} dominated this matchup in {activeTransfer.winRate ?? dominanceRate}% of appearances.</span>&rdquo;
                             </>
                           )}
                         </p>
                       </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="bg-white/5 p-4 rounded-[24px] border border-white/5 text-center flex flex-col justify-center min-w-[120px]">
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        <div className="bg-white/5 p-4 rounded-[24px] border border-white/5 text-center flex flex-col justify-center min-w-[100px]">
                           <div className="flex items-center gap-1 mb-1 justify-center">
-                            <p className="text-[10px] font-black text-white/30 uppercase tracking-widest">Growth</p>
-                            <InfoTooltip content="Percentage increase in total points compared to the player you sold, over the ownership period." />
+                            <p className="text-[9px] font-black text-white/30 uppercase tracking-widest">Win Rate</p>
+                            <InfoTooltip content="Percentage of gameweeks where your new player outscored the one you sold." />
                           </div>
-                          <p className="text-3xl font-black text-[#37ffef]">+{((activeTransfer.pointsGained / Math.max(1, activeTransfer.breakdown?.pointsOut || 1)) * 100).toFixed(0)}<span className="text-xl ml-0.5">%</span></p>
+                          <p className={`text-2xl font-black ${(activeTransfer.winRate ?? dominanceRate) >= 50 ? 'text-[#37ffef]' : 'text-[#ff6b9d]'}`}>
+                            {activeTransfer.winRate ?? dominanceRate}<span className="text-lg ml-0.5">%</span>
+                          </p>
                         </div>
-                        <div className="bg-white/5 p-4 rounded-[24px] border border-white/5 text-center flex flex-col justify-center min-w-[120px]">
+                        <div className="bg-white/5 p-4 rounded-[24px] border border-white/5 text-center flex flex-col justify-center min-w-[100px]">
                           <div className="flex items-center gap-1 mb-1 justify-center">
-                            <p className="text-[10px] font-black text-white/30 uppercase tracking-widest">P/Week</p>
-                            <InfoTooltip content="The weekly 'Efficiency Rate'. This shows how many extra points this specific transfer added to your score every single week it was in your team." />
+                            <p className="text-[9px] font-black text-white/30 uppercase tracking-widest">PPG Diff</p>
+                            <InfoTooltip content="Points Per Gameweek differential. How many more points your new player averaged each week vs the one you sold." />
                           </div>
-                          <p className="text-3xl font-black text-white">{(activeTransfer.pointsGained / Math.max(1, activeTransfer.gameweeksHeld)).toFixed(1)}</p>
+                          <p className={`text-2xl font-black ${(activeTransfer.ppgDifferential ?? (activeTransfer.pointsGained / Math.max(1, activeTransfer.gameweeksHeld))) >= 0 ? 'text-[#37ffef]' : 'text-[#ff6b9d]'}`}>
+                            {(activeTransfer.ppgDifferential ?? (activeTransfer.pointsGained / Math.max(1, activeTransfer.gameweeksHeld))).toFixed(1)}
+                          </p>
+                        </div>
+                        <div className="bg-white/5 p-4 rounded-[24px] border border-white/5 text-center flex flex-col justify-center min-w-[100px]">
+                          <div className="flex items-center gap-1 mb-1 justify-center">
+                            <p className="text-[9px] font-black text-white/30 uppercase tracking-widest">Net Gain</p>
+                            <InfoTooltip content="Total points gained minus any hit cost. The true ROI of this transfer." />
+                          </div>
+                          <p className={`text-2xl font-black ${(activeTransfer.netGainAfterHit ?? activeTransfer.pointsGained) >= 0 ? 'text-[#37ffef]' : 'text-[#ff6b9d]'}`}>
+                            {(activeTransfer.netGainAfterHit ?? activeTransfer.pointsGained) > 0 ? '+' : ''}{activeTransfer.netGainAfterHit ?? activeTransfer.pointsGained}
+                          </p>
+                        </div>
+                        <div className="bg-white/5 p-4 rounded-[24px] border border-white/5 text-center flex flex-col justify-center min-w-[100px]">
+                          <div className="flex items-center gap-1 mb-1 justify-center">
+                            <p className="text-[9px] font-black text-white/30 uppercase tracking-widest">Best Run</p>
+                            <InfoTooltip content="Longest streak of consecutive weeks where your new player outscored the old one." />
+                          </div>
+                          <p className="text-2xl font-black text-white">
+                            {activeTransfer.bestStreak ?? 0}<span className="text-lg ml-0.5 text-white/50">wks</span>
+                          </p>
                         </div>
                       </div>
                     </div>

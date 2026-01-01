@@ -571,6 +571,13 @@ export interface TransferAnalysis {
     gwRange: string;
     pointsHistory: { gw: number; in: number; out: number }[];
   };
+  // Enhanced metrics
+  ppgDifferential: number;      // Points per gameweek differential (normalized)
+  winRate: number;              // % of weeks playerIn outscored playerOut
+  hitCost: number;              // Transfer cost (0 for free, 4 for hit)
+  netGainAfterHit: number;      // pointsGained - hitCost
+  bestStreak: number;           // Longest consecutive weeks playerIn won
+  worstStreak: number;          // Longest consecutive weeks playerOut won
 }
 
 export interface CaptaincyAnalysis {

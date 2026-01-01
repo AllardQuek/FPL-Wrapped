@@ -4,6 +4,63 @@ import { getPlayer, getPlayerPointsInGameweek } from './utils';
 import { calculateHoursBeforeDeadline, getLocalHourOfDay, getTimezoneForRegion } from './timezone';
 
 /**
+ * Calculate enhanced metrics from points history
+ */
+function calculateEnhancedMetrics(
+    pointsHistory: { gw: number; in: number; out: number }[],
+    gameweeksHeld: number,
+    pointsGained: number,
+    hitCost: number
+): {
+    ppgDifferential: number;
+    winRate: number;
+    bestStreak: number;
+    worstStreak: number;
+    netGainAfterHit: number;
+} {
+    if (pointsHistory.length === 0) {
+        return { ppgDifferential: 0, winRate: 0, bestStreak: 0, worstStreak: 0, netGainAfterHit: -hitCost };
+    }
+
+    // PPG differential (normalized for ownership duration)
+    const ppgDifferential = gameweeksHeld > 0 ? pointsGained / gameweeksHeld : 0;
+
+    // Win rate: % of weeks playerIn outscored playerOut
+    const wins = pointsHistory.filter(h => h.in > h.out).length;
+    const winRate = (wins / pointsHistory.length) * 100;
+
+    // Calculate streaks
+    let bestStreak = 0;
+    let worstStreak = 0;
+    let currentWinStreak = 0;
+    let currentLoseStreak = 0;
+
+    for (const week of pointsHistory) {
+        if (week.in > week.out) {
+            currentWinStreak++;
+            currentLoseStreak = 0;
+            bestStreak = Math.max(bestStreak, currentWinStreak);
+        } else if (week.out > week.in) {
+            currentLoseStreak++;
+            currentWinStreak = 0;
+            worstStreak = Math.max(worstStreak, currentLoseStreak);
+        } else {
+            // Draw - reset both streaks
+            currentWinStreak = 0;
+            currentLoseStreak = 0;
+        }
+    }
+
+    return {
+        ppgDifferential: Math.round(ppgDifferential * 10) / 10,
+        winRate: Math.round(winRate),
+        bestStreak,
+        worstStreak,
+        netGainAfterHit: pointsGained - hitCost
+    };
+}
+
+/**
  * Analyze all transfers made by a manager
  */
 export function analyzeTransfers(data: ManagerData): TransferAnalysis[] {
@@ -15,6 +72,20 @@ export function analyzeTransfers(data: ManagerData): TransferAnalysis[] {
     history.chips.forEach(chip => {
         chipsByGW.set(chip.event, chip.name);
     });
+
+    // Build a map of hit costs per gameweek
+    const hitCostByGW = new Map<number, number>();
+    history.current.forEach(gw => {
+        hitCostByGW.set(gw.event, gw.event_transfers_cost);
+    });
+
+    // Count transfers per GW to distribute hit cost
+    const transfersPerGW = new Map<number, number>();
+    for (const transfer of transfers) {
+        const chipUsed = chipsByGW.get(transfer.event);
+        if (chipUsed === 'freehit' || chipUsed === 'wildcard') continue;
+        transfersPerGW.set(transfer.event, (transfersPerGW.get(transfer.event) || 0) + 1);
+    }
 
     const sortedFinishedGWs = [...finishedGameweeks].sort((a, b) => a - b);
 
@@ -35,6 +106,11 @@ export function analyzeTransfers(data: ManagerData): TransferAnalysis[] {
         const playerOut = getPlayer(transfer.element_out, bootstrap);
 
         if (!playerIn || !playerOut) continue;
+
+        // Calculate hit cost for this transfer (distributed among transfers in same GW)
+        const gwHitCost = hitCostByGW.get(transfer.event) || 0;
+        const gwTransferCount = transfersPerGW.get(transfer.event) || 1;
+        const hitCost = gwHitCost / gwTransferCount;
 
         // Calculate points comparison: playerIn vs playerOut
         let pointsIn = 0;
@@ -72,6 +148,10 @@ export function analyzeTransfers(data: ManagerData): TransferAnalysis[] {
         }
 
         const pointsGained = pointsIn - pointsOut;
+        
+        // Calculate enhanced metrics
+        const enhanced = calculateEnhancedMetrics(pointsHistory, gameweeksHeld, pointsGained, hitCost);
+        
         let verdict: TransferAnalysis['verdict'];
         if (pointsGained >= 20) verdict = 'excellent';
         else if (pointsGained >= 5) verdict = 'good';
@@ -92,7 +172,14 @@ export function analyzeTransfers(data: ManagerData): TransferAnalysis[] {
                 pointsOut,
                 gwRange: `GW${transfer.event}-GW${lastGW}`,
                 pointsHistory
-            }
+            },
+            // Enhanced metrics
+            ppgDifferential: enhanced.ppgDifferential,
+            winRate: enhanced.winRate,
+            hitCost,
+            netGainAfterHit: enhanced.netGainAfterHit,
+            bestStreak: enhanced.bestStreak,
+            worstStreak: enhanced.worstStreak
         });
     }
 
@@ -181,6 +268,10 @@ export function analyzeTransfers(data: ManagerData): TransferAnalysis[] {
                 }
 
                 const pointsGained = pointsIn - pointsOut;
+                
+                // Enhanced metrics (wildcards have no hit cost)
+                const enhanced = calculateEnhancedMetrics(pointsHistory, gameweeksHeld, pointsGained, 0);
+                
                 let verdict: TransferAnalysis['verdict'];
                 if (pointsGained >= 20) verdict = 'excellent';
                 else if (pointsGained >= 5) verdict = 'good';
@@ -210,7 +301,14 @@ export function analyzeTransfers(data: ManagerData): TransferAnalysis[] {
                         pointsOut,
                         gwRange: `GW${gw}-GW${lastGW}`,
                         pointsHistory
-                    }
+                    },
+                    // Enhanced metrics
+                    ppgDifferential: enhanced.ppgDifferential,
+                    winRate: enhanced.winRate,
+                    hitCost: 0,
+                    netGainAfterHit: enhanced.netGainAfterHit,
+                    bestStreak: enhanced.bestStreak,
+                    worstStreak: enhanced.worstStreak
                 });
             }
         }

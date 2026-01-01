@@ -179,11 +179,28 @@ export function generateSeasonSummary(data: ManagerData): SeasonSummary {
     const worstTransfer = sortedTransfers[sortedTransfers.length - 1] ?? null;
 
     const transferEfficiency = netTransferPoints - totalTransfersCost;
+    
+    // Calculate actual transfer-gameweek opportunities based on actual transfers
+    // This accounts for when transfers were actually made and how long they were held
+    const actualTransferGWs = transferAnalyses.reduce((sum, t) => sum + t.gameweeksHeld, 0);
+    
+    // If no transfers or no GWs held, use reasonable defaults
+    const effectiveTransferGWs = actualTransferGWs > 0 ? actualTransferGWs : totalTransfers * 10;
+    
+    // Thresholds: points per transfer per gameweek actually held
+    // A: +3.5 pt/transfer/GW (elite - consistently brilliant picks)
+    // B: +2.5 pt/transfer/GW (very good returns)
+    // C: +2.0 pt/transfer/GW (expected baseline - decent edge)
+    // D: +1.0 pt/transfer/GW (below average but acceptable)
+    // F: <1.0 pt/transfer/GW (poor/losing value)
+    //
+    // Example: 20 transfers held for avg 15 GWs = 300 transfer-GWs
+    // A: +1050 pts, B: +750 pts, C: +600 pts, D: +300 pts
     const transferGrade = calculateGrade(transferEfficiency, {
-        a: 30,
-        b: 10,
-        c: -10,
-        d: -30,
+        a: effectiveTransferGWs * 3.5,
+        b: effectiveTransferGWs * 2.5,
+        c: effectiveTransferGWs * 2.0,
+        d: effectiveTransferGWs * 1.0,
     });
 
     // Captaincy stats
@@ -351,6 +368,7 @@ export function generateSeasonSummary(data: ManagerData): SeasonSummary {
         totalTransfersCost,
         netTransferPoints,
         transferEfficiency, // Add transfer efficiency metric
+        actualTransferGWs: effectiveTransferGWs,
         captaincyEfficiency, // Add captaincy efficiency metric
         avgPointsOnBench: avgBenchPerWeek, // Add avg bench points
         bestTransfer,

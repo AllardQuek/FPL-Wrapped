@@ -26,4 +26,5 @@ export interface TransferTiming {
     avgHoursBeforeDeadline: number;
     avgLocalHourOfDay: number;
     lateNightTransfers: number;
+    priceRiseChasers: number;
 }

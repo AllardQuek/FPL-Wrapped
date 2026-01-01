@@ -6,6 +6,7 @@ import { SeasonSummary } from '@/lib/types';
 import { WelcomeCard } from '@/components/cards/WelcomeCard';
 import { OverviewCard } from '@/components/cards/OverviewCard';
 import { TransferCard } from '@/components/cards/TransferCard';
+import { DecisionSpotlightCard } from '@/components/cards/DecisionSpotlightCard';
 import { CaptaincyCard } from '@/components/cards/CaptaincyCard';
 import { BenchCard } from '@/components/cards/BenchCard';
 import { SquadAnalysisCard } from '@/components/cards/SquadAnalysisCard';
@@ -32,7 +33,7 @@ export default function WrappedPage() {
   const isNavigating = useRef(false);
   
   // Section IDs for navigation
-  const sections = ['welcome', 'overview', 'transfers', 'captaincy', 'bench', 'chips', 'squadAnalysis', 'persona', 'summary', 'footer'];
+  const sections = ['welcome', 'overview', 'transfers', 'decisionSpotlight', 'captaincy', 'bench', 'chips', 'squadAnalysis', 'persona', 'summary', 'footer'];
   
   // Navigation handler
   const handleNavigate = useCallback((index: number) => {
@@ -281,33 +282,37 @@ export default function WrappedPage() {
           <TransferCard summary={summary} />
         </section>
 
-        <section id="captaincy" ref={(el) => { sectionRefs.current[3] = el; }}>
+        <section id="decisionSpotlight" ref={(el) => { sectionRefs.current[3] = el; }}>
+          <DecisionSpotlightCard summary={summary} />
+        </section>
+
+        <section id="captaincy" ref={(el) => { sectionRefs.current[4] = el; }}>
           <CaptaincyCard summary={summary} />
         </section>
 
-        <section id="bench" ref={(el) => { sectionRefs.current[4] = el; }}>
+        <section id="bench" ref={(el) => { sectionRefs.current[5] = el; }}>
           <BenchCard summary={summary} />
         </section>
 
-        <section id="chips" ref={(el) => { sectionRefs.current[5] = el; }}>
+        <section id="chips" ref={(el) => { sectionRefs.current[6] = el; }}>
           <ChipsCard summary={summary} />
         </section>
 
         {summary.mvpPlayer && (
-          <section id="squadAnalysis" ref={(el) => { sectionRefs.current[6] = el; }}>
+          <section id="squadAnalysis" ref={(el) => { sectionRefs.current[7] = el; }}>
             <SquadAnalysisCard summary={summary} />
           </section>
         )}
 
-        <section id="persona" ref={(el) => { sectionRefs.current[7] = el; }}>
+        <section id="persona" ref={(el) => { sectionRefs.current[8] = el; }}>
           <PersonaCard summary={summary} />
         </section>
 
-        <section id="summary" ref={(el) => { sectionRefs.current[8] = el; }}>
+        <section id="summary" ref={(el) => { sectionRefs.current[9] = el; }}>
           <SummaryCard summary={summary} />
         </section>
 
-        <section id="footer" ref={(el) => { sectionRefs.current[9] = el; }}>
+        <section id="footer" ref={(el) => { sectionRefs.current[10] = el; }}>
           <FooterCard />
         </section>
       </div>

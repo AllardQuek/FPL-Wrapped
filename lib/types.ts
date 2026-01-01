@@ -642,6 +642,7 @@ export interface TransferTimingAnalysis {
   avgHoursBeforeDeadline: number;
   avgLocalHourOfDay: number;
   lateNightTransfers: number;
+  priceRiseChasers: number;
 }
 
 export interface SeasonSummary {
@@ -657,6 +658,7 @@ export interface SeasonSummary {
   hitsTaken: number;
   netTransferPoints: number;
   transferEfficiency: number;
+  actualTransferGWs: number; // Sum of gameweeks each transfer was held
   bestTransfer: TransferAnalysis | null;
   worstTransfer: TransferAnalysis | null;
   transferGrade: 'A' | 'B' | 'C' | 'D' | 'F';

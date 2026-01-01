@@ -52,6 +52,8 @@ async function analyzeManager(managerId: number) {
     console.log(`   Hits Taken: ${summary.hitsTaken ?? 'N/A'}`);
     console.log(`   Total Hit Cost: ${summary.hitsTaken ? `-${summary.hitsTaken * 4} pts` : 'N/A'}`);
     console.log(`   Transfer Efficiency: ${summary.transferEfficiency?.toFixed(1) ?? 'N/A'} pts`);
+    console.log(`   Transfer-GWs: ${summary.actualTransferGWs ?? 'N/A'}`);
+    console.log(`   Pts/Transfer-GW: ${summary.actualTransferGWs ? (summary.transferEfficiency / summary.actualTransferGWs).toFixed(2) : 'N/A'}`);
     console.log(`   Transfer Grade: ${summary.transferGrade || 'N/A'}`);
     if (summary.bestTransfer) {
       console.log(`   Best Transfer: ${summary.bestTransfer.playerIn.web_name} (GW${summary.bestTransfer.transfer.event})`);

@@ -1,7 +1,7 @@
 import { TransferAnalysis } from '../types';
 import { ManagerData, TransferTiming } from './types';
 import { getPlayer, getPlayerPointsInGameweek } from './utils';
-import { calculateHoursBeforeDeadline, getLocalHourOfDay, getTimezoneForRegion } from './timezone';
+import { calculateHoursBeforeDeadline, getLocalHourOfDay, getTimezoneForRegion, isWithinPriceRiseWindow } from './timezone';
 
 /**
  * Calculate enhanced metrics from points history
@@ -350,6 +350,7 @@ export function analyzeTransferTiming(data: ManagerData): TransferTiming {
             avgHoursBeforeDeadline: 0,
             avgLocalHourOfDay: 12,
             lateNightTransfers: 0,
+            priceRiseChasers: 0,
         };
     }
     
@@ -359,6 +360,7 @@ export function analyzeTransferTiming(data: ManagerData): TransferTiming {
     let earlyStrategicCount = 0;
     let kneeJerkCount = 0;
     let lateNightCount = 0;
+    let priceRiseChaserCount = 0;
     let totalHoursBeforeDeadline = 0;
     let totalLocalHour = 0;
     let validTransfers = 0;
@@ -417,6 +419,12 @@ export function analyzeTransferTiming(data: ManagerData): TransferTiming {
             if (localHour >= 23 || localHour <= 5) {
                 lateNightCount++;
             }
+            
+            // Check for price rise chasers (transfers made 7:30am-9:30am SGT)
+            // Price changes happen at 9:30am SGT daily
+            if (transfer.time && isWithinPriceRiseWindow(transfer.time)) {
+                priceRiseChaserCount++;
+            }
         }
     }
     
@@ -429,5 +437,6 @@ export function analyzeTransferTiming(data: ManagerData): TransferTiming {
         avgHoursBeforeDeadline: validTransfers > 0 ? totalHoursBeforeDeadline / validTransfers : 0,
         avgLocalHourOfDay: validTransfers > 0 ? totalLocalHour / validTransfers : 12,
         lateNightTransfers: lateNightCount,
+        priceRiseChasers: priceRiseChaserCount,
     };
 }

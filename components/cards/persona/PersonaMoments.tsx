@@ -32,7 +32,10 @@ export function PersonaMoments({ moments, primaryColor }: PersonaMomentsProps) {
                                 {moment.toLowerCase().includes('benched') ? '😱' : 
                                  moment.toLowerCase().includes('but') ? '😭' :
                                  moment.toLowerCase().includes('captained') ? '🎯' :
-                                 moment.toLowerCase().includes('signed') || moment.toLowerCase().includes('played') ? '⭐' : '📈'}
+                                 moment.toLowerCase().includes('signed') || moment.toLowerCase().includes('played') ? '⭐' :
+                                 moment.startsWith('⚡') || moment.startsWith('💰') || 
+                                 moment.startsWith('🌙') || moment.startsWith('📰') || 
+                                 moment.startsWith('📋') ? moment.charAt(0) : '📈'}
                             </div>
                             <p className="text-base text-black/80 leading-relaxed font-medium text-left pt-0.5">
                                 {moment}

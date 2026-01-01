@@ -150,7 +150,8 @@ export function calculateManagerPersona(
     bestCaptain,
     worstCaptain,
     bestChip,
-    worstTransfer
+    worstTransfer,
+    transferTiming
   );
 }
 
@@ -251,7 +252,8 @@ function buildPersonaResult(
   bestCaptain?: CaptaincyAnalysis | null,
   worstCaptain?: CaptaincyAnalysis | null,
   bestChip?: ChipAnalysis,
-  worstTransfer?: TransferAnalysis | null
+  worstTransfer?: TransferAnalysis | null,
+  transferTiming?: TransferTiming
 ): ManagerPersona {
   const personaData = PERSONA_MAP[selectedKey];
 
@@ -266,7 +268,8 @@ function buildPersonaResult(
     bestCaptain,
     worstCaptain,
     bestChip,
-    worstTransfer
+    worstTransfer,
+    transferTiming
   );
 
   // Calculate manager's actual spectrum scores
@@ -355,7 +358,8 @@ function generateMemorableMoments(
   bestCaptain?: CaptaincyAnalysis | null,
   worstCaptain?: CaptaincyAnalysis | null,
   bestChip?: ChipAnalysis,
-  worstTransfer?: TransferAnalysis | null
+  worstTransfer?: TransferAnalysis | null,
+  transferTiming?: TransferTiming
 ): string[] {
   interface Moment {
     text: string;
@@ -417,6 +421,67 @@ function generateMemorableMoments(
       isBad: false,
       score: bestTransfer.pointsGained
     });
+  }
+
+  // Add transfer timing insights
+  if (transferTiming) {
+    const totalTransfers = (transferTiming.earlyStrategicTransfers || 0) +
+                          (transferTiming.midWeekTransfers || 0) +
+                          (transferTiming.deadlineDayTransfers || 0) +
+                          (transferTiming.panicTransfers || 0);
+    
+    if (totalTransfers >= 10) { // Need sufficient data
+      const kneeJerkPct = ((transferTiming.kneeJerkTransfers || 0) / totalTransfers) * 100;
+      const lateNightPct = ((transferTiming.lateNightTransfers || 0) / totalTransfers) * 100;
+      const priceRisePct = ((transferTiming.priceRiseChasers || 0) / totalTransfers) * 100;
+      const panicPct = ((transferTiming.panicTransfers || 0) / totalTransfers) * 100;
+      const earlyPct = ((transferTiming.earlyStrategicTransfers || 0) / totalTransfers) * 100;
+
+      // Knee-jerk specialist
+      if (kneeJerkPct >= 25) {
+        potentialMoments.push({
+          text: `⚡ Made ${Math.round(kneeJerkPct)}% of transfers within 48h of previous gameweek - quick to react!`,
+          isBad: false,
+          score: kneeJerkPct
+        });
+      }
+
+      // Price rise chaser
+      if (priceRisePct >= 20) {
+        potentialMoments.push({
+          text: `💰 Timed ${Math.round(priceRisePct)}% of transfers to beat price rises - value hunter!`,
+          isBad: false,
+          score: priceRisePct
+        });
+      }
+
+      // Night owl
+      if (lateNightPct >= 25) {
+        potentialMoments.push({
+          text: `🌙 Made ${Math.round(lateNightPct)}% of transfers between 11pm-5am - nocturnal manager!`,
+          isBad: false,
+          score: lateNightPct
+        });
+      }
+
+      // Team news waiter
+      if (panicPct >= 30) {
+        potentialMoments.push({
+          text: `📰 Made ${Math.round(panicPct)}% of transfers in final 3hrs - waits for team news!`,
+          isBad: false,
+          score: panicPct
+        });
+      }
+
+      // Early planner
+      if (earlyPct >= 40) {
+        potentialMoments.push({
+          text: `📋 Made ${Math.round(earlyPct)}% of transfers 4+ days early - strategic planner!`,
+          isBad: false,
+          score: earlyPct
+        });
+      }
+    }
   }
 
   return potentialMoments

@@ -116,3 +116,36 @@ export function getLocalHourOfDay(timestamp: string, timezone: string): number {
         return new Date(timestamp).getUTCHours();
     }
 }
+
+/**
+ * Check if a transfer was made within the price rise window (7:30am-9:30am SGT)
+ * Price changes happen at 9:30am SGT, so transfers in the 2 hours before indicate price chasing
+ */
+export function isWithinPriceRiseWindow(timestamp: string): boolean {
+    try {
+        const date = new Date(timestamp);
+        const formatter = new Intl.DateTimeFormat('en-US', {
+            timeZone: 'Asia/Singapore',
+            hour: 'numeric',
+            minute: 'numeric',
+            hour12: false,
+        });
+        const parts = formatter.formatToParts(date);
+        const hourPart = parts.find(part => part.type === 'hour');
+        const minutePart = parts.find(part => part.type === 'minute');
+        
+        if (!hourPart || !minutePart) return false;
+        
+        const hour = parseInt(hourPart.value, 10);
+        const minute = parseInt(minutePart.value, 10);
+        const timeInMinutes = hour * 60 + minute;
+        
+        // 7:30am SGT = 450 minutes, 9:30am SGT = 570 minutes
+        const priceRiseWindowStart = 7 * 60 + 30; // 7:30am
+        const priceRiseWindowEnd = 9 * 60 + 30;   // 9:30am
+        
+        return timeInMinutes >= priceRiseWindowStart && timeInMinutes <= priceRiseWindowEnd;
+    } catch {
+        return false;
+    }
+}

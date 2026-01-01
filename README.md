@@ -195,4 +195,4 @@ MIT License - feel free to use this project however you'd like!
 
 ---
 
-Made with ⚽ for FPL managers everywhere
+Made with ⚽ for FPL managers

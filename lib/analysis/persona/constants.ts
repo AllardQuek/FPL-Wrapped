@@ -65,13 +65,13 @@ export const PERSONALITY_SPECTRUMS = {
     lowEnd: {
       letter: 'A',
       name: 'Aggressive',
-      description: 'Takes hits freely, chases immediate points aggressively',
+      description: 'Takes risks with hits or aggressive chip timing',
       emoji: '🎲',
     },
     highEnd: {
       letter: 'C',
       name: 'Cautious',
-      description: 'Avoids hits and risks, plays it safe for long-term gains',
+      description: 'Zero hits AND conservative chip timing - plays it safe',
       emoji: '🛡️',
     },
   },

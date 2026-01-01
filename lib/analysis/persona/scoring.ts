@@ -371,12 +371,24 @@ export function applyRankBoosts(
   const R = RANK_THRESHOLDS;
   const topPercentile = (currentRank / R.TOTAL_PLAYERS) * 100;
 
-  // Top 10k = THE GOAT
+  // Top 10k = THE GOAT (absolute dominance)
   if (currentRank <= R.ELITE) {
     scores['FERGUSON'] = (scores['FERGUSON'] || 0) * 10.0;
     scores['SLOT'] = (scores['SLOT'] || 0) * 2.2;
   }
-  // Top 50k
+  // Top 25k = Elite tier (exceptional performance)
+  else if (currentRank <= 25_000) {
+    scores['FERGUSON'] = (scores['FERGUSON'] || 0) * 9.0;
+    scores['SLOT'] = (scores['SLOT'] || 0) * 3.5;
+    scores['EMERY'] = (scores['EMERY'] || 0) * 3.0;
+  }
+  // Top 35k = Very strong tier
+  else if (currentRank <= 35_000) {
+    scores['FERGUSON'] = (scores['FERGUSON'] || 0) * 8.5;
+    scores['SLOT'] = (scores['SLOT'] || 0) * 3.2;
+    scores['EMERY'] = (scores['EMERY'] || 0) * 2.8;
+  }
+  // Top 50k = Strong tier
   else if (currentRank <= R.TOP_50K) {
     scores['FERGUSON'] = (scores['FERGUSON'] || 0) * 8.0;
     scores['SLOT'] = (scores['SLOT'] || 0) * 3.0;
@@ -638,7 +650,8 @@ export function filterEligiblePersonas(
     switch (key) {
       case 'FERGUSON':
         return currentRank <= R.ELITE || 
-          (metrics.efficiency > 0.60 && metrics.leadership > 0.60 && currentRank <= R.TOP_50K);
+          (currentRank <= R.TOP_50K && (metrics.efficiency > 0.55 || metrics.leadership > 0.55)) ||
+          (currentRank <= 35_000 && (metrics.efficiency > 0.50 || metrics.leadership > 0.50));
 
       case 'SLOT':
         return currentRank <= R.TOP_100K && metrics.efficiency > 0.60 && metrics.leadership > 0.55;
@@ -771,8 +784,10 @@ export function selectBestPersona(
     const p = persona.spectrums;
     
     // Factor A: Canonical Code Match (Dominant factor - natural personality drives assignment)
+    // EXCEPTION: For Ferguson in top 50k, rank achievement matters more than personality fit
     const isCanonicalMatch = persona.personalityCode === managerCode;
-    const codeMatchScore = isCanonicalMatch ? 50 : 0;
+    const isFergusonElite = key === 'FERGUSON' && currentRank <= RANK_THRESHOLDS.TOP_50K;
+    const codeMatchScore = isCanonicalMatch ? 50 : (isFergusonElite ? 35 : 0);
 
     // Factor B: Euclidean Distance (Proximity in 4D space)
     const distance = Math.sqrt(
@@ -787,8 +802,8 @@ export function selectBestPersona(
     const matchStrength = calculateMatchStrength(key, signals, metrics, currentRank);
 
     // Factor D: Base Score (Rank boosts, extreme metric boosts from previous steps)
-    // We normalize the base score a bit so it doesn't overwhelm the code match
-    const normalizedBaseScore = Math.min(20, baseScore);
+    // Ferguson in elite ranks gets special treatment - don't cap the base score
+    const normalizedBaseScore = isFergusonElite ? baseScore : Math.min(20, baseScore);
 
     return {
       key,
@@ -814,8 +829,9 @@ function calculateMatchStrength(
   let matchStrength = 0;
   const R = RANK_THRESHOLDS;
 
-  // Strong behavioral matches (3 points)
-  if (key === 'FERGUSON' && currentRank <= R.TOP_50K && metrics.efficiency > 0.7) matchStrength += 5;
+  // Strong behavioral matches (3-7 points)
+  if (key === 'FERGUSON' && currentRank <= R.TOP_50K && metrics.efficiency > 0.65) matchStrength += 7;
+  else if (key === 'FERGUSON' && currentRank <= R.TOP_50K && metrics.efficiency > 0.55) matchStrength += 5;
   if (key === 'TENHAG' && signals.constantTinkerer && metrics.activity > 0.75) matchStrength += 3;
   if (key === 'REDKNAPP' && signals.hitAddict && metrics.chaos > 0.4) matchStrength += 3;
   if (key === 'WENGER' && metrics.template < 0.20 && signals.disciplined) matchStrength += 3;

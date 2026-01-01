@@ -96,24 +96,30 @@ export function PersonaCard({ summary }: PersonaCardProps) {
         {
             key: 'cautious',
             ...PERSONALITY_SPECTRUMS.CAUTIOUS_AGGRESSIVE,
-            getTooltip: () => ({
-                lowEnd: (
-                    <div className="space-y-1">
-                        <p className="font-semibold text-white">Why {PERSONALITY_SPECTRUMS.CAUTIOUS_AGGRESSIVE.lowEnd.name}?</p>
-                        <p className="text-xs text-white/80">
-                            Determined by hit-taking. Taking {Math.abs(summary.totalTransfersCost / 4).toFixed(0)} hits shows an aggressive pursuit of immediate gains.
-                        </p>
-                    </div>
-                ),
-                highEnd: (
-                    <div className="space-y-1">
-                        <p className="font-semibold text-white">Why {PERSONALITY_SPECTRUMS.CAUTIOUS_AGGRESSIVE.highEnd.name}?</p>
-                        <p className="text-xs text-white/80">
-                            Determined by hit-taking. Taking only {Math.abs(summary.totalTransfersCost / 4).toFixed(0)} hits shows a disciplined, risk-averse approach.
-                        </p>
-                    </div>
-                )
-            })
+            getTooltip: () => {
+                const totalHits = Math.abs(summary.totalTransfersCost / 4);
+                
+                return {
+                    lowEnd: (
+                        <div className="space-y-1">
+                            <p className="font-semibold text-white">Why {PERSONALITY_SPECTRUMS.CAUTIOUS_AGGRESSIVE.lowEnd.name}?</p>
+                            <p className="text-xs text-white/80">
+                                {totalHits > 0 
+                                    ? `Taking ${totalHits.toFixed(0)} hits shows willingness to take risks for immediate gains.`
+                                    : 'Your aggressive chip timing shows a bold, risk-taking approach.'}
+                            </p>
+                        </div>
+                    ),
+                    highEnd: (
+                        <div className="space-y-1">
+                            <p className="font-semibold text-white">Why {PERSONALITY_SPECTRUMS.CAUTIOUS_AGGRESSIVE.highEnd.name}?</p>
+                            <p className="text-xs text-white/80">
+                                Zero hits combined with conservative chip timing shows a disciplined, risk-averse strategy.
+                            </p>
+                        </div>
+                    )
+                };
+            }
         }
     ];
 

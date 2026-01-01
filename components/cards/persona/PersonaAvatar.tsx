@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState } from 'react';
-import Image from 'next/image';
 
 interface PersonaAvatarProps {
     imageUrl?: string;
@@ -21,14 +20,13 @@ export function PersonaAvatar({ imageUrl, name, emoji, primaryColor }: PersonaAv
             ></div>
             <div className="relative w-full h-full rounded-full bg-slate-50 border-4 border-white shadow-xl overflow-hidden flex items-center justify-center">
                 {imageUrl && !imageError ? (
-                    <Image
+                    // Use regular img for better screenshot compatibility
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
                         src={imageUrl}
                         alt={name}
-                        fill
-                        className="object-cover"
+                        className="object-cover w-full h-full"
                         onError={() => setImageError(true)}
-                        sizes="128px"
-                        priority
                     />
                 ) : (
                     <span className="text-6xl">{emoji || '👔'}</span>

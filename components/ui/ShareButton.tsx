@@ -80,9 +80,43 @@ export function ShareButton() {
             // Wait for fonts to load properly
             await document.fonts.ready;
 
+            // Convert external images to data URLs to avoid CORS issues on iOS Safari
+            const images = element.querySelectorAll('img');
+            const imagePromises = Array.from(images).map(async (img) => {
+                // Skip if already a data URL
+                if (img.src.startsWith('data:')) return;
+                
+                // Check if it's an external image (not from same origin)
+                const isExternal = img.src.startsWith('http') && !img.src.includes(window.location.hostname);
+                
+                if (isExternal) {
+                    try {
+                        // Convert to data URL using canvas
+                        const canvas = document.createElement('canvas');
+                        canvas.width = img.naturalWidth || img.width;
+                        canvas.height = img.naturalHeight || img.height;
+                        const ctx = canvas.getContext('2d');
+                        if (ctx) {
+                            ctx.drawImage(img, 0, 0);
+                            const dataUrl = canvas.toDataURL('image/png');
+                            img.src = dataUrl;
+                        }
+                    } catch (err) {
+                        console.warn('Failed to convert image to data URL:', err);
+                        // If conversion fails, the image might not appear in screenshot
+                    }
+                }
+            });
+
+            await Promise.all(imagePromises);
+
+            // Small delay to ensure rendering is complete
+            await new Promise(resolve => setTimeout(resolve, 150));
+
             const dataUrl = await toPng(element as HTMLElement, {
                 backgroundColor: "#0d0015",
                 pixelRatio: 2, // Higher quality
+                cacheBust: true, // Prevent caching issues with external images
                 filter: (node) => {
                     // Exclude elements with the ignore attribute
                     if (node instanceof HTMLElement && node.hasAttribute("data-html2canvas-ignore")) {

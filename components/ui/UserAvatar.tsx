@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import Image from 'next/image';
 
 interface UserAvatarProps {
   managerId: number;
@@ -66,25 +65,27 @@ export function UserAvatar({
   return (
     <div className={`relative ${className}`} style={{ width: size, height: size }}>
       {imageError ? (
-        // Generated avatar (external API, use Next Image with unoptimized)
-        <Image
+        // Generated avatar (external API, use regular img with crossOrigin)
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
           src={imageSrc}
           alt={`${firstName} ${lastName}`}
           width={size}
           height={size}
           className="rounded-full object-cover"
-          unoptimized
+          crossOrigin="anonymous"
         />
       ) : (
         // FPL or team badge
-        <Image
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
           src={imageSrc}
           alt={`${firstName} ${lastName}`}
           width={size}
           height={size}
           className="rounded-full object-cover"
           onError={handleImageError}
-          unoptimized // External images
+          crossOrigin="anonymous"
         />
       )}
       

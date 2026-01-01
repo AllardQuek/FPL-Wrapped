@@ -1,4 +1,3 @@
-import Image from 'next/image';
 import { useState } from 'react';
 
 interface ProfileHeaderProps {
@@ -38,14 +37,14 @@ export function ProfileHeader({
         style={{ borderColor: `${primaryColor}60` }}
       >
         {imageUrl && !imageError ? (
-          <Image
+          // Use regular img for better screenshot compatibility
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
             src={imageUrl}
             alt={name}
-            fill
-            className="object-cover"
+            className="object-cover w-full h-full"
             onError={() => setImageError(true)}
-            sizes={isMobile ? '80px' : '128px'}
-            priority
+            crossOrigin="anonymous"
           />
         ) : (
           <span className={emojiSize}>{emoji || '👔'}</span>

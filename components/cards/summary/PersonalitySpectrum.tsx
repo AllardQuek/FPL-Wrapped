@@ -65,7 +65,7 @@ export function PersonalitySpectrum({
         </div>
       </div>
       
-      <div className="relative h-1.5 bg-gray-200 rounded-full mt-7 mb-2">
+      <div className="relative h-1.5 bg-gray-200 rounded-full mt-5 mb-2">
         {/* Middle reference line */}
         <div 
           className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-0.5 h-5 bg-black/30 rounded-full z-0"

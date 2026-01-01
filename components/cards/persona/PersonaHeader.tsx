@@ -9,7 +9,7 @@ interface PersonaHeaderProps {
 
 export function PersonaHeader({ title, primaryColor }: PersonaHeaderProps) {
     return (
-        <div className="mb-6">
+        <div className="mb-4">
             <h2 
                 className="text-[10px] font-bold tracking-[0.2em] uppercase mb-1"
                 style={{ color: `${primaryColor}80` }}

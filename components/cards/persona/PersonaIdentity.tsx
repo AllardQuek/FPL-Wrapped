@@ -12,11 +12,11 @@ interface PersonaIdentityProps {
 export function PersonaIdentity({ name, description, quote, quoteSource }: PersonaIdentityProps) {
     return (
         <>
-            <h3 className="text-xl font-black uppercase mb-4 text-black/90">
+            <h3 className="text-xl font-black uppercase mb-2 text-black/90">
                 {name}
             </h3>
             {quote && (
-                <div className="mb-6 px-4">
+                <div className="mb-4 px-4">
                     <p className="text-base leading-relaxed text-black/70 font-medium italic mb-1">
                         &ldquo;{quote}&rdquo;
                     </p>
@@ -27,7 +27,7 @@ export function PersonaIdentity({ name, description, quote, quoteSource }: Perso
                     )}
                 </div>
             )}
-            <p className="text-sm leading-relaxed text-black/50 mb-8 px-6 font-medium">
+            <p className="text-sm leading-relaxed text-black/50 mb-2 px-6 font-medium">
                 {description}
             </p>
         </>

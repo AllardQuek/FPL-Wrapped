@@ -14,7 +14,7 @@ export function PersonaAvatar({ imageUrl, name, emoji, primaryColor }: PersonaAv
     const [imageError, setImageError] = useState(false);
 
     return (
-        <div className="relative w-32 h-32 mx-auto mb-6">
+        <div className="relative w-24 h-24 mx-auto mb-4">
             <div 
                 className="absolute inset-0 rounded-full animate-pulse-slow opacity-20"
                 style={{ backgroundColor: primaryColor }}

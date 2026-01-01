@@ -109,7 +109,7 @@ export function SquadAnalysisCard({ summary }: SquadAnalysisCardProps) {
           {/* RIGHT: Position Breakdown */}
           <div className="space-y-4 flex flex-col">
             <div className="flex items-center justify-between px-2">
-              <p className="text-xs font-bold text-white/50 uppercase tracking-widest">Squad Balance</p>
+              <p className="text-xs font-bold text-white/50 uppercase tracking-widest">Top Positions</p>
               <span className="text-[10px] font-bold text-[#3b82f6] bg-[#3b82f6]/10 px-2 py-0.5 rounded-full uppercase">By Position</span>
             </div>
             <div className="bg-white/5 rounded-3xl p-8 border border-white/10 backdrop-blur-md shadow-2xl relative overflow-hidden group flex-1 flex flex-col">

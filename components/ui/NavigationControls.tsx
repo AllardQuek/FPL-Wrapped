@@ -11,7 +11,6 @@ interface NavigationControlsProps {
 
 export function NavigationControls({ sections, currentSection, onNavigate }: NavigationControlsProps) {
   const [showHint, setShowHint] = useState(true);
-  const [touchStart, setTouchStart] = useState<number | null>(null);
   const [isMobile, setIsMobile] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
 
@@ -101,31 +100,6 @@ export function NavigationControls({ sections, currentSection, onNavigate }: Nav
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [currentSection, sections.length, onNavigate]);
 
-  // Touch/swipe handling
-  const handleTouchStart = (e: React.TouchEvent) => {
-    setTouchStart(e.touches[0].clientY);
-  };
-
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    if (touchStart === null) return;
-
-    const touchEnd = e.changedTouches[0].clientY;
-    const diff = touchStart - touchEnd;
-
-    // Swipe threshold: 50px
-    if (Math.abs(diff) > 50) {
-      if (diff > 0 && currentSection < sections.length - 1) {
-        // Swiped up - next section
-        onNavigate(currentSection + 1);
-      } else if (diff < 0 && currentSection > 0) {
-        // Swiped down - previous section
-        onNavigate(currentSection - 1);
-      }
-    }
-
-    setTouchStart(null);
-  };
-
   // Click zones for navigation
   const handleClickZone = (direction: 'prev' | 'next') => {
     // Ignore clicks if user is selecting text
@@ -180,22 +154,11 @@ export function NavigationControls({ sections, currentSection, onNavigate }: Nav
 
       {/* Navigation Buttons */}
       <>
-        {/* Swipe handler for touch devices */}
-        {isMobile && (
-          <div
-            className="fixed inset-0 z-40 pointer-events-auto"
-            onTouchStart={handleTouchStart}
-            onTouchEnd={handleTouchEnd}
-            data-html2canvas-ignore
-            style={{ touchAction: 'pan-y' }} // Allow vertical scrolling
-          />
-        )}
-        
         {/* Visible Next Button (Bottom Right) */}
         {currentSection < sections.length - 1 && (
           <button
             onClick={() => handleClickZone('next')}
-            className="fixed bottom-6 right-6 z-50 bg-white/10 backdrop-blur-md hover:bg-white/20 active:bg-white/30 text-white p-4 rounded-full shadow-lg border border-white/20 transition-all active:scale-95"
+            className="fixed bottom-6 right-6 z-50 bg-slate-900/90 backdrop-blur-md text-[#00ff87] p-4 rounded-full shadow-2xl border border-white/10 transition-all active:scale-95 hover:bg-slate-800"
             aria-label="Next section"
             data-html2canvas-ignore
           >
@@ -210,13 +173,12 @@ export function NavigationControls({ sections, currentSection, onNavigate }: Nav
           className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 animate-bounce pointer-events-none"
           data-html2canvas-ignore
         >
-          <div className="bg-white/10 backdrop-blur-md px-6 py-3 rounded-full border border-white/20">
-            <p className="text-xs text-white/70 font-medium flex items-center gap-2">
+          <div className="bg-slate-900/90 backdrop-blur-md px-6 py-3 rounded-full border border-white/10 shadow-2xl">
+            <p className="text-xs text-white/90 font-medium flex items-center gap-2">
               {isMobile ? (
                 <>
-                  <span>Swipe up or tap</span>
+                  <span>Scroll to continue</span>
                   <span className="text-[#00ff87]">↓</span>
-                  <span>to continue</span>
                 </>
               ) : (
                 <>

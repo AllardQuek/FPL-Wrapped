@@ -117,10 +117,10 @@ export function PersonaCard({ summary }: PersonaCardProps) {
     ];
 
     return (
-        <div className="min-h-screen flex flex-col items-center justify-center p-8 relative">
+        <div className="min-h-screen flex flex-col items-center justify-center p-4 relative">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.05),transparent_50%)] pointer-events-none" />
             
-            <div className="max-w-lg w-full animate-fade-in text-center mb-6 relative z-10">
+            <div className="max-w-lg w-full animate-fade-in text-center mb-4 relative z-10">
                 <p className="text-white/40 text-[10px] tracking-[0.3em] uppercase">
                     Your Manager Persona
                 </p>
@@ -129,7 +129,7 @@ export function PersonaCard({ summary }: PersonaCardProps) {
             <div className="max-w-lg w-full relative group">
                 {/* Main Card */}
                 <div 
-                    className="bg-white rounded-[2.5rem] p-8 md:p-10 text-black shadow-2xl relative z-10 overflow-hidden border-2"
+                    className="bg-white rounded-[2.5rem] p-6 md:p-8 text-black shadow-2xl relative z-10 overflow-hidden border-2"
                     style={{ borderColor: `${persona.primaryColor}30` }}
                 >
                     {/* Background Pattern */}
@@ -148,14 +148,14 @@ export function PersonaCard({ summary }: PersonaCardProps) {
                             primaryColor={persona.primaryColor}
                         />
 
-                        <div className="mb-6">
+                        <div className="mb-8">
                             <PersonaIdentity 
                                 name={persona.name} 
                                 description={persona.description} 
                                 quote={persona.quote}
                                 quoteSource={persona.quoteSource}
                             />
-                            <div className="mt-4">
+                            <div className="mt-2">
                                 <TraitBadges 
                                     traits={persona.traits} 
                                     primaryColor={persona.primaryColor} 
@@ -164,8 +164,8 @@ export function PersonaCard({ summary }: PersonaCardProps) {
                             </div>
                         </div>
 
-                        <div className="space-y-4 mb-8">
-                            <p className="text-[10px] font-bold text-black/40 uppercase tracking-widest mb-4">Personality Spectrum</p>
+                        <div className="space-y-3 mb-4">
+                            <p className="text-[10px] font-bold text-black/40 uppercase tracking-widest mb-2">Personality Spectrum</p>
                             {spectrums.map(({ key, getTooltip, ...spectrum }) => {
                                 const score = persona.spectrums[key as keyof typeof persona.spectrums];
                                 return (

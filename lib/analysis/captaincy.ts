@@ -39,19 +39,21 @@ export function analyzeCaptaincy(data: ManagerData): CaptaincyAnalysis[] {
 
         const startingPicks = picks.picks.filter((p) => p.position <= 11);
         let bestPickId = captainPick.element;
-        let bestPickPoints = rawCaptainPoints;
+        let bestPickRawPoints = rawCaptainPoints;
 
         for (const pick of startingPicks) {
             const points = getPlayerPointsInGameweek(pick.element, gw, liveByGameweek);
-            if (points > bestPickPoints) {
-                bestPickPoints = points;
+            if (points > bestPickRawPoints) {
+                bestPickRawPoints = points;
                 bestPickId = pick.element;
             }
         }
 
         const bestPlayer = getPlayer(bestPickId, bootstrap);
-        const optimalCaptainPoints = bestPickPoints * captainPick.multiplier;
-        const pointsLeftOnTable = optimalCaptainPoints - captainPoints;
+        const bestPickIfCaptainPoints = bestPickRawPoints * captainPick.multiplier;
+        // Net team difference when swapping the captain to the best starter:
+        // (multiplier * bestRaw + rawCaptain) - (multiplier * rawCaptain + bestRaw) = (multiplier - 1) * (bestRaw - rawCaptain)
+        const pointsLeftOnTable = (captainPick.multiplier - 1) * (bestPickRawPoints - rawCaptainPoints);
 
         const mostCaptainedId = bootstrap.events[gw - 1]?.most_captained;
         const wasMostCaptainedGlobal = captainPick.element === mostCaptainedId;
@@ -66,11 +68,13 @@ export function analyzeCaptaincy(data: ManagerData): CaptaincyAnalysis[] {
             captainPoints,
             bestPickId,
             bestPickName: bestPlayer?.web_name ?? 'Unknown',
-            bestPickPoints: optimalCaptainPoints,
+            // Store the raw points the best starter scored (single game points)
+            bestPickPoints: bestPickRawPoints,
             pointsLeftOnTable,
             wasOptimal: wasAccurate,
             wasSuccessful: wasAccurate,
             wasMostCaptainedGlobal,
+            captainMultiplier: captainPick.multiplier,
         });
     }
 

@@ -68,3 +68,26 @@ export function analyzeBench(data: ManagerData): BenchAnalysis[] {
 
     return analyses;
 }
+
+/**
+ * Compute the average bench points across finished gameweeks, optionally excluding a specific GW.
+ * Returns 0 if no eligible gameweeks are found.
+ */
+export function averageBenchPoints(data: ManagerData, excludeGameweek?: number): number {
+    const { picksByGameweek, liveByGameweek, finishedGameweeks } = data;
+    let total = 0;
+    let count = 0;
+
+    for (const gw of finishedGameweeks) {
+        if (excludeGameweek !== undefined && gw === excludeGameweek) continue;
+        const picks = picksByGameweek.get(gw);
+        if (!picks) continue;
+
+        const bench = picks.picks.filter(p => p.position > 11);
+        const gwBenchPoints = bench.reduce((s, p) => s + getPlayerPointsInGameweek(p.element, gw, liveByGameweek), 0);
+        total += gwBenchPoints;
+        count++;
+    }
+
+    return count > 0 ? total / count : 0;
+}

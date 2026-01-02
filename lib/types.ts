@@ -1,3 +1,5 @@
+import type { ChipName } from './constants/chipThresholds';
+
 // FPL API Types
 
 // Bootstrap-static types (general game data)
@@ -383,16 +385,17 @@ export interface PastSeasonHistory {
 }
 
 export interface ChipUsage {
-  name: string;
+  name: ChipName;
   time: string;
   event: number;
 }
 
 export interface ChipAnalysis {
-  name: string;
+  name: ChipName;
   event: number;
   pointsGained: number;
   verdict: string;
+  verdictTier?: 'excellent' | 'decent' | 'wasted';
   details: string;
   isExcellent: boolean;
   used: boolean;
@@ -415,6 +418,9 @@ export interface ChipAnalysis {
     gameweeksAfter?: number[];
     pointsAfter?: number[];
     avgAfter?: number;
+    // Bench Boost comparison
+    benchAverage?: number;
+    benchDiff?: number;
     wildcardDetails?: {
       before: { gw: number; points: number; hits: number; avg: number; net: number }[];
       after: { gw: number; points: number; hits: number; avg: number; net: number }[];
@@ -631,6 +637,7 @@ export interface CaptaincyAnalysis {
   bestPickId: number;
   bestPickName: string;
   bestPickPoints: number;
+  captainMultiplier: number;
   pointsLeftOnTable: number;
   wasOptimal: boolean;
   wasSuccessful: boolean; // Captain scored 6+ points

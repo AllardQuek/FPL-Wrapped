@@ -1,10 +1,12 @@
 import { ChipAnalysis } from '@/lib/types';
 import { chipLabels } from './constants';
+import { formatPoints as formatPointsLocal } from '@/lib/analysis/utils';
 import { BenchBoostBreakdown } from './BenchBoostBreakdown';
 import { TripleCaptainBreakdown } from './TripleCaptainBreakdown';
 import { FreeHitBreakdown } from './FreeHitBreakdown';
 import { WildcardBreakdown } from './WildcardBreakdown';
 import { ChipVerdict } from './ChipVerdict';
+import { CHIP_NAMES } from '@/lib/constants/chipThresholds';
 
 interface ChipDialogContentProps {
     chip: ChipAnalysis;
@@ -33,7 +35,7 @@ export function ChipDialogContent({ chip }: ChipDialogContentProps) {
                     {chipName} Analysis
                 </p>
                 <p className="text-sm text-white/70 leading-relaxed">
-                    Used in <strong className="text-white">Gameweek {chip.event}</strong> with a net impact of <strong className={chip.pointsGained >= 0 ? 'text-[#00ff87]' : 'text-[#ff6b9d]'}>{chip.pointsGained > 0 ? '+' : ''}{chip.pointsGained} points</strong>.
+                    Used in <strong className="text-white">Gameweek {chip.event}</strong> with a net impact of <strong className={chip.pointsGained >= 0 ? 'text-[#00ff87]' : 'text-[#ff6b9d]'}>{formatPointsLocal(chip.pointsGained, 'points')}</strong>.
                 </p>
             </div>
 
@@ -43,10 +45,10 @@ export function ChipDialogContent({ chip }: ChipDialogContentProps) {
                     How It Was Calculated
                 </p>
                 
-                {chip.name === 'bboost' && <BenchBoostBreakdown chip={chip} />}
-                {chip.name === '3xc' && <TripleCaptainBreakdown chip={chip} />}
-                {chip.name === 'freehit' && <FreeHitBreakdown chip={chip} />}
-                {chip.name === 'wildcard' && <WildcardBreakdown chip={chip} />}
+                {chip.name === CHIP_NAMES.BBOOST && <BenchBoostBreakdown chip={chip} />}
+                {chip.name === CHIP_NAMES.THREE_XC && <TripleCaptainBreakdown chip={chip} />}
+                {chip.name === CHIP_NAMES.FREEHIT && <FreeHitBreakdown chip={chip} />}
+                {chip.name === CHIP_NAMES.WILDCARD && <WildcardBreakdown chip={chip} />}
             </div>
 
             <ChipVerdict chip={chip} />

@@ -35,3 +35,17 @@ export function calculateGrade(
     if (score >= thresholds.d) return 'D';
     return 'F';
 }
+
+/**
+ * Format a points number with a sign and optional unit.
+ * Examples:
+ *  formatPoints(5) => '+5 pts'
+ *  formatPoints(-2) => '-2 pts'
+ *  formatPoints(0) => '0 pts'
+ *  formatPoints(3, 'pts/GW') => '+3 pts/GW'
+ *  formatPoints(3, false) => '+3'
+ */
+export function formatPoints(value: number, unit: string | false = 'pts'): string {
+    const signed = value > 0 ? `+${value}` : `${value}`;
+    return unit === false ? signed : `${signed} ${unit}`;
+}

@@ -1,11 +1,13 @@
 import { ChipAnalysis } from '@/lib/types';
+import { CHIP_NAMES } from '@/lib/constants/chipThresholds';
+import { formatPoints } from '@/lib/analysis/utils';
 
 interface FreeHitBreakdownProps {
     chip: ChipAnalysis;
 }
 
 export function FreeHitBreakdown({ chip }: FreeHitBreakdownProps) {
-    if (chip.name !== 'freehit' || chip.metadata?.freeHitPoints === undefined || chip.metadata?.previousTeamPoints === undefined) return null;
+    if (chip.name !== CHIP_NAMES.FREEHIT || chip.metadata?.freeHitPoints === undefined || chip.metadata?.previousTeamPoints === undefined) return null;
 
     return (
         <div className="text-sm text-white/70 space-y-3">
@@ -81,7 +83,7 @@ export function FreeHitBreakdown({ chip }: FreeHitBreakdownProps) {
                 <div className="flex items-center justify-between">
                     <span className="text-white font-bold">Net Gain</span>
                     <span className={`font-black text-base ${chip.pointsGained >= 0 ? 'text-[#00ff87]' : 'text-[#ff6b9d]'}`}>
-                        {chip.pointsGained > 0 ? '+' : ''}{chip.pointsGained} pts
+                        {formatPoints(chip.pointsGained)}
                     </span>
                 </div>
             </div>
@@ -89,7 +91,7 @@ export function FreeHitBreakdown({ chip }: FreeHitBreakdownProps) {
             <div className="bg-white/5 rounded-lg p-3 border border-white/10">
                 <p className="text-xs text-white/50 mb-1">FORMULA</p>
                 <code className="text-xs text-[#00ff87] font-mono">
-                    {chip.metadata.freeHitPoints} - {chip.metadata.previousTeamPoints} = {chip.pointsGained}
+                    {chip.metadata.freeHitPoints} - {chip.metadata.previousTeamPoints} = {formatPoints(chip.pointsGained)}
                 </code>
             </div>
             

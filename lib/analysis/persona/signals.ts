@@ -11,6 +11,7 @@ import {
   ChipPersonality,
   TransferTimingAnalysis,
 } from './types';
+import { CHIP_NAMES } from '@/lib/constants/chipThresholds';
 import { SIGNAL_THRESHOLDS, PREMIUM_CAPTAINS } from './constants';
 
 /**
@@ -223,7 +224,7 @@ function detectChipTimingPatterns(
   const T = SIGNAL_THRESHOLDS;
 
   // Early wildcard
-  const wildcardChip = chips.find((c) => c.name === 'wildcard');
+  const wildcardChip = chips.find((c) => c.name === CHIP_NAMES.WILDCARD);
   signals.earlyAggression = wildcardChip
     ? wildcardChip.event < T.EARLY_WILDCARD_GW
     : false;

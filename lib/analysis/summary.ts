@@ -208,11 +208,13 @@ export function generateSeasonSummary(data: ManagerData): SeasonSummary {
         (sum, c) => sum + c.captainPoints,
         0
     );
+    // Optimal captaincy points: sum of best starter raw points multiplied by the captain multiplier used that GW
     const optimalCaptaincyPoints = captaincyAnalyses.reduce(
-        (sum, c) => sum + c.bestPickPoints,
+        (sum, c) => sum + (c.bestPickPoints * (c.captainMultiplier ?? 2)),
         0
     );
-    const captaincyPointsLost = optimalCaptaincyPoints - totalCaptaincyPoints;
+    // Points left on table is the net team difference per GW, already computed in analyses
+    const captaincyPointsLost = captaincyAnalyses.reduce((sum, c) => sum + c.pointsLeftOnTable, 0);
     const successfulCaptaincies = captaincyAnalyses.filter((c) => c.wasSuccessful).length;
     const captaincySuccessRate = captaincyAnalyses.length > 0
         ? (successfulCaptaincies / captaincyAnalyses.length) * 100

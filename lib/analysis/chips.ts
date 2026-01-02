@@ -1,6 +1,9 @@
 import { ChipAnalysis } from '../types';
 import { ManagerData } from './types';
-import { getPlayer, getPlayerPointsInGameweek } from './utils';
+import { getPlayer, getPlayerPointsInGameweek, formatPoints } from './utils';
+import { CHIP_THRESHOLDS, getVerdictLabel, determineChipVerdictTier, type ChipName } from '@/lib/constants/chipThresholds';
+import { averageBenchPoints } from './bench';
+import { CHIP_NAMES } from '@/lib/constants/chipThresholds';
 
 /**
  * Analyze chip usage
@@ -8,7 +11,7 @@ import { getPlayer, getPlayerPointsInGameweek } from './utils';
 export function analyzeChips(data: ManagerData): ChipAnalysis[] {
     const { history, bootstrap, picksByGameweek, liveByGameweek, finishedGameweeks } = data;
     const analyses: ChipAnalysis[] = [];
-    const allChipNames = ['3xc', 'bboost', 'freehit', 'wildcard'];
+    const allChipNames: ChipName[] = [CHIP_NAMES.THREE_XC, CHIP_NAMES.BBOOST, CHIP_NAMES.FREEHIT, CHIP_NAMES.WILDCARD];
 
     for (const chipName of allChipNames) {
         const chip = history.chips.find(c => c.name === chipName);
@@ -16,13 +19,14 @@ export function analyzeChips(data: ManagerData): ChipAnalysis[] {
 
         let pointsGained = 0;
         let verdict = "Pending";
+        let verdictTier: 'excellent' | 'decent' | 'wasted' | undefined = undefined;
         let details = "You haven't used this chip yet.";
         let isExcellent = false;
         const event = chip?.event || 0;
         let metadata: ChipAnalysis['metadata'] = undefined;
 
         if (used && chip) {
-            if (chip.name === 'bboost') {
+            if (chip.name === CHIP_NAMES.BBOOST) {
                 const picks = picksByGameweek.get(chip.event);
                 if (picks) {
                     const bench = picks.picks.filter(p => p.position > 11);
@@ -35,27 +39,36 @@ export function analyzeChips(data: ManagerData): ChipAnalysis[] {
                         }
                         return sum + pts;
                     }, 0);
-                    isExcellent = pointsGained >= 15;
-                    verdict = isExcellent ? "Masterstroke" : pointsGained >= 5 ? "Decent" : "Wasted";
-                    details = `Your bench delivered ${pointsGained} extra points.`;
-                    metadata = { benchPlayers };
+
+                    // Compute your average bench points across finished gameweeks (excluding this chip GW)
+                    const avgBenchOther = averageBenchPoints(data, chip.event);
+                    const benchDiff = pointsGained - avgBenchOther;
+
+                    // Determine tier via helper
+                    verdictTier = determineChipVerdictTier(CHIP_NAMES.BBOOST, { points: pointsGained, diff: benchDiff });
+                    isExcellent = verdictTier === 'excellent';
+                    verdict = getVerdictLabel(chip.name as ChipName, verdictTier) ?? (verdictTier === 'excellent' ? 'Masterstroke' : verdictTier === 'decent' ? 'Decent' : 'Wasted');
+
+                    details = `Your bench delivered ${formatPoints(pointsGained)}. That's (${formatPoints(Math.round(benchDiff), false)}) vs your average bench of ${formatPoints(Math.round(avgBenchOther))}.`;
+                    metadata = { benchPlayers, benchAverage: Math.round(avgBenchOther), benchDiff: Math.round(benchDiff) };
                 }
-            } else if (chip.name === '3xc') {
+            } else if (chip.name === CHIP_NAMES.THREE_XC) {
                 const picks = picksByGameweek.get(chip.event);
                 const captain = picks?.picks.find(p => p.is_captain);
                 if (captain) {
                     const basePoints = getPlayerPointsInGameweek(captain.element, chip.event, liveByGameweek);
                     const player = getPlayer(captain.element, bootstrap);
                     pointsGained = basePoints;
-                    isExcellent = pointsGained >= 12;
-                    verdict = isExcellent ? "Elite Timing" : pointsGained >= 4 ? "Solid" : "Unfortunate";
-                    details = `${player?.web_name} added ${pointsGained} net points.`;
+                    verdictTier = determineChipVerdictTier(CHIP_NAMES.THREE_XC, { points: pointsGained });
+                    isExcellent = verdictTier === 'excellent';
+                    verdict = getVerdictLabel(CHIP_NAMES.THREE_XC, verdictTier) ?? (isExcellent ? 'Elite Timing' : pointsGained >= CHIP_THRESHOLDS['3xc'].solidPoints ? 'Solid' : 'Unfortunate');
+                    details = `${player?.web_name} added ${formatPoints(pointsGained)} net points.`;
                     metadata = {
                         captainName: player?.web_name,
                         captainBasePoints: basePoints
                     };
                 }
-            } else if (chip.name === 'freehit') {
+            } else if (chip.name === CHIP_NAMES.FREEHIT) {
                 const currentPicks = picksByGameweek.get(chip.event);
                 const previousPicks = picksByGameweek.get(chip.event - 1);
                 if (currentPicks && previousPicks) {
@@ -98,9 +111,10 @@ export function analyzeChips(data: ManagerData): ChipAnalysis[] {
                     }
                     
                     pointsGained = fhPoints - noChipPoints;
-                    isExcellent = pointsGained >= 10;
-                    verdict = isExcellent ? "Clutch" : pointsGained > 0 ? "Effective" : "Backfired";
-                    details = `${pointsGained >= 0 ? 'Gained' : 'Lost'} ${Math.abs(pointsGained)} points vs your old team.`;
+                    verdictTier = determineChipVerdictTier(CHIP_NAMES.FREEHIT, { points: pointsGained });
+                    isExcellent = verdictTier === 'excellent';
+                    verdict = getVerdictLabel('freehit' as ChipName, verdictTier) ?? (isExcellent ? 'Clutch' : pointsGained > 0 ? 'Effective' : 'Backfired');
+                    details = `${formatPoints(pointsGained)} vs your old team.`;
                     metadata = {
                         freeHitPoints: fhPoints,
                         previousTeamPoints: noChipPoints,
@@ -108,7 +122,7 @@ export function analyzeChips(data: ManagerData): ChipAnalysis[] {
                         previousTeamPlayers
                     };
                 }
-            } else if (chip.name === 'wildcard') {
+            } else if (chip.name === CHIP_NAMES.WILDCARD) {
                 const before = finishedGameweeks.filter(g => g < chip.event && g >= chip.event - 4);
                 const after = finishedGameweeks.filter(g => g >= chip.event && g < chip.event + 4);
                 if (before.length > 0 && after.length > 0) {
@@ -130,9 +144,10 @@ export function analyzeChips(data: ManagerData): ChipAnalysis[] {
                     const avgBefore = beforeData.reduce((sum, d) => sum + d.net, 0) / beforeData.length;
                     const avgAfter = afterData.reduce((sum, d) => sum + d.net, 0) / afterData.length;
                     pointsGained = Math.round(avgAfter - avgBefore);
-                    isExcellent = pointsGained >= 5;
-                    verdict = isExcellent ? "Transformed" : pointsGained >= 0 ? "Improved" : "Tough Run";
-                    details = `${pointsGained >= 0 ? 'Up' : 'Down'} ${Math.abs(pointsGained)} pts/GW relative to average.`;
+                    verdictTier = determineChipVerdictTier(CHIP_NAMES.WILDCARD, { points: pointsGained });
+                    isExcellent = verdictTier === 'excellent';
+                    verdict = getVerdictLabel(CHIP_NAMES.WILDCARD, verdictTier) ?? (isExcellent ? 'Transformed' : pointsGained >= 0 ? 'Improved' : 'Tough Run');
+                    details = `${formatPoints(pointsGained, 'pts/GW')} relative to average.`;
                     metadata = {
                         gameweeksBefore: before,
                         pointsBefore: beforeData.map(d => d.net),
@@ -154,6 +169,7 @@ export function analyzeChips(data: ManagerData): ChipAnalysis[] {
             event,
             pointsGained,
             verdict,
+            verdictTier,
             details,
             isExcellent,
             used,

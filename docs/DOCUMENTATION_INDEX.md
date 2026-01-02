@@ -28,6 +28,7 @@ Quick reference to all project documentation, organized by purpose and task.
 - **[Navigation Implementation](architecture/navigation-implementation.md)** - Code-level details of the navigation system.
 - **[Next.js vs Vite](architecture/nextjs-vite.md)** - Why we chose Next.js and the resulting architectural benefits.
 - **[Archetypes](architecture/archetypes.md)** - Early conceptual data structures and design thinking.
+ - **[API Wrapper Patterns](architecture/api-wrappers.md)** - Rationale for thin HTTP wrappers, caching, and testability.
 
 ## ✍️ Content & Copy
 *The "Voice" of the application.*

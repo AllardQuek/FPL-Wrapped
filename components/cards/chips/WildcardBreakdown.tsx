@@ -1,11 +1,13 @@
 import { ChipAnalysis } from '@/lib/types';
+import { CHIP_NAMES } from '@/lib/constants/chipThresholds';
+import { formatPoints } from '@/lib/analysis/utils';
 
 interface WildcardBreakdownProps {
     chip: ChipAnalysis;
 }
 
 export function WildcardBreakdown({ chip }: WildcardBreakdownProps) {
-    if (chip.name !== 'wildcard' || !chip.metadata?.wildcardDetails) return null;
+    if (chip.name !== CHIP_NAMES.WILDCARD || !chip.metadata?.wildcardDetails) return null;
 
     const { before, after } = chip.metadata.wildcardDetails;
 
@@ -73,7 +75,7 @@ export function WildcardBreakdown({ chip }: WildcardBreakdownProps) {
                 <div className="pt-3 mt-3 border-t border-white/10 flex items-center justify-between">
                     <span className="text-white font-bold">Net Improvement</span>
                     <span className={`font-black text-base ${chip.pointsGained >= 0 ? 'text-[#00ff87]' : 'text-[#ff6b9d]'}`}>
-                        {chip.pointsGained > 0 ? '+' : ''}{chip.pointsGained} pts/GW
+                        {formatPoints(chip.pointsGained, 'pts/GW')}
                     </span>
                 </div>
             </div>
@@ -81,7 +83,7 @@ export function WildcardBreakdown({ chip }: WildcardBreakdownProps) {
             <div className="bg-white/5 rounded-lg p-3 border border-white/10">
                 <p className="text-xs text-white/50 mb-1">CALCULATION</p>
                 <p className="text-[11px] leading-relaxed">
-                    We compare your average "Points Above Average" before the wildcard to your average "Points Above Average" after. This removes the noise of high or low scoring gameweeks for the general public.
+                    We compare your average &quot;Points Above Average&quot; before the wildcard to your average &quot;Points Above Average&quot; after. This removes the noise of high or low scoring gameweeks for the general public.
                 </p>
             </div>
             

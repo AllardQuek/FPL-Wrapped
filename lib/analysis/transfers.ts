@@ -2,6 +2,7 @@ import { TransferAnalysis } from '../types';
 import { ManagerData, TransferTiming } from './types';
 import { getPlayer, getPlayerPointsInGameweek } from './utils';
 import { calculateHoursBeforeDeadline, getLocalHourOfDay, getTimezoneForRegion, isWithinPriceRiseWindow } from './timezone';
+import { CHIP_NAMES } from '@/lib/constants/chipThresholds';
 
 /**
  * Calculate enhanced metrics from points history
@@ -83,7 +84,7 @@ export function analyzeTransfers(data: ManagerData): TransferAnalysis[] {
     const transfersPerGW = new Map<number, number>();
     for (const transfer of transfers) {
         const chipUsed = chipsByGW.get(transfer.event);
-        if (chipUsed === 'freehit' || chipUsed === 'wildcard') continue;
+        if (chipUsed === CHIP_NAMES.FREEHIT || chipUsed === CHIP_NAMES.WILDCARD) continue;
         transfersPerGW.set(transfer.event, (transfersPerGW.get(transfer.event) || 0) + 1);
     }
 
@@ -93,12 +94,12 @@ export function analyzeTransfers(data: ManagerData): TransferAnalysis[] {
         const chipUsed = chipsByGW.get(transfer.event);
 
         // Skip Free Hit transfers entirely (they're temporary)
-        if (chipUsed === 'freehit') {
+        if (chipUsed === CHIP_NAMES.FREEHIT) {
             continue;
         }
 
         // Skip Wildcard transfers from API (we'll calculate net transfers separately)
-        if (chipUsed === 'wildcard') {
+        if (chipUsed === CHIP_NAMES.WILDCARD) {
             continue;
         }
 
@@ -185,7 +186,7 @@ export function analyzeTransfers(data: ManagerData): TransferAnalysis[] {
 
     // Final Wildcard Net Transfer Calculation (The Fix)
     for (const [gw, chipName] of chipsByGW.entries()) {
-        if (chipName !== 'wildcard') continue;
+        if (chipName !== CHIP_NAMES.WILDCARD) continue;
         if (!sortedFinishedGWs.includes(gw)) continue;
 
         const prevGW = gw - 1;
@@ -337,7 +338,7 @@ export function analyzeTransferTiming(data: ManagerData): TransferTiming {
     // Filter to non-chip transfers only (more meaningful for timing analysis)
     const meaningfulTransfers = transfers.filter(t => {
         const chipUsed = chipsByGW.get(t.event);
-        return !chipUsed || (chipUsed !== 'wildcard' && chipUsed !== 'freehit');
+        return !chipUsed || (chipUsed !== CHIP_NAMES.WILDCARD && chipUsed !== CHIP_NAMES.FREEHIT);
     });
     
     if (meaningfulTransfers.length === 0) {

@@ -1,11 +1,13 @@
 import { ChipAnalysis } from '@/lib/types';
+import { CHIP_NAMES } from '@/lib/constants/chipThresholds';
+import { formatPoints } from '@/lib/analysis/utils';
 
 interface TripleCaptainBreakdownProps {
     chip: ChipAnalysis;
 }
 
 export function TripleCaptainBreakdown({ chip }: TripleCaptainBreakdownProps) {
-    if (chip.name !== '3xc' || !chip.metadata?.captainName || chip.metadata?.captainBasePoints === undefined) return null;
+    if (chip.name !== CHIP_NAMES.THREE_XC || !chip.metadata?.captainName || chip.metadata?.captainBasePoints === undefined) return null;
 
     return (
         <div className="text-sm text-white/70 space-y-3">
@@ -29,7 +31,7 @@ export function TripleCaptainBreakdown({ chip }: TripleCaptainBreakdownProps) {
                     </div>
                     <div className="pt-2 mt-2 border-t border-white/10 flex items-center justify-between">
                         <span className="text-white font-bold">Net Gain</span>
-                        <span className="font-black text-[#00ff87] text-base">+{chip.pointsGained} pts</span>
+                        <span className="font-black text-[#00ff87] text-base">{formatPoints(chip.pointsGained)}</span>
                     </div>
                 </div>
             </div>
@@ -37,7 +39,7 @@ export function TripleCaptainBreakdown({ chip }: TripleCaptainBreakdownProps) {
             <div className="bg-white/5 rounded-lg p-3 border border-white/10">
                 <p className="text-xs text-white/50 mb-1">FORMULA</p>
                 <code className="text-xs text-[#00ff87] font-mono">
-                    Net Gain = ({chip.metadata.captainBasePoints} × 3) - ({chip.metadata.captainBasePoints} × 2) = {chip.pointsGained}
+                    Net Gain = ({chip.metadata.captainBasePoints} × 3) - ({chip.metadata.captainBasePoints} × 2) = {formatPoints(chip.pointsGained)}
                 </code>
             </div>
             

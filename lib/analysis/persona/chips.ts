@@ -5,6 +5,7 @@
 
 import { ChipAnalysis, FPLBootstrap } from '../../types';
 import { ChipPersonality } from './types';
+import { CHIP_NAMES } from '@/lib/constants/chipThresholds';
 
 const PREMIUM_TRIPLE_CAPTAIN_CHOICES = ['Haaland', 'M.Salah', 'Palmer', 'Son'];
 
@@ -68,16 +69,16 @@ function calculateEffectivenessScore(usedChips: ChipAnalysis[]): number {
 
     // Normalize based on chip type expectations
     switch (chip.name) {
-      case 'bboost':
+      case CHIP_NAMES.BBOOST:
         // Bench Boost: -5 to 20 pts → 0-1
         return Math.min(1, Math.max(0, (points + 5) / 25));
-      case '3xc':
+      case CHIP_NAMES.THREE_XC:
         // Triple Captain: -2 to 18 pts → 0-1
         return Math.min(1, Math.max(0, (points + 2) / 20));
-      case 'freehit':
+      case CHIP_NAMES.FREEHIT:
         // Free Hit: -5 to 15 pts → 0-1
         return Math.min(1, Math.max(0, (points + 5) / 20));
-      case 'wildcard':
+      case CHIP_NAMES.WILDCARD:
         // Wildcard: -10 to 15 pts/gw → 0-1 (Normalized relative to average)
         return Math.min(1, Math.max(0, (points + 10) / 25));
       default:
@@ -98,7 +99,7 @@ function calculateRiskScore(usedChips: ChipAnalysis[]): number {
   let riskFactors = 0;
 
   // Check Triple Captain risk
-  const tripleCaptain = usedChips.find((c) => c.name === '3xc');
+  const tripleCaptain = usedChips.find((c) => c.name === CHIP_NAMES.THREE_XC);
   if (tripleCaptain?.metadata?.captainName) {
     const captainName = tripleCaptain.metadata.captainName as string;
     const isDifferential = !PREMIUM_TRIPLE_CAPTAIN_CHOICES.includes(captainName);
@@ -109,7 +110,7 @@ function calculateRiskScore(usedChips: ChipAnalysis[]): number {
   }
 
   // Check Bench Boost risk
-  const benchBoost = usedChips.find((c) => c.name === 'bboost');
+  const benchBoost = usedChips.find((c) => c.name === CHIP_NAMES.BBOOST);
   if (benchBoost?.metadata?.benchPlayers) {
     const benchPlayers = benchBoost.metadata.benchPlayers as Array<{
       name: string;

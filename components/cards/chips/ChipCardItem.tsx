@@ -1,4 +1,5 @@
 import { ChipAnalysis } from '@/lib/types';
+import { formatPoints } from '@/lib/analysis/utils';
 import { InfoDialog } from '@/components/ui/InfoDialog';
 import { chipLabels, chipEmojis } from './constants';
 import { ChipDialogContent } from './ChipDialogContent';
@@ -33,7 +34,7 @@ export function ChipCardItem({ chip, index, isLast }: ChipCardItemProps) {
                         {chip.used && (
                             <div className="text-right">
                                 <p className={`text-xl font-black tracking-tighter ${chip.pointsGained >= 0 ? 'text-[#00ff87]' : 'text-[#e90052]'}`}>
-                                    {chip.pointsGained > 0 ? '+' : ''}{chip.pointsGained}
+                                    {formatPoints(chip.pointsGained, false)}
                                 </p>
                                 <p className="text-[8px] font-bold text-white/30 uppercase tracking-widest leading-none mt-1">Net Gain</p>
                             </div>
@@ -54,7 +55,7 @@ export function ChipCardItem({ chip, index, isLast }: ChipCardItemProps) {
                         </h3>
                     </div>
 
-                    <div className="mt-auto">
+                    <div className="pt-auto">
                         <div className={`inline-block px-2 py-0.5 rounded text-[8px] font-black uppercase mb-3 ${chip.used
                             ? (chip.isExcellent ? 'bg-[#00ff87] text-[#0d0015]' : 'bg-white text-black')
                             : 'bg-white/10 text-white/40'

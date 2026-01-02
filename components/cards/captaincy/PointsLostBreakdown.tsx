@@ -1,4 +1,5 @@
 import { CaptaincyAnalysis } from '@/lib/types';
+import { InfoTooltip } from '@/components/ui/Tooltip';
 
 interface PointsLostBreakdownProps {
   analyses: CaptaincyAnalysis[];
@@ -12,8 +13,11 @@ export function PointsLostBreakdown({ analyses, totalPointsLost }: PointsLostBre
       gw: a.gameweek,
       captain: a.captainName,
       captainPts: a.captainPoints,
+      captainRaw: Math.round(a.captainPoints / (a.captainMultiplier ?? 2)),
+      multiplier: a.captainMultiplier ?? 2,
       bestPick: a.bestPickName,
       bestPts: a.bestPickPoints,
+      bestPtsIfCaptain: a.bestPickPoints * (a.captainMultiplier ?? 2),
       lost: a.pointsLeftOnTable,
     }));
 
@@ -35,20 +39,36 @@ export function PointsLostBreakdown({ analyses, totalPointsLost }: PointsLostBre
             <div className="space-y-2">
               {pointsLostDetails.map(d => (
                 <div key={d.gw} className="bg-white/5 border border-white/10 rounded-lg p-2.5">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-[10px] font-bold text-white/60">GW{d.gw}</span>
-                    <span className="text-xs font-black text-[#ff6b9d]">-{d.lost}pts</span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2 text-[10px]">
+                    <div className="grid grid-cols-4 gap-4 items-center text-[10px]">
                     <div>
-                      <div className="text-white/40 text-[9px] uppercase">You Captained</div>
+                      <div className="text-[10px] font-bold text-white/60">GW{d.gw}</div>
+                    </div>
+                    <div>
+                      <div className="text-white/40 text-[9px] uppercase">Your Choice</div>
                       <div className="font-bold text-white text-xs truncate">{d.captain}</div>
                       <div className="text-white/60">{d.captainPts}pts</div>
                     </div>
                     <div>
-                      <div className="text-white/40 text-[9px] uppercase">Best Option Was</div>
+                      <div className="text-white/40 text-[9px] uppercase">Best Option</div>
                       <div className="font-bold text-[#00ff87] text-xs truncate">{d.bestPick}</div>
-                      <div className="text-[#00ff87]">{d.bestPts}pts</div>
+                      <div className="text-[#00ff87]">{d.bestPtsIfCaptain}pts <span className="text-white/60 text-[9px]">({d.bestPts} raw)</span></div>
+                    </div>
+                    <div className="text-right">
+                      <div className="inline-flex items-center gap-2 justify-end">
+                        <span className="text-xs font-black text-[#ff6b9d]">-{d.lost}pts</span>
+                        <InfoTooltip
+                          side="left"
+                          content={<div className="space-y-1">
+                            <div className="font-bold">How this is calculated</div>
+                            <div className="text-[12px]">
+                              Formula: <code className="font-mono">(multiplier − 1) × (best_raw − captain_raw)</code>
+                            </div>
+                            <div className="text-[12px]">Example: ({d.multiplier} − 1) × ({d.bestPts} − {d.captainRaw}) = {d.lost}</div>
+                            <div className="text-[12px]">Best if captain: {d.bestPtsIfCaptain} pts ({d.bestPts} raw)</div>
+                            <div className="text-[12px]">You captained: {d.captainPts} pts ({d.captainRaw} raw)</div>
+                          </div>}
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>

@@ -91,9 +91,15 @@ async function fetchFPL<T>(endpoint: string, retries = 3): Promise<T> {
 
 
 /**
- * Get bootstrap-static data (all players, teams, gameweeks)
- * Uses a local file cache to bypass Next.js 2MB Data Cache limit
- * and persist data across dev server restarts.
+ * Get bootstrap-static data (all players, teams, gameweeks).
+ *
+ * Remarks:
+ * - Uses an in-memory cache in production and an optional file cache in development
+ *   to speed local dev server restarts.
+ * - Prefer this function over calling the endpoint directly so callers benefit
+ *   from consistent caching and path stability.
+ *
+ * @returns The FPL bootstrap payload (players, teams, events, etc.).
  */
 export async function getBootstrapData(): Promise<FPLBootstrap> {
   // 1. Try In-Memory Cache (Fastest - Works in Prod & Dev)
@@ -145,28 +151,46 @@ export async function getBootstrapData(): Promise<FPLBootstrap> {
 }
 
 /**
- * Get manager/entry basic info
+ * Get basic manager/entry info.
+ *
+ * This is a thin wrapper over `fetchFPL` that centralizes the endpoint and
+ * return type for callers.
+ *
+ * @param managerId The FPL manager/entry id.
+ * @returns ManagerInfo for the given id.
  */
 export async function getManagerInfo(managerId: number): Promise<ManagerInfo> {
   return fetchFPL<ManagerInfo>(`/entry/${managerId}/`);
 }
 
 /**
- * Get manager's gameweek-by-gameweek history
+ * Get a manager's gameweek-by-gameweek history.
+ *
+ * Use this wrapper to obtain typed history data; tests should mock this
+ * function rather than global fetch for simplicity.
+ *
+ * @param managerId The FPL manager/entry id.
+ * @returns ManagerHistory for the given id.
  */
 export async function getManagerHistory(managerId: number): Promise<ManagerHistory> {
   return fetchFPL<ManagerHistory>(`/entry/${managerId}/history/`);
 }
 
 /**
- * Get all transfers made by a manager
+ * Get all transfers made by a manager.
+ * @param managerId The FPL manager/entry id.
+ * @returns Array of transfers for the manager.
  */
 export async function getManagerTransfers(managerId: number): Promise<Transfer[]> {
   return fetchFPL<Transfer[]>(`/entry/${managerId}/transfers/`);
 }
 
 /**
- * Get league standings (paginated)
+ * Get league standings (paginated).
+ *
+ * @param leagueId The league id.
+ * @param page Optional page number (defaults to 1).
+ * @returns LeagueStandings for the requested page.
  */
 export async function getLeagueStandings(
   leagueId: number,
@@ -176,7 +200,14 @@ export async function getLeagueStandings(
 }
 
 /**
- * Get manager's team picks for a specific gameweek
+ * Get a manager's team picks for a specific gameweek.
+ *
+ * This wrapper includes an in-memory per-manager+gameweek cache (`picksCache`) to
+ * avoid duplicate network requests for the same picks.
+ *
+ * @param managerId The FPL manager/entry id.
+ * @param gameweek The gameweek number.
+ * @returns GameWeekPicks for the requested manager and gameweek.
  */
 export async function getGameWeekPicks(
   managerId: number,
@@ -192,7 +223,12 @@ export async function getGameWeekPicks(
 }
 
 /**
- * Get detailed player history (all gameweeks)
+ * Get detailed player history (all gameweeks).
+ *
+ * Uses `playerSummaryCache` to reduce duplicate requests across consumers.
+ *
+ * @param playerId The FPL player id.
+ * @returns PlayerSummary for the given player.
  */
 export async function getPlayerSummary(playerId: number): Promise<PlayerSummary> {
   if (playerSummaryCache.has(playerId)) {
@@ -204,7 +240,12 @@ export async function getPlayerSummary(playerId: number): Promise<PlayerSummary>
 }
 
 /**
- * Get live gameweek data (points for all players in a gameweek)
+ * Get live gameweek data (points for all players in a gameweek).
+ *
+ * Uses `liveCache` to deduplicate requests for the same gameweek.
+ *
+ * @param gameweek The gameweek number.
+ * @returns LiveGameWeek payload for the requested gameweek.
  */
 export async function getLiveGameWeek(gameweek: number): Promise<LiveGameWeek> {
   if (liveCache.has(gameweek)) {
@@ -218,7 +259,10 @@ export async function getLiveGameWeek(gameweek: number): Promise<LiveGameWeek> {
 // Helper functions
 
 /**
- * Get a player by ID from bootstrap data
+ * Get a player by ID from bootstrap data.
+ *
+ * @param playerId The FPL player id.
+ * @returns The `Player` if found, otherwise `undefined`.
  */
 export async function getPlayerById(playerId: number): Promise<Player | undefined> {
   const bootstrap = await getBootstrapData();
@@ -226,7 +270,12 @@ export async function getPlayerById(playerId: number): Promise<Player | undefine
 }
 
 /**
- * Get player name by ID
+ * Get player name by ID.
+ *
+ * Falls back to `'Unknown'` when player cannot be found.
+ *
+ * @param playerId The FPL player id.
+ * @returns The player's web name or `'Unknown'`.
  */
 export async function getPlayerName(playerId: number): Promise<string> {
   const player = await getPlayerById(playerId);
@@ -234,7 +283,9 @@ export async function getPlayerName(playerId: number): Promise<string> {
 }
 
 /**
- * Get all finished gameweeks
+ * Get all finished gameweeks.
+ *
+ * @returns Array of finished gameweek ids.
  */
 export async function getFinishedGameweeks(): Promise<number[]> {
   const bootstrap = await getBootstrapData();
@@ -244,7 +295,9 @@ export async function getFinishedGameweeks(): Promise<number[]> {
 }
 
 /**
- * Get the current gameweek number
+ * Get the current gameweek number.
+ *
+ * @returns The id of the current gameweek, or `1` if not found.
  */
 export async function getCurrentGameweek(): Promise<number> {
   const bootstrap = await getBootstrapData();
@@ -253,7 +306,14 @@ export async function getCurrentGameweek(): Promise<number> {
 }
 
 /**
- * Fetch all data needed for a manager's wrapped experience
+ * Fetch all data needed for a manager's wrapped experience.
+ *
+ * This function composes several wrappers (`getManagerInfo`, `getManagerHistory`,
+ * `getManagerTransfers`, `getGameWeekPicks`, `getLiveGameWeek`, ...) and performs
+ * batched fetching with a small delay to avoid hitting rate limits.
+ *
+ * @param managerId The FPL manager/entry id.
+ * @returns An object containing bootstrap, managerInfo, history, transfers, picks and live data maps.
  */
 export async function fetchAllManagerData(managerId: number) {
   // Fetch bootstrap data first (cached)
@@ -319,7 +379,9 @@ export async function fetchAllManagerData(managerId: number) {
 }
 
 /**
- * Clear the bootstrap cache (useful for testing or forcing refresh)
+ * Clear in-memory caches used by this module.
+ *
+ * Useful for testing or forcing a refresh in long-lived processes.
  */
 export function clearCache(): void {
   bootstrapCache = null;

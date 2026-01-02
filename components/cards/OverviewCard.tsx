@@ -4,12 +4,14 @@ import { SeasonSummary } from '@/lib/types';
 import * as TooltipPrimitive from "@radix-ui/react-tooltip";
 import { TrendingUp, TrendingDown, Minus, Info } from 'lucide-react';
 import { WrappedCardLayout } from '@/components/ui/wrapped/WrappedCardLayout';
+import { getSectionById } from '@/lib/constants/wrapped-sections';
 
 interface OverviewCardProps {
   summary: SeasonSummary;
 }
 
 export function OverviewCard({ summary }: OverviewCardProps) {
+  const section = getSectionById('overview');
   const formatRank = (rank: number) => {
     if (rank >= 1000000) return `${(rank / 1000000).toFixed(1)}M`;
     if (rank >= 1000) return `${(rank / 1000).toFixed(0)}K`;
@@ -207,7 +209,7 @@ export function OverviewCard({ summary }: OverviewCardProps) {
 
   return (
     <WrappedCardLayout 
-      sectionNumber="01: The Résumé" 
+      sectionNumber={section?.number || "01: The Résumé"} 
       centerContent
     >
       <div className="space-y-6">

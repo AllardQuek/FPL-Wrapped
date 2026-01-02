@@ -8,6 +8,7 @@ import { PersonaIdentity } from './persona/PersonaIdentity';
 import { PersonalitySpectrum } from './summary/PersonalitySpectrum';
 import { TraitBadges } from './summary/TraitBadges';
 import { SharedImageFooter } from '../ui/wrapped/SharedImageFooter';
+import { getSectionById } from '@/lib/constants/wrapped-sections';
 
 interface PersonaCardProps {
     summary: SeasonSummary;
@@ -15,6 +16,7 @@ interface PersonaCardProps {
 
 export function PersonaCard({ summary }: PersonaCardProps) {
     const { persona } = summary;
+    const section = getSectionById('persona');
 
     const spectrums = [
         {
@@ -130,7 +132,7 @@ export function PersonaCard({ summary }: PersonaCardProps) {
             <div className="flex-1 flex flex-col justify-center w-full max-w-lg">
                 <div className="animate-fade-in text-center mb-4 relative z-10">
                     <p className="text-white/40 text-[10px] tracking-[0.3em] uppercase">
-                        Your Manager Persona
+                        {section?.number ? `Section ${section.number}` : 'Your Manager Persona'}
                     </p>
                 </div>
 

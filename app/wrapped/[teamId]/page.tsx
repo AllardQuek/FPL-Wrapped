@@ -16,6 +16,7 @@ import { SummaryCard } from '@/components/cards/SummaryCard';
 import { FooterCard } from '@/components/cards/FooterCard';
 import { ShareButton } from '@/components/ui/ShareButton';
 import { NavigationControls } from '@/components/ui/NavigationControls';
+import { SECTION_IDS } from '@/lib/constants/wrapped-sections';
 
 export default function WrappedPage() {
   const params = useParams();
@@ -33,7 +34,7 @@ export default function WrappedPage() {
   const isNavigating = useRef(false);
   
   // Section IDs for navigation
-  const sections = ['welcome', 'overview', 'transfers', 'decisionSpotlight', 'captaincy', 'bench', 'chips', 'squadAnalysis', 'persona', 'summary', 'footer'];
+  const sections = SECTION_IDS;
   
   // Navigation handler
   const handleNavigate = useCallback((index: number) => {

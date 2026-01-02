@@ -7,6 +7,7 @@ import { StatsRow } from './summary/StatsRow';
 import { PersonaMoments } from './persona/PersonaMoments';
 import { SeasonVerdict } from './summary/SeasonVerdict';
 import { SharedImageFooter } from '../ui/wrapped/SharedImageFooter';
+import { getSectionById } from '@/lib/constants/wrapped-sections';
 
 interface SummaryCardProps {
   summary: SeasonSummary;
@@ -16,12 +17,13 @@ export function SummaryCard({ summary }: SummaryCardProps) {
   const { persona } = summary;
   const currentSeason = getCurrentFPLSeason();
   const netImpact = summary.netTransferPoints - summary.totalTransfersCost;
+  const section = getSectionById('summary');
 
   return (
     <div className="min-h-screen flex flex-col items-center p-8 relative">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.08),transparent_55%)] pointer-events-none" />
       <div className="flex-1 flex flex-col justify-center relative max-w-5xl w-full mx-auto">
-        <p className="text-white/40 text-[10px] tracking-[0.3em] uppercase mb-8 text-center">Final Report: The Season Summary</p>
+        <p className="text-white/40 text-[10px] tracking-[0.3em] uppercase mb-8 text-center">{section?.number ? `Section ${section.number}` : 'Final Report: The Season Summary'}</p>
         <div 
           className="bg-white rounded-3xl p-6 md:p-8 text-black shadow-[0_20px_50px_rgba(255,255,255,0.05)] border-2 overflow-hidden"
           style={{ borderColor: `${persona.primaryColor}30` }}

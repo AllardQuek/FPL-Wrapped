@@ -7,6 +7,7 @@ import { TemplateOverlap } from './squad/TemplateOverlap';
 import { ContributionStackedBar } from './squad/ContributionStackedBar';
 import { ContributionLegend } from './squad/ContributionLegend';
 import { SharedImageFooter } from '../ui/wrapped/SharedImageFooter';
+import { getSectionById } from '@/lib/constants/wrapped-sections';
 
 interface SquadAnalysisCardProps {
   summary: SeasonSummary;
@@ -15,6 +16,7 @@ interface SquadAnalysisCardProps {
 export function SquadAnalysisCard({ summary }: SquadAnalysisCardProps) {
   const topContributors = summary.topContributors || [];
   const positionBreakdown = summary.positionBreakdown || [];
+  const section = getSectionById('squadAnalysis');
   
   if (topContributors.length === 0) {
     return null;
@@ -73,7 +75,7 @@ export function SquadAnalysisCard({ summary }: SquadAnalysisCardProps) {
     <div className="min-h-screen flex flex-col items-center p-8 bg-gradient-to-b from-transparent to-black/20">
       <div className="flex-1 flex flex-col justify-center max-w-6xl w-full">
         <div className="mb-12 text-center">
-          <p className="text-[#00ff87] text-[10px] font-black tracking-[0.4em] uppercase mb-2">Section 05: The Engine Room</p>
+          <p className="text-[#00ff87] text-[10px] font-black tracking-[0.4em] uppercase mb-2">Section {section?.number || "07: The Engine Room"}</p>
           <h2 className="text-5xl font-black tracking-tighter text-white uppercase italic">Squad Analysis</h2>
           <div className="h-1 w-24 bg-[#00ff87] mx-auto mt-4 rounded-full opacity-50" />
         </div>

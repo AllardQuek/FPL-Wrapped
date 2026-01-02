@@ -7,6 +7,7 @@ import { EfficiencyReport } from './transfers/EfficiencyReport';
 import { TransferChart } from './transfers/TransferChart';
 import { WhatIfSimulator } from './transfers/WhatIfSimulator';
 import { SharedImageFooter } from '../ui/wrapped/SharedImageFooter';
+import { getSectionById } from '@/lib/constants/wrapped-sections';
 
 interface DecisionSpotlightCardProps {
   summary: SeasonSummary;
@@ -25,6 +26,7 @@ export function DecisionSpotlightCard({ summary }: DecisionSpotlightCardProps) {
   const [isSimLoading, setIsSimLoading] = useState(false);
   const [simError, setSimError] = useState<string | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
+  const section = getSectionById('decisionSpotlight');
 
   // Get top 5 transfers
   const topTransfers = summary.transferAnalyses
@@ -59,7 +61,7 @@ export function DecisionSpotlightCard({ summary }: DecisionSpotlightCardProps) {
   return (
     <div className="min-h-screen flex flex-col items-center p-8">
       <div className="flex-1 flex flex-col justify-center max-w-4xl w-full">
-        <p className="text-white/40 text-[10px] tracking-[0.3em] uppercase mb-4 text-center">Section 03: Transfer Decisions</p>
+        <p className="text-white/40 text-[10px] tracking-[0.3em] uppercase mb-4 text-center">Section {section?.number || "03: Transfer Decisions"}</p>
         <h2 className="text-4xl font-bold tracking-tight text-white mb-8 text-center uppercase italic">Decision Spotlight</h2>
 
         <DecisionSpotlightHeader 

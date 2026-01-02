@@ -4,7 +4,6 @@ import { SeasonSummary } from '@/lib/types';
 import { PersonaInsight } from './bench/PersonaInsight';
 import { StatsGrid } from './bench/StatsGrid';
 import { WorstBenchMiss } from './bench/WorstBenchMiss';
-import { BenchBoostComparison } from './bench/BenchBoostComparison';
 import { WrappedCardLayout } from '@/components/ui/wrapped/WrappedCardLayout';
 import { CHIP_NAMES } from '@/lib/constants/chipThresholds';
 
@@ -21,9 +20,6 @@ export function BenchCard({ summary }: BenchCardProps) {
       sectionTitle="Selection"
     >
       <PersonaInsight summary={summary} />
-
-      {/* Bench Boost comparison (if used) */}
-      <BenchBoostComparison chip={benchChip} />
 
       <StatsGrid summary={summary} />
       <WorstBenchMiss worstBenchMiss={summary.worstBenchMiss} />

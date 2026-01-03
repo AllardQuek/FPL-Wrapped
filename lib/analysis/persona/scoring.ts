@@ -366,10 +366,13 @@ export function applyCentroidScoring(
 export function applyRankBoosts(
   scores: Record<string, number>,
   currentRank: number,
-  signals: BehavioralSignals
+  signals: BehavioralSignals,
+  totalPlayers?: number
 ): void {
   const R = RANK_THRESHOLDS;
-  const topPercentile = (currentRank / R.TOTAL_PLAYERS) * 100;
+  const topPercentile = (totalPlayers && totalPlayers > 0) 
+    ? (currentRank / totalPlayers) * 100 
+    : 100;
 
   // Top 10k = THE GOAT (absolute dominance)
   if (currentRank <= R.ELITE) {

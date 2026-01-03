@@ -114,7 +114,7 @@ export function calculateManagerPersona(
   applyBehavioralBoosts(scores, behavioralSignals, metrics);
   
   const currentRank = history.current[history.current.length - 1]?.overall_rank ?? 9999999;
-  applyRankBoosts(scores, currentRank, behavioralSignals);
+  applyRankBoosts(scores, currentRank, behavioralSignals, data.totalPlayers);
   applyCaptainPatternBoosts(scores, captainPattern, metrics);
   applyTransferTimingBoosts(scores, behavioralSignals);
   applyExtremeMetricBoosts(scores, metrics, behavioralSignals);

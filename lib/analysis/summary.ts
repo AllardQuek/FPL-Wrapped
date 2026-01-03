@@ -388,15 +388,18 @@ export function generateSeasonSummary(data: ManagerData): SeasonSummary {
     const currentOverallRank = history.current[history.current.length - 1]?.overall_rank ?? 0;
     
     // Calculate rank-based grade (outcome quality)
-    // Assuming ~10M FPL players
-    const totalPlayers = 10000000;
-    const percentile = currentOverallRank > 0 ? ((totalPlayers - currentOverallRank) / totalPlayers) * 100 : 0;
+    // Use actual total players from bootstrap data
+    const totalPlayers = data.totalPlayers;
+    const rawPercentile = (currentOverallRank > 0 && totalPlayers > 0) 
+        ? (currentOverallRank / totalPlayers) * 100 
+        : 100;
+    const topPercentile = Math.round(rawPercentile * 100) / 100;
     
     let rankGradeScore: number;
-    if (percentile >= 95) rankGradeScore = 4; // A: Top 5% (~500K)
-    else if (percentile >= 85) rankGradeScore = 3; // B: Top 15% (~1.5M)
-    else if (percentile >= 60) rankGradeScore = 2; // C: Top 40% (~4M)
-    else if (percentile >= 30) rankGradeScore = 1; // D: Top 70% (~7M)
+    if (topPercentile <= 5) rankGradeScore = 4; // A: Top 5%
+    else if (topPercentile <= 15) rankGradeScore = 3; // B: Top 15%
+    else if (topPercentile <= 40) rankGradeScore = 2; // C: Top 40%
+    else if (topPercentile <= 70) rankGradeScore = 1; // D: Top 70%
     else rankGradeScore = 0; // F: Below 70%
     
     // Calculate decision-based grade average (process quality)
@@ -412,7 +415,9 @@ export function generateSeasonSummary(data: ManagerData): SeasonSummary {
         managerName: `${managerInfo.player_first_name} ${managerInfo.player_last_name}`,
         teamName: managerInfo.name,
         totalPoints: history.current[history.current.length - 1]?.total_points ?? 0,
-        overallRank: history.current[history.current.length - 1]?.overall_rank ?? 0,
+        overallRank: currentOverallRank,
+        totalPlayers,
+        topPercentile,
         currentSquadValue,
         squadValueTrend,
         squadValueChange,

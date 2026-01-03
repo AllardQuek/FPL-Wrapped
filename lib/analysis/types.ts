@@ -9,6 +9,7 @@ import {
 
 export interface ManagerData {
     bootstrap: FPLBootstrap;
+    totalPlayers: number;
     managerInfo: ManagerInfo;
     history: ManagerHistory;
     transfers: Transfer[];

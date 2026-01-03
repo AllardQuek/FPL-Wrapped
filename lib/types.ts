@@ -703,6 +703,8 @@ export interface SeasonSummary {
   teamName: string;
   totalPoints: number;
   overallRank: number;
+  totalPlayers: number;
+  topPercentile: number;
 
   // Transfer analysis
   totalTransfers: number;

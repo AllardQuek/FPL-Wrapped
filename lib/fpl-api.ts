@@ -262,11 +262,12 @@ export async function getLiveGameWeek(gameweek: number): Promise<LiveGameWeek> {
  * Get a player by ID from bootstrap data.
  *
  * @param playerId The FPL player id.
+ * @param bootstrap Optional bootstrap payload; when provided, avoids fetching again.
  * @returns The `Player` if found, otherwise `undefined`.
  */
-export async function getPlayerById(playerId: number): Promise<Player | undefined> {
-  const bootstrap = await getBootstrapData();
-  return bootstrap.elements.find((p) => p.id === playerId);
+export async function getPlayerById(playerId: number, bootstrap?: FPLBootstrap): Promise<Player | undefined> {
+  const bs = bootstrap ?? await getBootstrapData();
+  return bs.elements.find((p) => p.id === playerId);
 }
 
 /**
@@ -275,21 +276,23 @@ export async function getPlayerById(playerId: number): Promise<Player | undefine
  * Falls back to `'Unknown'` when player cannot be found.
  *
  * @param playerId The FPL player id.
+ * @param bootstrap Optional bootstrap payload; when provided, avoids fetching again.
  * @returns The player's web name or `'Unknown'`.
  */
-export async function getPlayerName(playerId: number): Promise<string> {
-  const player = await getPlayerById(playerId);
+export async function getPlayerName(playerId: number, bootstrap?: FPLBootstrap): Promise<string> {
+  const player = await getPlayerById(playerId, bootstrap);
   return player?.web_name ?? 'Unknown';
 }
 
 /**
  * Get all finished gameweeks.
  *
+ * @param bootstrap Optional bootstrap payload; when provided, avoids fetching again.
  * @returns Array of finished gameweek ids.
  */
-export async function getFinishedGameweeks(): Promise<number[]> {
-  const bootstrap = await getBootstrapData();
-  return bootstrap.events
+export async function getFinishedGameweeks(bootstrap?: FPLBootstrap): Promise<number[]> {
+  const bs = bootstrap ?? await getBootstrapData();
+  return bs.events
     .filter((e) => e.finished)
     .map((e) => e.id);
 }
@@ -297,12 +300,24 @@ export async function getFinishedGameweeks(): Promise<number[]> {
 /**
  * Get the current gameweek number.
  *
+ * @param bootstrap Optional bootstrap payload; when provided, avoids fetching again.
  * @returns The id of the current gameweek, or `1` if not found.
  */
-export async function getCurrentGameweek(): Promise<number> {
-  const bootstrap = await getBootstrapData();
-  const current = bootstrap.events.find((e) => e.is_current);
+export async function getCurrentGameweek(bootstrap?: FPLBootstrap): Promise<number> {
+  const bs = bootstrap ?? await getBootstrapData();
+  const current = bs.events.find((e) => e.is_current);
   return current?.id ?? 1;
+}
+
+/**
+ * Get total number of players in FPL (from bootstrap-static).
+ *
+ * @param bootstrap Optional bootstrap payload; when provided, avoids fetching again.
+ * @returns The total number of players reported by FPL or `0` if not available.
+ */
+export async function getTotalPlayers(bootstrap?: FPLBootstrap): Promise<number> {
+  const bs = bootstrap ?? await getBootstrapData();
+  return bs.total_players ?? 0;
 }
 
 /**
@@ -318,6 +333,10 @@ export async function getCurrentGameweek(): Promise<number> {
 export async function fetchAllManagerData(managerId: number) {
   // Fetch bootstrap data first (cached)
   const bootstrap = await getBootstrapData();
+  
+  // Use helpers with bootstrap to avoid redundant fetches and reduce boilerplate
+  const totalPlayers = await getTotalPlayers(bootstrap);
+  const finishedGameweeks = await getFinishedGameweeks(bootstrap);
 
   // Fetch manager-specific data in parallel
   const [managerInfo, history, transfers] = await Promise.all([
@@ -325,11 +344,6 @@ export async function fetchAllManagerData(managerId: number) {
     getManagerHistory(managerId),
     getManagerTransfers(managerId),
   ]);
-
-  // Get finished gameweeks
-  const finishedGameweeks = bootstrap.events
-    .filter((e) => e.finished)
-    .map((e) => e.id);
 
   // Fetch picks and live data for each finished gameweek
   // We use a small batch size and delay to avoid hitting rate limits
@@ -362,6 +376,7 @@ export async function fetchAllManagerData(managerId: number) {
 
   const result = {
     bootstrap,
+    totalPlayers,
     managerInfo,
     history,
     transfers,

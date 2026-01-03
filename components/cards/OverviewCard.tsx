@@ -39,16 +39,15 @@ export function OverviewCard({ summary }: OverviewCardProps) {
   };
 
   const renderOverallGradeTooltip = () => {
-    // Calculate rank-based grade
-    const totalPlayers = 10000000;
-    const percentile = ((totalPlayers - summary.overallRank) / totalPlayers) * 100;
+    // Use pre-calculated top percentile from summary
+    const topPercentile = summary.topPercentile;
     
     let rankGrade: string;
     let rankScore: number;
-    if (percentile >= 95) { rankGrade = 'A'; rankScore = 4; }
-    else if (percentile >= 85) { rankGrade = 'B'; rankScore = 3; }
-    else if (percentile >= 60) { rankGrade = 'C'; rankScore = 2; }
-    else if (percentile >= 30) { rankGrade = 'D'; rankScore = 1; }
+    if (topPercentile <= 5) { rankGrade = 'A'; rankScore = 4; }
+    else if (topPercentile <= 15) { rankGrade = 'B'; rankScore = 3; }
+    else if (topPercentile <= 40) { rankGrade = 'C'; rankScore = 2; }
+    else if (topPercentile <= 70) { rankGrade = 'D'; rankScore = 1; }
     else { rankGrade = 'F'; rankScore = 0; }
     
     // Calculate decision average
@@ -73,7 +72,7 @@ export function OverviewCard({ summary }: OverviewCardProps) {
             <span className={`text-xs font-bold ${getGradeColor(rankGrade)}`}>{rankGrade}</span>
           </div>
           <div className="text-[9px] text-white/50 pl-1">
-            #{formatRank(summary.overallRank)} = Top {percentile.toFixed(1)}%
+            #{formatRank(summary.overallRank)} = Top {topPercentile}%
           </div>
         </div>
         
@@ -177,30 +176,22 @@ export function OverviewCard({ summary }: OverviewCardProps) {
     );
   };
 
-  // Calculate rank percentile
-  const calculatePercentile = (rank: number) => {
-    // Assuming ~10M FPL players globally
-    const totalPlayers = 10000000;
-    const percentile = ((totalPlayers - rank) / totalPlayers) * 100;
-    return Math.round(percentile * 10) / 10; // Round to 1 decimal
-  };
-
-  const percentile = calculatePercentile(summary.overallRank);
+  const percentile = summary.topPercentile;
 
   const getSeasonOverviewInsight = () => {
-    const percentileText = percentile >= 1 ? `Top ${percentile.toFixed(1)}%` : 'Top <0.1%';
+    const percentileText = percentile < 0.1 ? 'Top <0.1%' : `Top ${percentile}%`;
     
-    if (percentile >= 99) {
+    if (percentile <= 1) {
       return `${percentileText} globally. Elite territory. You've played with world-class precision and deserve every accolade.`;
-    } else if (percentile >= 95) {
+    } else if (percentile <= 5) {
       return `${percentileText} finish. Outstanding season with tactical mastery that puts you in rare company.`;
-    } else if (percentile >= 85) {
+    } else if (percentile <= 15) {
       return `${percentileText} worldwide. Strong campaign, a top-tier finish outplaying the vast majority.`;
-    } else if (percentile >= 70) {
+    } else if (percentile <= 30) {
       return `${percentileText} globally. Solid season, your decisions mostly landed, navigating the fixture chaos like a pro.`;
-    } else if (percentile >= 50) {
+    } else if (percentile <= 50) {
       return `${percentileText} finish. Mid-table respectable, every season has its ups and downs, you're right in the mix.`;
-    } else if (percentile >= 25) {
+    } else if (percentile <= 75) {
       return `${percentileText} placement. Rebuilding season, not every campaign clicks perfectly. Room to grow.`;
     } else {
       return `Learning year. Every manager starts somewhere. Use this as fuel to study and come back stronger.`;

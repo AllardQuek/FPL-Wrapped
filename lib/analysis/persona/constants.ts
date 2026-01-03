@@ -205,8 +205,6 @@ export const RANK_THRESHOLDS = {
   TOP_150K: 150_000,
   /** Top 300k threshold */
   TOP_300K: 300_000,
-  /** Total players estimate */
-  TOTAL_PLAYERS: 12_742_297,
 } as const;
 
 // ============================================================================

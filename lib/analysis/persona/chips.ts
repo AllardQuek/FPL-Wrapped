@@ -155,8 +155,8 @@ function calculatePopularityScore(
       );
       if (chipPlay && !gameweek.is_current) {
         // Only count finished GWs
-        const totalPlayers = bootstrap.total_players || 10_000_000;
-        const usageRate = chipPlay.num_played / totalPlayers;
+        const totalPlayers = bootstrap.total_players;
+        const usageRate = totalPlayers > 0 ? chipPlay.num_played / totalPlayers : 0;
 
         // 10% usage = 1.0 score
         popularitySum += Math.min(1, usageRate * 10);

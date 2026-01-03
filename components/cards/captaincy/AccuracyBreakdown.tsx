@@ -27,7 +27,6 @@ export function AccuracyBreakdown({ analyses }: AccuracyBreakdownProps) {
   }));
 
   const successfulGWs = accuracyDetails.filter(d => d.wasOptimal);
-  const missedGWs = accuracyDetails.filter(d => !d.wasOptimal);
   const accuracyRate = (successfulGWs.length / analyses.length) * 100;
 
   return (

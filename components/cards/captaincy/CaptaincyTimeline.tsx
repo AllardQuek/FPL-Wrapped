@@ -31,15 +31,15 @@ export function CaptaincyTimeline({ analyses, successRate, pointsLost, bestCapta
   const successfulGWsCount = analyses.filter(a => a.wasOptimal).length;
 
   // Group into rows for the snake timeline
-  const rows = [];
-  for (let i = 0; i < accuracyDetails.length; i += ITEMS_PER_ROW) {
-    const row = accuracyDetails.slice(i, i + ITEMS_PER_ROW);
-    // Pad the row with nulls to ensure consistent alignment across rows
-    while (row.length < ITEMS_PER_ROW) {
-      row.push(null as any);
+    const rows: (typeof accuracyDetails[number] | null)[][] = [];
+    for (let i = 0; i < accuracyDetails.length; i += ITEMS_PER_ROW) {
+      const row: (typeof accuracyDetails[number] | null)[] = accuracyDetails.slice(i, i + ITEMS_PER_ROW);
+      // Pad the row with nulls to ensure consistent alignment across rows
+      while (row.length < ITEMS_PER_ROW) {
+        row.push(null);
+      }
+      rows.push(row);
     }
-    rows.push(row);
-  }
 
   return (
     <div className="space-y-4">

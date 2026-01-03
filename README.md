@@ -212,7 +212,7 @@ This project is not affiliated with, endorsed by, or connected to the Premier Le
 
 ## License
 
-MIT License - feel free to use this project however you'd like!
+MIT License
 
 ---
 

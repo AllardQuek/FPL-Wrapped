@@ -87,7 +87,7 @@ export function DecisionSpotlightCard({ summary }: DecisionSpotlightCardProps) {
                   className="group flex items-center gap-2 px-6 py-3 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 transition-all"
                 >
                   <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/60 group-hover:text-white">
-                    {isExpanded ? 'Hide Details' : 'Explore Decision & What-If'}
+                    {isExpanded ? 'Hide Tool' : 'What-If Tool'}
                   </span>
                   <div className={`transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}>
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">

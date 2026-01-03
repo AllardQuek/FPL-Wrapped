@@ -23,15 +23,15 @@ export function ChipsCard({ summary }: ChipsCardProps) {
     });
 
     return (
-        <div className="min-h-screen flex flex-col items-center p-8">
-            <div className="flex-1 flex flex-col justify-center max-w-4xl w-full">
-                <p className="text-white/40 text-[10px] tracking-[0.3em] uppercase mb-4 text-center">Section {section?.number || "06: Power Plays"}</p>
-                <h2 className="text-4xl font-bold tracking-tight text-white mb-12 text-center uppercase italic">Chip Strategy</h2>
+        <div className="min-h-screen flex flex-col items-center p-6 md:p-8">
+            <div className="flex-1 flex flex-col justify-center max-w-5xl w-full py-8 md:py-0">
+                <p className="text-white/40 text-[10px] tracking-[0.3em] uppercase mb-2 md:mb-4 text-center">Section {section?.number || "06: Power Plays"}</p>
+                <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-white mb-6 md:mb-8 text-center uppercase italic">Chip Strategy</h2>
 
                 <PersonaInsight summary={summary} />
 
                 {/* Timeline Label */}
-                <p className="mb-8 text-center text-white/30 text-xs tracking-[0.3em] uppercase font-bold">
+                <p className="mb-6 md:mb-8 text-center text-white/30 text-xs tracking-[0.3em] uppercase font-bold">
                     Chip Usage Timeline
                 </p>
 
@@ -40,7 +40,7 @@ export function ChipsCard({ summary }: ChipsCardProps) {
                     {/* Connector Line for Desktop Flow */}
                     <div className="absolute top-1/2 left-4 right-4 h-0.5 bg-white/5 -translate-y-1/2 hidden md:block"></div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6 relative z-10">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 md:gap-6 relative z-10">
                         {sortedChips.map((chip, i) => (
                             <ChipCardItem 
                                 key={i} 

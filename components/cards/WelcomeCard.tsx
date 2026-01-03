@@ -84,17 +84,17 @@ export function WelcomeCard({ summary }: WelcomeCardProps) {
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[500px] bg-[#00ff87]/5 blur-[120px] rounded-full -z-10"></div>
 
       <div className="flex-1 flex flex-col justify-center text-center animate-fade-in">
-        <p className="text-white/40 text-[10px] tracking-[0.5em] uppercase mb-12">Premier League Season Review</p>
+        <p className="text-white/40 text-[10px] tracking-[0.5em] uppercase mb-12">FPL Season Review</p>
 
         <div className="relative inline-block mb-12">
           <p className="text-6xl md:text-8xl font-black tracking-tighter text-white italic opacity-10 absolute -top-12 -left-12 -z-10 select-none">{currentSeason}</p>
           <h1 className="text-5xl md:text-7xl font-bold tracking-tight text-white mb-4">
-            {(summary.managerName || 'Manager').split(' ')[0].toUpperCase()}.
+            {(summary.teamName || 'Team').toUpperCase()}.
           </h1>
         </div>
 
         <p className="text-lg md:text-xl font-medium text-white/60 mb-8 max-w-sm mx-auto leading-relaxed">
-          Which manager persona are you?<br></br> Let&apos;s find out.
+          what kind of manager are you?
         </p>
 
         {/* Mystery Avatar - User's Unknown Persona */}

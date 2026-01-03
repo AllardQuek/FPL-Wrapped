@@ -19,9 +19,11 @@ export function CaptaincyCard({ summary }: CaptaincyCardProps) {
       sectionNumber={section?.number || "04: The Armband"} 
       sectionTitle={section?.title || "Captaincy"}
     >
-      <PersonaInsight 
-        successRate={summary.captaincySuccessRate} 
-        persona={summary.persona} 
+      <PersonaInsight
+        successRate={summary.captaincySuccessRate}
+        templateRate={summary.captaincyTemplateRate ?? 0}
+        consistencyRate={summary.captaincyConsistencyRate ?? 0}
+        persona={summary.persona}
       />
 
       <StatsGrid summary={summary} />

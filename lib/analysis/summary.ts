@@ -237,6 +237,24 @@ export function generateSeasonSummary(data: ManagerData): SeasonSummary {
         ? (successfulCaptaincies / captaincyAnalyses.length) * 100
         : 0;
 
+    // Template (most-popular) captain picks: how often the manager chose the global most-captained player
+    const templateCaptainPicks = captaincyAnalyses.filter((c) => c.wasMostCaptainedGlobal).length;
+    const captaincyTemplateRate = captaincyAnalyses.length > 0
+        ? (templateCaptainPicks / captaincyAnalyses.length) * 100
+        : 0;
+
+    // Consistency: proportion of gameweeks where the captain was the same as the previous analysed GW
+    let consecutiveSameCount = 0;
+    let comparisons = 0;
+    for (let i = 1; i < captaincyAnalyses.length; i++) {
+        const prev = captaincyAnalyses[i - 1];
+        const cur = captaincyAnalyses[i];
+        if (!prev || !cur) continue;
+        comparisons++;
+        if (prev.captainId === cur.captainId) consecutiveSameCount++;
+    }
+    const captaincyConsistencyRate = comparisons > 0 ? (consecutiveSameCount / comparisons) * 100 : 0;
+
     const sortedCaptaincy = [...captaincyAnalyses].sort(
         (a, b) => b.captainPoints - a.captainPoints
     );
@@ -415,6 +433,8 @@ export function generateSeasonSummary(data: ManagerData): SeasonSummary {
         optimalCaptaincyPoints,
         captaincyPointsLost,
         captaincySuccessRate,
+        captaincyTemplateRate,
+        captaincyConsistencyRate,
         bestCaptainPick,
         worstCaptainPick,
         captaincyGrade,

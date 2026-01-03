@@ -720,6 +720,8 @@ export interface SeasonSummary {
   optimalCaptaincyPoints: number;
   captaincyPointsLost: number;
   captaincySuccessRate: number;
+  captaincyTemplateRate?: number; // % of gameweeks where you picked the globally most-captained player
+  captaincyConsistencyRate?: number; // % of gameweeks where you picked the same captain as previous GW
   captaincyEfficiency: number;
   bestCaptainPick: CaptaincyAnalysis | null;
   worstCaptainPick: CaptaincyAnalysis | null;

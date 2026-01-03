@@ -60,7 +60,7 @@ export function PersonaInsight({ successRate, templateRate, consistencyRate, per
   };
 
   return (
-    <div className="bg-white/5 rounded-3xl p-6 mb-8 border border-white/10 backdrop-blur-md">
+    <div className="bg-white/5 rounded-2xl p-4 mb-6 border border-white/10 backdrop-blur-md">
       <div className="flex items-center gap-4 text-left">
         <div className="relative w-14 h-14 rounded-full overflow-hidden border-2 border-white/20 flex-shrink-0 bg-white/10">
           {/* eslint-disable-next-line @next/next/no-img-element */}

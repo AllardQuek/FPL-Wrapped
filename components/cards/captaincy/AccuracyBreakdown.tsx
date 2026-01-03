@@ -1,80 +1,83 @@
 import { CaptaincyAnalysis } from '@/lib/types';
+import { getAccuracyColor } from './constants';
 
 interface AccuracyBreakdownProps {
   analyses: CaptaincyAnalysis[];
 }
 
 export function AccuracyBreakdown({ analyses }: AccuracyBreakdownProps) {
+  if (!analyses || analyses.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 text-white/40">
+        <div className="text-4xl mb-4">🎯</div>
+        <p className="text-sm font-medium">No captaincy data available yet.</p>
+        <p className="text-[10px] uppercase tracking-widest mt-1">Finish some gameweeks first!</p>
+      </div>
+    );
+  }
+
   const accuracyDetails = analyses.map(a => ({
     gw: a.gameweek,
     captain: a.captainName,
-    captainPts: a.captainPoints / 2, // Divide by multiplier to get raw points
+    captainPts: a.captainPoints / a.captainMultiplier,
     bestPick: a.bestPickName,
-    bestPts: a.bestPickPoints / 2,
+    bestPts: a.bestPickPoints,
     wasOptimal: a.wasOptimal,
+    pointsLeft: a.pointsLeftOnTable,
   }));
 
   const successfulGWs = accuracyDetails.filter(d => d.wasOptimal);
   const missedGWs = accuracyDetails.filter(d => !d.wasOptimal);
+  const accuracyRate = (successfulGWs.length / analyses.length) * 100;
 
   return (
-    <div className="text-white">
-      <div className="grid grid-cols-1 gap-3">
-        {/* Summary Stats */}
-        <div className="bg-white/5 rounded-lg p-3 border border-white/10">
-          <div className="text-xs text-white/60 mb-1">Season Summary</div>
-          <div className="text-xl font-black text-[#00ff87]">{successfulGWs.length} / {analyses.length}</div>
-          <div className="text-[10px] text-white/40">Optimal Captain Choices</div>
+    <div className="text-white space-y-6">
+      {/* Summary Stats */}
+      <div className="grid grid-cols-2 gap-3">
+        <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+          <div className="text-[10px] text-white/40 uppercase font-bold tracking-wider mb-1">Accuracy</div>
+          <div className={`text-2xl font-black ${getAccuracyColor(accuracyRate)}`}>
+            {Math.round(accuracyRate)}%
+          </div>
+          <div className="text-[10px] text-white/40">{successfulGWs.length} of {analyses.length} optimal</div>
         </div>
-
-        {/* Successful Picks */}
-        {successfulGWs.length > 0 && (
-          <div>
-            <h3 className="text-xs font-black text-[#00ff87] uppercase tracking-wider mb-2 flex items-center gap-2">
-              <span>✅</span> Optimal Picks ({successfulGWs.length})
-            </h3>
-            <div className="grid grid-cols-3 gap-2">
-              {successfulGWs.map(d => (
-                <div key={d.gw} className="bg-[#00ff87]/10 border border-[#00ff87]/20 rounded-lg p-2 text-center">
-                  <div className="text-[9px] text-white/40 font-bold uppercase">GW{d.gw}</div>
-                  <div className="text-xs font-bold text-white mt-1 truncate">{d.captain}</div>
-                  <div className="text-[10px] text-[#00ff87] font-black">{d.captainPts}pts</div>
-                </div>
-              ))}
-            </div>
+        <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+          <div className="text-[10px] text-white/40 uppercase font-bold tracking-wider mb-1">Points Lost</div>
+          <div className="text-2xl font-black text-[#ff6b9d]">
+            -{accuracyDetails.reduce((acc, d) => acc + d.pointsLeft, 0)}
           </div>
-        )}
+          <div className="text-[10px] text-white/40">Total missed potential</div>
+        </div>
+      </div>
 
-        {/* Missed Opportunities */}
-        {missedGWs.length > 0 && (
-          <div>
-            <h3 className="text-xs font-black text-[#ff6b9d] uppercase tracking-wider mb-2 flex items-center gap-2">
-              <span>❌</span> Missed Opportunities ({missedGWs.length})
-            </h3>
-            <div className="space-y-2">
-              {missedGWs.map(d => (
-                <div key={d.gw} className="bg-white/5 border border-white/10 rounded-lg p-2.5">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-[10px] font-bold text-white/60">GW{d.gw}</span>
-                    <span className="text-xs font-bold text-[#ff6b9d]">-{d.bestPts - d.captainPts}pts</span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2 text-[10px]">
-                    <div>
-                      <div className="text-white/40 text-[9px] uppercase">You Picked</div>
-                      <div className="font-bold text-white text-xs truncate">{d.captain}</div>
-                      <div className="text-white/60">{d.captainPts}pts</div>
-                    </div>
-                    <div>
-                      <div className="text-white/40 text-[9px] uppercase">Should Have Been</div>
-                      <div className="font-bold text-[#00ff87] text-xs truncate">{d.bestPick}</div>
-                      <div className="text-[#00ff87]">{d.bestPts}pts</div>
-                    </div>
-                  </div>
+      {/* Detailed List */}
+      <div className="space-y-4">
+        <h3 className="text-[10px] font-bold text-white/40 uppercase tracking-widest px-1">Gameweek History</h3>
+        <div className="space-y-2">
+          {accuracyDetails.slice().reverse().map(d => (
+            <div key={d.gw} className={`bg-white/5 border rounded-xl p-3 flex items-center justify-between ${d.wasOptimal ? 'border-[#00ff87]/20' : 'border-[#ff6b9d]/20'}`}>
+              <div className="flex items-center gap-3">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-black ${d.wasOptimal ? 'bg-[#00ff87]/20 text-[#00ff87]' : 'bg-[#ff6b9d]/20 text-[#ff6b9d]'}`}>
+                  {d.gw}
                 </div>
-              ))}
+                <div>
+                  <div className="text-xs font-bold text-white">{d.captain}</div>
+                  <div className="text-[10px] text-white/40">{d.captainPts} pts</div>
+                </div>
+              </div>
+              
+              {!d.wasOptimal && (
+                <div className="text-right">
+                  <div className="text-[10px] font-bold text-[#ff6b9d]">-{d.pointsLeft}pts</div>
+                  <div className="text-[8px] text-white/40 uppercase">Missed {d.bestPick}</div>
+                </div>
+              )}
+              {d.wasOptimal && (
+                <div className="text-[10px] font-bold text-[#00ff87]">OPTIMAL</div>
+              )}
             </div>
-          </div>
-        )}
+          ))}
+        </div>
       </div>
     </div>
   );

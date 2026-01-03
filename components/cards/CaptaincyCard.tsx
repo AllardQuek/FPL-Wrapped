@@ -2,8 +2,8 @@
 
 import { SeasonSummary } from '@/lib/types';
 import { PersonaInsight } from './captaincy/PersonaInsight';
-import { StatsGrid } from './captaincy/StatsGrid';
-import { PointsLeftOnTable } from './captaincy/PointsLeftOnTable';
+import { HerdFactor } from './captaincy/HerdFactor';
+import { CaptaincyTimeline } from './captaincy/CaptaincyTimeline';
 import { WrappedCardLayout } from '@/components/ui/wrapped/WrappedCardLayout';
 import { getSectionById } from '@/lib/constants/wrapped-sections';
 
@@ -26,9 +26,16 @@ export function CaptaincyCard({ summary }: CaptaincyCardProps) {
         persona={summary.persona}
       />
 
-      <StatsGrid summary={summary} />
+      <div className="mb-6">
+        <CaptaincyTimeline 
+          analyses={summary.captaincyAnalyses} 
+          successRate={summary.captaincySuccessRate}
+          pointsLost={summary.captaincyPointsLost}
+          bestCaptainGW={summary.bestCaptainPick?.gameweek}
+        />
+      </div>
 
-      <PointsLeftOnTable summary={summary} />
+      <HerdFactor summary={summary} />
     </WrappedCardLayout>
   );
 }

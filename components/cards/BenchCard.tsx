@@ -5,7 +5,6 @@ import { PersonaInsight } from './bench/PersonaInsight';
 import { StatsGrid } from './bench/StatsGrid';
 import { WorstBenchMiss } from './bench/WorstBenchMiss';
 import { WrappedCardLayout } from '@/components/ui/wrapped/WrappedCardLayout';
-import { CHIP_NAMES } from '@/lib/constants/chipThresholds';
 import { getSectionById } from '@/lib/constants/wrapped-sections';
 
 interface BenchCardProps {
@@ -22,7 +21,7 @@ export function BenchCard({ summary }: BenchCardProps) {
     >
       <PersonaInsight summary={summary} />
 
-      <StatsGrid summary={summary} />
+      <StatsGrid summary={summary} benchAnalyses={summary.benchAnalyses} />
       <WorstBenchMiss worstBenchMiss={summary.worstBenchMiss} />
     </WrappedCardLayout>
   );

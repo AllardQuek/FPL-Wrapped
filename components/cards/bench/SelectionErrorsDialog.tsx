@@ -77,7 +77,13 @@ export function SelectionErrorsDialog({ benchAnalyses }: SelectionErrorsDialogPr
                     Benched: <span className="font-black text-white">{error.bestBenchPick?.player.web_name}</span> ({error.bestBenchPick?.points} pts)
                   </p>
                   <p className="text-white/60 text-xs mt-1">
-                    Started someone with only {error.lowestStarterPoints} pts
+                    {error.replacedPlayers && error.replacedPlayers.length > 0 ? (
+                      <>
+                        Started: {error.replacedPlayers.map((rp) => rp.player.web_name).join(', ')} ({error.replacedPlayers[0].points} pts)
+                      </>
+                    ) : (
+                      <>Started someone with only {error.replacedPlayerPoints ?? error.lowestStarterPoints ?? 0} pts</>
+                    )}
                   </p>
                 </div>
               </div>

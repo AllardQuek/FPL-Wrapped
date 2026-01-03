@@ -20,7 +20,19 @@ export function WorstBenchMiss({ worstBenchMiss }: WorstBenchMissProps) {
               {worstBenchMiss.bestBenchPick?.player.web_name} ({worstBenchMiss.bestBenchPick?.points} pts)
             </p>
             <p className="text-[9px] sm:text-[10px] text-black/40 font-bold uppercase tracking-widest">
-              GW{worstBenchMiss.gameweek} • Benched for a {worstBenchMiss.lowestStarterPoints}pt starter
+              GW{worstBenchMiss.gameweek} • Benched for {worstBenchMiss.replacedPlayers && worstBenchMiss.replacedPlayers.length > 0 ? (
+                <>
+                  {worstBenchMiss.replacedPlayers.map((rp, i) => (
+                    <span key={rp.player.id}>
+                      {i > 0 && ', '}
+                      {rp.player.web_name}
+                    </span>
+                  ))}
+                  {` (${worstBenchMiss.replacedPlayers[0].points}pt starter${worstBenchMiss.replacedPlayers.length > 1 ? 's' : ''})`}
+                </>
+              ) : (
+                <>a {worstBenchMiss.replacedPlayerPoints}pt starter</>
+              )}
             </p>
           </>
         ) : (

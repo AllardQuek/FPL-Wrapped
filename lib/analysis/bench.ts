@@ -29,30 +29,75 @@ export function analyzeBench(data: ManagerData): BenchAnalysis[] {
             }
         }
 
+        // Find started players by position
+        const startedPlayers: { player: Player; points: number; position: Position }[] = [];
+        let startedKeeperPoints = 0;
         let lowestStarterPoints = Infinity;
+
         for (const pick of starters) {
             const points = getPlayerPointsInGameweek(pick.element, gw, liveByGameweek);
-            if (points < lowestStarterPoints) {
-                lowestStarterPoints = points;
+            const player = getPlayer(pick.element, bootstrap);
+            if (player) {
+                const position = ELEMENT_TYPE_TO_POSITION[player.element_type];
+                startedPlayers.push({ player, points, position });
+                
+                if (position === 'GKP') {
+                    startedKeeperPoints = points;
+                }
+                
+                if (points < lowestStarterPoints) {
+                    lowestStarterPoints = points;
+                }
             }
         }
 
-        const bestBenchPlayer = benchPlayers.reduce(
-            (best, current) => (current.points > best.points ? current : best),
-            benchPlayers[0] || { player: null, points: 0 }
-        );
+        // Calculate missed points for each bench player
+        let maxMissedPoints = 0;
+        let bestBenchPick: { player: Player; points: number } | null = null;
+        let errorPosition: Position | undefined;
+        let replacedPlayerPoints = 0;
+        let replacedPlayers: { player: Player; points: number }[] = [];
 
-        const missedPoints = Math.max(0, (bestBenchPlayer.points || 0) - (lowestStarterPoints === Infinity ? 0 : lowestStarterPoints));
+        for (const benchPlayer of benchPlayers) {
+            if (!benchPlayer.player) continue;
+            
+            const benchPosition = ELEMENT_TYPE_TO_POSITION[benchPlayer.player.element_type];
+            let missedPointsForThisPlayer = 0;
+            let comparisonPoints = 0;
+            
+            if (benchPosition === 'GKP') {
+                // For goalkeepers, compare with the started keeper
+                comparisonPoints = startedKeeperPoints;
+                missedPointsForThisPlayer = Math.max(0, benchPlayer.points - startedKeeperPoints);
+            } else {
+                // For other positions, can sub for any starter, so compare with lowest starter
+                comparisonPoints = lowestStarterPoints === Infinity ? 0 : lowestStarterPoints;
+                missedPointsForThisPlayer = Math.max(0, benchPlayer.points - comparisonPoints);
+            }
+            
+            if (missedPointsForThisPlayer > maxMissedPoints) {
+                maxMissedPoints = missedPointsForThisPlayer;
+                bestBenchPick = benchPlayer;
+                errorPosition = benchPosition;
+                replacedPlayerPoints = comparisonPoints;
+
+                // Determine which starter(s) would be replaced
+                if (benchPosition === 'GKP') {
+                    const keeper = startedPlayers.find((s) => s.position === 'GKP');
+                    replacedPlayers = keeper ? [{ player: keeper.player, points: comparisonPoints }] : [];
+                } else {
+                    // Find all starters matching the lowest starter points (ties possible)
+                    replacedPlayers = startedPlayers
+                        .filter((s) => s.points === comparisonPoints)
+                        .map((s) => ({ player: s.player, points: s.points }));
+                }
+            }
+        }
+
+        const missedPoints = maxMissedPoints;
         // Only count as a "selection error" if the difference is significant (3+ points)
         // This filters out marginal calls and focuses on genuine mistakes
         const hadBenchRegret = missedPoints > 3;
-
-        // Track position of the error for granular insights
-        let errorPosition: Position | undefined;
-        if (hadBenchRegret && bestBenchPlayer.player) {
-            const positionId = bestBenchPlayer.player.element_type;
-            errorPosition = ELEMENT_TYPE_TO_POSITION[positionId];
-        }
 
         analyses.push({
             gameweek: gw,
@@ -60,9 +105,11 @@ export function analyzeBench(data: ManagerData): BenchAnalysis[] {
             benchPlayers,
             lowestStarterPoints: lowestStarterPoints === Infinity ? 0 : lowestStarterPoints,
             missedPoints,
-            bestBenchPick: hadBenchRegret ? (bestBenchPlayer as { player: Player; points: number }) : null,
+            bestBenchPick: hadBenchRegret ? bestBenchPick : null,
             hadBenchRegret,
             errorPosition,
+            replacedPlayerPoints,
+            replacedPlayers: hadBenchRegret ? replacedPlayers : undefined,
         });
     }
 

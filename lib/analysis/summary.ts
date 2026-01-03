@@ -155,8 +155,25 @@ export function generateSeasonSummary(data: ManagerData): SeasonSummary {
     // Run all analyses
     const transferAnalyses = analyzeTransfers(data);
     const captaincyAnalyses = analyzeCaptaincy(data);
-    const benchAnalyses = analyzeBench(data);
+    // Run chip analysis early so we can detect Bench Boost weeks and
+    // exclude them from bench-specific calculations to avoid skewing
+    // averages and unnecessary work.
     const chipAnalyses = analyzeChips(data);
+
+    // Build a set of gameweeks where Bench Boost was played
+    const benchBoostGWs = new Set<number>(
+        (chipAnalyses || []).filter(c => c.used && c.name === 'bboost').map(c => c.event)
+    );
+
+    // Create a lightweight view of ManagerData with bench-boost weeks removed
+    // and pass that to the bench analysis. This avoids changing the
+    // bench analyzer signature while saving work inside `analyzeBench`.
+    const dataForBench: ManagerData = {
+        ...data,
+        finishedGameweeks: data.finishedGameweeks.filter(gw => !benchBoostGWs.has(gw)),
+    };
+
+    const benchAnalyses = analyzeBench(dataForBench);
     const templateOverlap = calculateTemplateOverlap(data);
     const patienceMetrics = calculatePatienceMetrics(data);
     const transferTiming = analyzeTransferTiming(data);

@@ -649,10 +649,12 @@ export interface BenchAnalysis {
   benchPoints: number;
   benchPlayers: { player: Player; points: number }[];
   lowestStarterPoints: number;
-  missedPoints: number; // Best bench player - worst starter if bench was better
+  missedPoints: number; // Best bench player - player they would have replaced
   bestBenchPick: { player: Player; points: number } | null;
   hadBenchRegret: boolean;
   errorPosition?: 'GKP' | 'DEF' | 'MID' | 'FWD'; // Position of the benched player who should have started
+  replacedPlayerPoints: number; // Points of the player that would have been replaced
+  replacedPlayers?: { player: Player; points: number }[]; // One or more started players who would have been replaced
 }
 
 export interface ManagerPersona {

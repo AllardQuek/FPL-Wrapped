@@ -61,9 +61,13 @@ export function ChipCardItem({ chip, index, isLast }: ChipCardItemProps) {
                     </div>
 
                     <div className="mt-auto md:mt-2">
-                        <div className={`inline-block px-2 py-0.5 rounded text-[8px] font-black uppercase ${chip.used
-                            ? (chip.isExcellent ? 'bg-[#00ff87] text-[#0d0015]' : 'bg-white text-black')
-                            : 'bg-white/10 text-white/40'
+                        <div className={`inline-block px-2 py-0.5 rounded text-[8px] font-black uppercase ${!chip.used
+                            ? 'bg-white/10 text-white/40'
+                            : chip.verdictTier === 'excellent'
+                                ? 'bg-[#00ff87] text-[#0d0015]'
+                                : chip.verdictTier === 'wasted'
+                                    ? 'bg-[#e90052] text-white'
+                                    : 'bg-white text-black'
                             }`}>
                             {chip.verdict}
                         </div>

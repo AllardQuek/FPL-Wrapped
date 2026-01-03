@@ -35,7 +35,7 @@ export function ChipDialogContent({ chip }: ChipDialogContentProps) {
                     {chipName} Analysis
                 </p>
                 <p className="text-sm text-white/70 leading-relaxed">
-                    Used in <strong className="text-white">Gameweek {chip.event}</strong> with a net impact of <strong className={chip.pointsGained >= 0 ? 'text-[#00ff87]' : 'text-[#ff6b9d]'}>{formatPointsLocal(chip.pointsGained, 'points')}</strong>.
+                    Used in <strong className="text-white">Gameweek {chip.event}</strong> with a net impact of <strong className={chip.pointsGained >= 0 ? 'text-[#00ff87]' : 'text-[#e90052]'}>{formatPointsLocal(chip.pointsGained, 'points')}</strong>.
                 </p>
             </div>
 

@@ -11,7 +11,13 @@ export function ChipVerdict({ chip }: ChipVerdictProps) {
                 Final Verdict
             </p>
             <div className="flex items-center gap-3">
-                <span className={`px-3 py-1.5 rounded-lg text-sm font-black uppercase ${chip.isExcellent ? 'bg-[#00ff87] text-[#0d0015]' : 'bg-white text-black'}`}>
+                <span className={`px-3 py-1.5 rounded-lg text-sm font-black uppercase ${
+                    chip.verdictTier === 'excellent' 
+                        ? 'bg-[#00ff87] text-[#0d0015]' 
+                        : chip.verdictTier === 'wasted'
+                            ? 'bg-[#e90052] text-white'
+                            : 'bg-white text-black'
+                }`}>
                     {chip.verdict}
                 </span>
                 <p className="text-sm text-white/70">{chip.details}</p>

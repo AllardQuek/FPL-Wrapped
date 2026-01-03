@@ -34,27 +34,29 @@ function ManagerAvatar({ image, name, emoji, isActive, isMystery }: { image: str
   
   return (
     <div className={`relative group ${isActive || isMystery ? 'scale-110' : ''} transition-transform duration-300`}>
-      <div className={`w-16 h-16 md:w-20 md:h-20 rounded-full overflow-hidden border-2 ${
-        isMystery ? 'border-[#00ff87] shadow-[0_0_15px_rgba(0,255,135,0.4)]' : 'border-white/20'
-      } bg-slate-800 flex items-center justify-center relative`}>
-        {isMystery ? (
-          // Show question mark for the mystery slot (user's unknown persona)
-          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-slate-700 to-slate-800 relative overflow-hidden">
-            {/* Animated gradient overlay */}
-            <div className="absolute inset-0 bg-gradient-to-br from-[#00ff87]/10 via-transparent to-purple-500/10 animate-pulse"></div>
-            <span className="text-4xl md:text-5xl font-black text-[#00ff87] relative z-10 drop-shadow-[0_2px_8px_rgba(0,255,135,0.5)]">?</span>
-          </div>
-        ) : !imageError ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={image}
-            alt={name}
-            className="object-cover w-full h-full"
-            onError={() => setImageError(true)}
-          />
-        ) : (
-          <span className="text-2xl md:text-3xl">{emoji}</span>
-        )}
+      {/* Outer container for shadow to avoid clipping with overflow-hidden */}
+      <div className={`w-16 h-16 md:w-20 md:h-20 rounded-full ${isMystery ? 'shadow-[0_0_20px_rgba(0,255,135,0.4)]' : ''}`}>
+        <div className="w-full h-full rounded-full overflow-hidden border-2 border-white/20 bg-slate-800 flex items-center justify-center relative"
+          style={isMystery ? { borderColor: '#00ff87' } : {}}>
+          {isMystery ? (
+            // Show question mark for the mystery slot (user's unknown persona)
+            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-slate-700 to-slate-800 relative overflow-hidden">
+              {/* Static gradient overlay for better sharing reliability */}
+              <div className="absolute inset-0 bg-gradient-to-br from-[#00ff87]/20 via-transparent to-purple-500/20"></div>
+              <span className="text-4xl md:text-5xl font-black text-[#00ff87] relative z-10 drop-shadow-[0_2px_8px_rgba(0,255,135,0.5)]">?</span>
+            </div>
+          ) : !imageError ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={image}
+              alt={name}
+              className="object-cover w-full h-full"
+              onError={() => setImageError(true)}
+            />
+          ) : (
+            <span className="text-2xl md:text-3xl">{emoji}</span>
+          )}
+        </div>
       </div>
       {!isMystery && (
         <div className="absolute -top-10 left-1/2 -translate-x-1/2 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-10">

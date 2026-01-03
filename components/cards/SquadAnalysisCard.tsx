@@ -130,10 +130,10 @@ export function SquadAnalysisCard({ summary }: SquadAnalysisCardProps) {
       sectionTitle={section?.title || "Squad Analysis"}
       className="max-w-6xl p-4"
     >
-      {/* keep a small decorative underline like the original */}
-      <div className="h-1 w-16 bg-[#00ff87] mx-auto mt-2 rounded-full opacity-50 mb-4" />
-
       <SquadInsight summary={summary} />
+
+      {/* keep a small decorative underline like the original */}
+      <div className="h-1 w-16 bg-[#00ff87] mx-auto mb-2 rounded-full opacity-50 mb-4" />
       
       <TemplateOverlap overlap={summary.templateOverlap} />
 

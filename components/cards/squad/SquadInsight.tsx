@@ -85,7 +85,7 @@ export function SquadInsight({ summary }: SquadInsightProps) {
 
   return (
     <div className="mb-4 p-0 relative group">
-      <div className="flex items-center justify-center gap-4 mb-3 text-center">
+      <div className="flex items-center justify-center gap-4 text-center">
         <div className="max-w-xl">
           <p className="text-sm text-white font-medium leading-snug italic">
             {getSquadBuildingInsight()}

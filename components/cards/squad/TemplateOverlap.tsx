@@ -9,8 +9,8 @@ interface TemplateOverlapProps {
 
 export function TemplateOverlap({ overlap }: TemplateOverlapProps) {
   return (
-    <div className="mb-8 flex justify-center">
-      <div className="bg-white/5 rounded-3xl p-6 border border-white/10 flex flex-col md:flex-row items-center justify-center gap-6 md:gap-8 max-w-3xl w-full backdrop-blur-md shadow-xl">
+    <div className="mb-6 flex justify-center">
+      <div className="bg-white/5 rounded-3xl p-4 border border-white/10 flex flex-col md:flex-row items-center justify-center gap-4 md:gap-6 max-w-3xl w-full backdrop-blur-md shadow-xl">
         <div className="flex items-center gap-4">
           <span className="text-4xl">
             {overlap >= 50 ? '🐑' : 

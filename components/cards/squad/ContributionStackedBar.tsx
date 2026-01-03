@@ -20,7 +20,7 @@ export function ContributionStackedBar({
   showLabels = true 
 }: ContributionStackedBarProps) {
   return (
-    <div className={`w-full ${height} bg-white/5 rounded-xl overflow-hidden flex mb-4 shadow-inner border border-white/5`}>
+    <div className={`w-full ${height} bg-white/5 rounded-xl overflow-hidden flex mb-2 shadow-inner border border-white/5`}>
       {items.map((item, i) => (
         <div
           key={i}

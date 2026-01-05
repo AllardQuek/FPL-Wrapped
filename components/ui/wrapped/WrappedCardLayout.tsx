@@ -18,9 +18,11 @@ export function WrappedCardLayout({
   className = "",
   centerContent = false
 }: WrappedCardLayoutProps) {
+  const hasMaxWidth = className.includes('max-w-');
+
   return (
     <div className="min-h-screen flex flex-col items-center p-8">
-      <div className={`flex-1 flex flex-col justify-center w-full max-w-lg ${centerContent ? 'text-center' : ''} ${className}`}>
+      <div className={`flex-1 flex flex-col justify-center w-full ${!hasMaxWidth ? 'max-w-lg' : ''} ${centerContent ? 'text-center' : ''} ${className}`}>
         <p className="text-white/40 text-[10px] tracking-[0.3em] uppercase mb-8 text-center">
           Section {sectionNumber}
         </p>

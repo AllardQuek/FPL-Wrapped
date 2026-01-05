@@ -16,7 +16,7 @@ export function TransferCard({ summary }: TransferCardProps) {
 
   return (
     <div className="min-h-screen flex flex-col items-center p-8">
-      <div className="flex-1 flex flex-col justify-center max-w-4xl w-full">
+      <div className="flex-1 flex flex-col justify-center max-w-5xl w-full">
         <p className="text-white/40 text-[10px] tracking-[0.3em] uppercase mb-4 text-center">Section {section?.number || "02: Transfer Strategy"}</p>
         <h2 className="text-4xl font-bold tracking-tight text-white mb-8 text-center uppercase italic">Transfer Overview</h2>
 

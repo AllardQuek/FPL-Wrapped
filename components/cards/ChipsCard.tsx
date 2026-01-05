@@ -24,7 +24,7 @@ export function ChipsCard({ summary }: ChipsCardProps) {
 
     return (
         <div className="min-h-screen flex flex-col items-center p-6 md:p-8">
-            <div className="flex-1 flex flex-col justify-center max-w-5xl w-full py-8 md:py-0">
+            <div className="flex-1 flex flex-col justify-center max-w-6xl w-full py-8 md:py-0">
                 <p className="text-white/40 text-[10px] tracking-[0.3em] uppercase mb-2 md:mb-4 text-center">Section {section?.number || "06: Power Plays"}</p>
                 <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-white mb-6 md:mb-8 text-center uppercase italic">Chip Strategy</h2>
 

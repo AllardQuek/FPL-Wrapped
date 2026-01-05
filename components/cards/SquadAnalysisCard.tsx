@@ -128,7 +128,7 @@ export function SquadAnalysisCard({ summary }: SquadAnalysisCardProps) {
     <WrappedCardLayout
       sectionNumber={section?.number || "07: The Engine Room"}
       sectionTitle={section?.title || "Squad Analysis"}
-      className="max-w-6xl p-4"
+      className="max-w-7xl p-4"
     >
       <SquadInsight summary={summary} />
 
@@ -137,14 +137,14 @@ export function SquadAnalysisCard({ summary }: SquadAnalysisCardProps) {
       
       <TemplateOverlap overlap={summary.templateOverlap} />
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
         {/* LEFT: Top Contributors by Player */}
         <div className="space-y-2 flex flex-col">
           <div className="flex items-center justify-between px-2">
             <p className="text-[10px] font-bold text-white/50 uppercase tracking-widest">Top Contributors</p>
             <span className="text-[9px] font-bold text-[#00ff87] bg-[#00ff87]/10 px-2 py-0.5 rounded-full uppercase">By Player</span>
           </div>
-          <div className="bg-white/5 rounded-3xl p-6 border border-white/10 backdrop-blur-md shadow-2xl relative overflow-hidden group flex flex-col">
+          <div className="bg-white/5 rounded-3xl p-8 border border-white/10 backdrop-blur-md shadow-2xl relative overflow-hidden group flex flex-col">
             <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-16 -mt-16 blur-3xl group-hover:bg-white/10 transition-colors" />
             
             <div className="flex-1 flex flex-col">
@@ -179,7 +179,7 @@ export function SquadAnalysisCard({ summary }: SquadAnalysisCardProps) {
             <p className="text-[10px] font-bold text-white/50 uppercase tracking-widest">Top Positions</p>
             <span className="text-[9px] font-bold text-[#3b82f6] bg-[#3b82f6]/10 px-2 py-0.5 rounded-full uppercase">By Position</span>
           </div>
-          <div className="bg-white/5 rounded-3xl p-6 border border-white/10 backdrop-blur-md shadow-2xl relative overflow-hidden group flex flex-col">
+          <div className="bg-white/5 rounded-3xl p-8 border border-white/10 backdrop-blur-md shadow-2xl relative overflow-hidden group flex flex-col">
             <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-16 -mt-16 blur-3xl group-hover:bg-white/10 transition-colors" />
             
             <div className="flex-1 flex flex-col">

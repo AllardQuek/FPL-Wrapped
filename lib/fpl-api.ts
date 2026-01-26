@@ -26,6 +26,9 @@ const picksCache = new Map<string, GameWeekPicks>();
 // Cache for player summaries (shared across managers)
 const playerSummaryCache = new Map<number, PlayerSummary>();
 
+// Cache for player lookups within bootstrap data
+const bootstrapPlayerMapCache = new WeakMap<FPLBootstrap, Map<number, Player>>();
+
 /**
  * Simple sleep function for rate limiting
  */
@@ -261,13 +264,25 @@ export async function getLiveGameWeek(gameweek: number): Promise<LiveGameWeek> {
 /**
  * Get a player by ID from bootstrap data.
  *
+ * Optimized with a WeakMap cache to avoid O(N) linear search in bootstrap elements.
+ *
  * @param playerId The FPL player id.
  * @param bootstrap Optional bootstrap payload; when provided, avoids fetching again.
  * @returns The `Player` if found, otherwise `undefined`.
  */
 export async function getPlayerById(playerId: number, bootstrap?: FPLBootstrap): Promise<Player | undefined> {
   const bs = bootstrap ?? await getBootstrapData();
-  return bs.elements.find((p) => p.id === playerId);
+
+  let playerMap = bootstrapPlayerMapCache.get(bs);
+  if (!playerMap) {
+    playerMap = new Map();
+    for (const p of bs.elements) {
+      playerMap.set(p.id, p);
+    }
+    bootstrapPlayerMapCache.set(bs, playerMap);
+  }
+
+  return playerMap.get(playerId);
 }
 
 /**

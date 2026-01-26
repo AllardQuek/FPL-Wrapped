@@ -8,6 +8,9 @@ import { calculateManagerPersona } from './persona';
 import { calculateGrade, getPlayer, getPlayerPointsInGameweek } from './utils';
 import { ELEMENT_TYPE_TO_POSITION, type Position } from '@/lib/constants/positions';
 
+// Cache for template player IDs to avoid rebuilding the Set for every analysis
+const templateCache = new WeakMap<FPLBootstrap, Set<number>>();
+
 /**
  * Calculate the template overlap percentage of the manager's team.
  * 
@@ -25,12 +28,16 @@ export function calculateTemplateOverlap(data: ManagerData): number {
     // Template threshold: players with 15%+ ownership are considered "template picks"
     const TEMPLATE_OWNERSHIP_THRESHOLD = 15.0;
 
-    // Build set of template player IDs (ownership >= 15%)
-    const templatePlayerIds = new Set(
-        bootstrap.elements
-            .filter(p => parseFloat(p.selected_by_percent) >= TEMPLATE_OWNERSHIP_THRESHOLD)
-            .map(p => p.id)
-    );
+    // Build set of template player IDs (ownership >= 15%) - memoized via WeakMap
+    let templatePlayerIds = templateCache.get(bootstrap);
+    if (!templatePlayerIds) {
+        templatePlayerIds = new Set(
+            bootstrap.elements
+                .filter(p => parseFloat(p.selected_by_percent) >= TEMPLATE_OWNERSHIP_THRESHOLD)
+                .map(p => p.id)
+        );
+        templateCache.set(bootstrap, templatePlayerIds);
+    }
     
     // Count how many of the manager's squad slots are template picks
     let totalTemplateMatches = 0;

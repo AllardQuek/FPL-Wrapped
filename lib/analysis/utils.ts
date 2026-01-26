@@ -1,7 +1,12 @@
 import { FPLBootstrap, LiveGameWeek, Player } from '../types';
 
+// Memoization caches for expensive lookups
+const pointsCache = new WeakMap<LiveGameWeek, Map<number, number>>();
+const playerCache = new WeakMap<FPLBootstrap, Map<number, Player>>();
+
 /**
- * Get player points for a specific gameweek from live data
+ * Get player points for a specific gameweek from live data.
+ * Optimized with a WeakMap cache to avoid O(N) linear search in live elements.
  */
 export function getPlayerPointsInGameweek(
     playerId: number,
@@ -11,15 +16,32 @@ export function getPlayerPointsInGameweek(
     const live = liveByGameweek.get(gameweek);
     if (!live) return 0;
 
-    const element = live.elements.find((e) => e.id === playerId);
-    return element?.stats.total_points ?? 0;
+    let pointsMap = pointsCache.get(live);
+    if (!pointsMap) {
+        pointsMap = new Map();
+        for (const element of live.elements) {
+            pointsMap.set(element.id, element.stats.total_points);
+        }
+        pointsCache.set(live, pointsMap);
+    }
+
+    return pointsMap.get(playerId) ?? 0;
 }
 
 /**
- * Get player by ID from bootstrap data
+ * Get player by ID from bootstrap data.
+ * Optimized with a WeakMap cache to avoid O(N) linear search in bootstrap elements.
  */
 export function getPlayer(playerId: number, bootstrap: FPLBootstrap): Player | undefined {
-    return bootstrap.elements.find((p) => p.id === playerId);
+    let playersMap = playerCache.get(bootstrap);
+    if (!playersMap) {
+        playersMap = new Map();
+        for (const p of bootstrap.elements) {
+            playersMap.set(p.id, p);
+        }
+        playerCache.set(bootstrap, playersMap);
+    }
+    return playersMap.get(playerId);
 }
 
 /**

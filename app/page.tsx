@@ -25,6 +25,20 @@ export default function Home() {
     }));
   });
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let value = e.target.value;
+
+    // Smart Paste: If a full FPL URL is pasted, extract the ID
+    if (value.includes('fantasy.premierleague.com')) {
+      const match = value.match(/\/entry\/(\d+)/);
+      if (match && match[1]) {
+        value = match[1];
+      }
+    }
+
+    setTeamId(value);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -83,20 +97,24 @@ export default function Home() {
         {/* Input Form - Optimized for space and layout stability */}
         <div className="w-full max-w-lg mb-10 md:mb-12 animate-slide-in delay-200 opacity-0" style={{ animationFillMode: 'forwards' }}>
           <div className="relative group">
-            <div className="absolute -inset-0.5 bg-gradient-to-r from-[#00ff87] to-[#018146] rounded-2xl blur opacity-15 group-hover:opacity-25 transition duration-1000"></div>
+            <div className="absolute -inset-0.5 bg-gradient-to-r from-[#00ff87] to-[#018146] rounded-2xl blur opacity-15 group-hover:opacity-25 group-focus-within:opacity-40 transition duration-1000"></div>
             <form onSubmit={handleSubmit} className="relative glass-card p-2 flex flex-col sm:flex-row gap-2 rounded-2xl">
+              <label htmlFor="team-id-input" className="sr-only">FPL Team ID</label>
               <input
+                id="team-id-input"
                 type="text"
                 value={teamId}
-                onChange={(e) => setTeamId(e.target.value)}
+                onChange={handleInputChange}
                 placeholder="Enter Team ID"
-                className="flex-1 bg-transparent border-none focus:ring-0 text-white placeholder-white/20 px-6 py-4 text-base font-bold min-w-0"
+                className="flex-1 bg-transparent border-none focus:ring-0 text-white placeholder-white/20 px-6 py-4 text-base font-bold min-w-0 focus:outline-none"
                 disabled={isLoading}
+                autoFocus
               />
               <button
                 type="submit"
                 disabled={isLoading}
-                className="bg-[#00ff87] hover:bg-[#00e67a] text-[#0d0015] font-black px-8 py-4 rounded-xl transition-all flex items-center justify-center whitespace-nowrap active:scale-95 shadow-lg sm:w-auto"
+                className="bg-[#00ff87] hover:bg-[#00e67a] text-[#0d0015] font-black px-8 py-4 rounded-xl transition-all flex items-center justify-center whitespace-nowrap active:scale-95 shadow-lg sm:w-auto focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#0d0015]"
+                aria-label={isLoading ? "Loading Wrapped" : "View My Wrapped"}
               >
                 <svg 
                   className={`w-6 h-6 ${isLoading ? 'animate-spin' : 'animate-pulse'}`} 
@@ -110,7 +128,7 @@ export default function Home() {
           </div>
           <div className="flex justify-between items-center mt-3 px-2">
             <p className="text-[10px] text-white/30 uppercase tracking-widest font-bold">Find ID in Points tab URL</p>
-            {error && <p className="text-xs text-[#e90052] font-black uppercase italic animate-pulse">{error}</p>}
+            {error && <p role="alert" className="text-xs text-[#e90052] font-black uppercase italic animate-pulse">{error}</p>}
           </div>
         </div>
 

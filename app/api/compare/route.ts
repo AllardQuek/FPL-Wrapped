@@ -8,12 +8,23 @@ export async function GET(request: NextRequest) {
     const start = parseInt(searchParams.get('start') || '1');
     const end = parseInt(searchParams.get('end') || '38');
 
-    if (!p1 || !p2) {
-        return NextResponse.json({ error: 'Missing player IDs' }, { status: 400 });
+    // Security: Validate player IDs to prevent invalid FPL API calls
+    if (!p1 || !p2 || isNaN(parseInt(p1)) || isNaN(parseInt(p2))) {
+        return NextResponse.json({ error: 'Missing or invalid player IDs' }, { status: 400 });
+    }
+
+    // Security: Validate gameweek range to prevent Denial of Service (DoS)
+    // by excessive memory allocation or long loops.
+    if (isNaN(start) || isNaN(end) || start < 1 || end > 38 || start > end) {
+        return NextResponse.json(
+            { error: 'Invalid gameweek range. Must be between 1 and 38, and start must be <= end.' },
+            { status: 400 }
+        );
     }
 
     try {
-        const [id1, id2] = [parseInt(p1), parseInt(p2)];
+        const id1 = parseInt(p1);
+        const id2 = parseInt(p2);
         const [summary1, summary2, player1, player2] = await Promise.all([
             getPlayerSummary(id1),
             getPlayerSummary(id2),

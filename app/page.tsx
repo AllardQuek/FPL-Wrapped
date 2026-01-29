@@ -127,7 +127,7 @@ export default function Home() {
             </form>
           </div>
           <div className="flex justify-between items-center mt-3 px-2">
-            <p className="text-[10px] text-white/30 uppercase tracking-widest font-bold">Find ID in Points tab URL</p>
+            <p className="text-[10px] text-white/30 uppercase tracking-widest font-bold">Paste Team ID or Points URL</p>
             {error && <p role="alert" className="text-xs text-[#e90052] font-black uppercase italic animate-pulse">{error}</p>}
           </div>
         </div>

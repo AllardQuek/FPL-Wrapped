@@ -10,6 +10,7 @@
     "analyze:league": "npx tsx scripts/bulk-analyze-league.ts"
   },
   "dependencies": {
+    "@elastic/elasticsearch": "^9.3.1",
     "@radix-ui/react-dialog": "^1.1.15",
     "@radix-ui/react-tooltip": "^1.2.8",
     "@vercel/analytics": "^1.6.1",

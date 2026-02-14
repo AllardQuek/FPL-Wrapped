@@ -21,7 +21,7 @@ async function main() {
   console.log(`   Elasticsearch enabled: ${features.elasticsearch.enabled ? '✅' : '❌'}`);
   console.log(`   Elasticsearch configured: ${features.elasticsearch.configured ? '✅' : '❌'}`);
   console.log(`   Mini-league reports: ${features.features.miniLeagueReports ? '✅' : '❌'}`);
-  console.log(`   Conversational queries: ${features.features.conversationalQueries ? '✅' : '❌'}\n`);
+  console.log(`   Chat: ${features.features.chat ? '✅' : '❌'}\n`);
   
   if (!FEATURES.ELASTICSEARCH_ENABLED) {
     console.log('ℹ️  Elasticsearch is disabled. Set ENABLE_ELASTICSEARCH=true to enable.\n');

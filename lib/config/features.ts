@@ -5,6 +5,21 @@
  * via environment variables. This allows safe testing during trial period.
  */
 
+// Load .env.local for Node.js scripts (Next.js handles this automatically)
+if (typeof window === 'undefined' && process.env.NODE_ENV !== 'production') {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const dotenv = require('dotenv');
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { resolve } = require('path');
+    dotenv.config({ path: resolve(process.cwd(), '.env.local') });
+  } catch (e) {
+    // dotenv not available, skip (Next.js context), console log error
+    console.warn('Could not load .env.local, make sure to create it with the necessary variables. Error:', e);
+    
+  }
+}
+
 export const FEATURES = {
   /**
    * Master switch for Elasticsearch functionality
@@ -19,10 +34,10 @@ export const FEATURES = {
   MINI_LEAGUE_REPORTS: process.env.ENABLE_MINI_LEAGUE_REPORTS === 'true',
   
   /**
-   * Enable conversational queries with manager data
-   * Requires ELASTICSEARCH_ENABLED to be true
+   * Enable chat interface with FPL data (Elastic Agent Builder)
+   * Requires ELASTICSEARCH_ENABLED to be true and ELASTIC_AGENT_ID configured
    */
-  CONVERSATIONAL_QUERIES: process.env.ENABLE_CONVERSATIONAL_QUERIES === 'true',
+  CHAT: process.env.ENABLE_CHAT === 'true',
 } as const;
 
 export type FeatureName = keyof typeof FEATURES;
@@ -55,7 +70,7 @@ export function getFeatureStatus() {
     },
     features: {
       miniLeagueReports: FEATURES.MINI_LEAGUE_REPORTS,
-      conversationalQueries: FEATURES.CONVERSATIONAL_QUERIES,
+      chat: FEATURES.CHAT,
     },
   };
 }

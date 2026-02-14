@@ -169,13 +169,25 @@ pnpm es:health
 pnpm es:init
 
 # Index single manager
-pnpm es:index -- --manager 123456 --gameweek 10
+pnpm es:index -- --manager 495371 --gameweek 25
 
 # Index entire league
-pnpm es:index -- --league 456789 --gameweek 10
+pnpm es:index -- --league 1305804 --gameweek 25
 
 # Query indexed document
-pnpm es:query -- --manager 123456 --gameweek 10
+pnpm es:query -- --manager 495371 --gameweek 25
+
+# All completed gameweeks
+pnpm es:index -- --manager 495371 --all
+
+# Specific range
+pnpm es:index -- --manager 495371 --from 1 --to 25
+
+# Index all gameweeks for all managers in a league
+pnpm es:index -- --league 1305804 --all
+
+# Index specific gameweek range for a league
+pnpm es:index -- --league 1305804 --from 1 --to 25
 ```
 
 ## What's Indexed?

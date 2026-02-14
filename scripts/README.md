@@ -1,4 +1,46 @@
-# Quick Start: Testing Profile Images
+# FPL Wrapped Scripts
+
+This directory contains various utility scripts for the FPL Wrapped project.
+
+## 📊 Elasticsearch Indexing
+
+### Quick Start
+
+```bash
+# Index all gameweeks for a single manager
+pnpm es:index -- --manager 495371 --all
+
+# Index all gameweeks for all managers in a league
+pnpm es:index -- --league 213 --all
+
+# Index a specific gameweek for a manager
+pnpm es:index -- --manager 495371 --gameweek 10
+
+# Index a specific gameweek for all managers in a league
+pnpm es:index -- --league 213 --gameweek 10
+
+# Index a range of gameweeks
+pnpm es:index -- --manager 495371 --from 1 --to 25
+pnpm es:index -- --league 213 --from 10 --to 20
+```
+
+### Use Cases
+
+- **Single Manager Analysis**: Index all gameweeks for detailed performance tracking
+- **League Comparison**: Index entire leagues to compare manager performances over the season
+- **Historical Data**: Build up a dataset for analysis and insights
+- **Mini-League Rankings**: Track how managers in your league perform week-by-week
+
+### Performance Notes
+
+- The script respects FPL API rate limits with built-in delays
+- League-wide indexing processes managers sequentially to avoid overwhelming the API
+- Progress is shown for each manager and gameweek
+- Failed operations are logged but don't stop the overall process
+
+---
+
+## 🖼️ Profile Images Testing
 
 ## 🚀 Run This Now
 

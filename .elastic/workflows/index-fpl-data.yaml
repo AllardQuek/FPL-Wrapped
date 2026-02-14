@@ -1,0 +1,244 @@
+name: index-fpl-data
+description: Index FPL manager and league gameweek data to Elasticsearch on demand
+enabled: true
+tags:
+  - elasticsearch
+  - fpl
+  - indexing
+  - data-pipeline
+
+triggers:
+  - type: manual
+    inputs:
+      - name: operation_type
+        type: string
+        description: "Type of indexing operation"
+        required: true
+        options:
+          - manager_gameweek
+          - manager_all
+          - league_gameweek
+          - league_all
+      - name: manager_id
+        type: number
+        description: "FPL Manager Team ID (required for manager operations)"
+        required: false
+      - name: league_id
+        type: number
+        description: "FPL Mini-League ID (required for league operations)"
+        required: false
+      - name: gameweek
+        type: number
+        description: "Specific gameweek number (1-38)"
+        required: false
+      - name: from_gameweek
+        type: number
+        description: "Start gameweek for range operations"
+        required: false
+        default: 1
+      - name: to_gameweek
+        type: number
+        description: "End gameweek for range operations"
+        required: false
+  
+  - type: schedule
+    cron: "0 2 * * 2"  # Run at 2 AM every Tuesday (after gameweek ends)
+    inputs:
+      operation_type: "league_gameweek"
+      league_id: 1305804  # Your default league
+      gameweek: "current"
+
+  - type: webhook
+    path: /index-fpl-data
+    method: POST
+    auth:
+      type: bearer
+
+steps:
+  # Step 1: Validate inputs and check ES health
+  - name: validate_and_check
+    type: script
+    with:
+      language: typescript
+      script: |
+        const { operation_type, manager_id, league_id, gameweek } = ${{trigger.inputs}};
+        
+        // Validate required inputs
+        if (operation_type.includes('manager') && !manager_id) {
+          throw new Error('manager_id is required for manager operations');
+        }
+        if (operation_type.includes('league') && !league_id) {
+          throw new Error('league_id is required for league operations');
+        }
+        if (operation_type.includes('gameweek') && !gameweek && gameweek !== 'current') {
+          throw new Error('gameweek is required for gameweek-specific operations');
+        }
+        
+        // Check ES health
+        const { execSync } = require('child_process');
+        const healthOutput = execSync('pnpm es:health', { 
+          cwd: process.env.WORKSPACE_PATH,
+          encoding: 'utf-8'
+        });
+        
+        if (!healthOutput.includes('✅')) {
+          throw new Error('Elasticsearch health check failed');
+        }
+        
+        return {
+          validated: true,
+          es_healthy: true,
+          timestamp: new Date().toISOString()
+        };
+
+  # Step 2: Build the indexing command
+  - name: build_command
+    type: script
+    with:
+      language: javascript
+      script: |
+        const { operation_type, manager_id, league_id, gameweek, from_gameweek, to_gameweek } = ${{trigger.inputs}};
+        
+        let cmd = 'pnpm es:index --';
+        
+        // Add manager or league
+        if (operation_type.includes('manager')) {
+          cmd += ` --manager ${manager_id}`;
+        } else if (operation_type.includes('league')) {
+          cmd += ` --league ${league_id}`;
+        }
+        
+        // Add gameweek specification
+        if (operation_type.includes('_all')) {
+          if (from_gameweek && to_gameweek) {
+            cmd += ` --from ${from_gameweek} --to ${to_gameweek}`;
+          } else {
+            cmd += ' --all';
+          }
+        } else if (gameweek === 'current') {
+          // Get current gameweek from FPL API
+          cmd += ' --gameweek $(curl -s https://fantasy.premierleague.com/api/bootstrap-static/ | jq ".events[] | select(.is_current == true) | .id")';
+        } else {
+          cmd += ` --gameweek ${gameweek}`;
+        }
+        
+        return { command: cmd };
+
+  # Step 3: Execute indexing
+  - name: execute_indexing
+    type: script
+    with:
+      language: typescript
+      timeout: 600000  # 10 minutes timeout for large leagues
+      script: |
+        const { execSync } = require('child_process');
+        const command = ${{steps.build_command.output.command}};
+        
+        console.log(`🚀 Executing: ${command}`);
+        
+        try {
+          const output = execSync(command, {
+            cwd: process.env.WORKSPACE_PATH,
+            encoding: 'utf-8',
+            maxBuffer: 10 * 1024 * 1024  // 10MB buffer for large outputs
+          });
+          
+          // Parse output for stats
+          const indexed = (output.match(/✅/g) || []).length;
+          const failed = (output.match(/❌/g) || []).length;
+          const skipped = (output.match(/⏭️/g) || []).length;
+          
+          return {
+            success: true,
+            indexed_count: indexed,
+            failed_count: failed,
+            skipped_count: skipped,
+            output_preview: output.slice(-1000)  // Last 1000 chars
+          };
+        } catch (error) {
+          return {
+            success: false,
+            error: error.message,
+            output: error.stdout || error.stderr
+          };
+        }
+
+  # Step 4: Verify indexing with query
+  - name: verify_indexing
+    type: script
+    with:
+      language: typescript
+      script: |
+        const { execSync } = require('child_process');
+        const { operation_type, manager_id, league_id, gameweek } = ${{trigger.inputs}};
+        
+        if (!${{steps.execute_indexing.output.success}}) {
+          console.log('⏭️ Skipping verification due to indexing failure');
+          return { skipped: true };
+        }
+        
+        // Build verification query
+        let queryCmd = 'pnpm es:query --';
+        if (operation_type.includes('manager')) {
+          queryCmd += ` --manager ${manager_id}`;
+        }
+        if (gameweek && gameweek !== 'current') {
+          queryCmd += ` --gameweek ${gameweek}`;
+        }
+        
+        try {
+          const output = execSync(queryCmd, {
+            cwd: process.env.WORKSPACE_PATH,
+            encoding: 'utf-8'
+          });
+          
+          return {
+            verified: true,
+            sample_output: output.slice(0, 500)
+          };
+        } catch (error) {
+          return {
+            verified: false,
+            error: error.message
+          };
+        }
+
+  # Step 5: Log summary
+  - name: log_summary
+    type: console
+    with:
+      message: |
+        📊 FPL Data Indexing Complete
+        
+        Operation: ${{trigger.inputs.operation_type}}
+        ${{trigger.inputs.manager_id && `Manager: ${trigger.inputs.manager_id}` || ''}}
+        ${{trigger.inputs.league_id && `League: ${trigger.inputs.league_id}` || ''}}
+        ${{trigger.inputs.gameweek && `Gameweek: ${trigger.inputs.gameweek}` || ''}}
+        
+        Results:
+        ✅ Indexed: ${{steps.execute_indexing.output.indexed_count}}
+        ❌ Failed: ${{steps.execute_indexing.output.failed_count}}
+        ⏭️ Skipped: ${{steps.execute_indexing.output.skipped_count}}
+        
+        Verification: ${{steps.verify_indexing.output.verified ? '✅ Passed' : '❌ Failed'}}
+        
+        Timestamp: ${{steps.validate_and_check.output.timestamp}}
+
+  # Step 6: Optional - Send notification (can be configured)
+  - name: send_notification
+    type: webhook
+    if: ${{steps.execute_indexing.output.failed_count > 0}}
+    with:
+      url: ${{env.NOTIFICATION_WEBHOOK_URL}}
+      method: POST
+      headers:
+        Content-Type: application/json
+      body: |
+        {
+          "workflow": "index-fpl-data",
+          "status": "completed_with_errors",
+          "indexed": ${{steps.execute_indexing.output.indexed_count}},
+          "failed": ${{steps.execute_indexing.output.failed_count}},
+          "operation": "${{trigger.inputs.operation_type}}",
+          "timestamp": "${{steps.validate_and_check.output.timestamp}}"
+        }

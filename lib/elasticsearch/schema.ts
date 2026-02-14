@@ -116,18 +116,38 @@ export async function createIndexIfNotExists(indexName: string): Promise<boolean
       return true;
     }
     
-    // Create index with mapping
-    await client.indices.create({
+    // Check if serverless by attempting to get cluster info
+    let isServerless = false;
+    try {
+      const info = await client.info();
+      // Serverless doesn't return build_flavor or has specific version patterns
+      isServerless = info.tagline?.includes('serverless') || 
+                     info.version.build_flavor === 'serverless' ||
+                     !info.version.build_flavor;
+    } catch (e) {
+      // Assume serverless if we can't determine
+      console.log('Unable to detect mode, assuming serverless', e);
+      isServerless = true;
+    }
+    
+    // Create index with appropriate settings
+    const indexConfig: any = {
       index: indexName,
-      settings: {
+      mappings: getGameweekDecisionsMapping(),
+    };
+    
+    // Only add settings if NOT serverless
+    if (!isServerless) {
+      indexConfig.settings = {
         number_of_shards: 1,
         number_of_replicas: 1,
-        refresh_interval: '5s', // Balance between freshness and performance
-      },
-      mappings: getGameweekDecisionsMapping(),
-    });
+        refresh_interval: '5s',
+      };
+    }
     
-    console.log(`✅ Created index "${indexName}" with mapping`);
+    await client.indices.create(indexConfig);
+    
+    console.log(`✅ Created index "${indexName}" with mapping${isServerless ? ' (serverless mode)' : ''}`);
     return true;
   } catch (error) {
     console.error(`Failed to create index "${indexName}":`, error);

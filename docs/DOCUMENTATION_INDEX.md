@@ -66,4 +66,23 @@ Quick reference to all project documentation, organized by purpose and task.
 
 ---
 
-**Last Updated**: January 1, 2026
+## 🚀 Extended Features (Planned)
+*Future mini-league analysis and chat features.*
+
+### Mini-League Reports
+**[Mini-League Reports Plan](research/extended-features/plan.md)** - Scheduled reports with 34 pre-built analytics
+- Phase 1: Elasticsearch indexing infrastructure
+- Phase 2: Query library (captain analysis, bench regrets, transfer effectiveness, etc.)
+- Phase 3: Multi-platform delivery (Telegram, Discord, Email, WhatsApp)
+- **Use case**: Automated scheduled reports pushed to league groups
+
+### Chat with Data
+**[Chat Feature Plan](research/extended-features/plan-chat.md)** - Conversational query interface
+- Web UI at `/chat` 
+- Telegram bot `/ask` command
+- LLM-powered natural language to Elasticsearch queries
+- **Use case**: Ad-hoc questions like "Who captained Salah in GW25?"
+
+---
+
+**Last Updated**: February 15, 2026

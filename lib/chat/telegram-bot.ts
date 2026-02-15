@@ -13,6 +13,21 @@ if (!token) {
 export const bot = token ? new Telegraf(token) : null;
 
 if (bot) {
+    const conversationIdsByChatId = new Map<number, string>();
+
+    type ChatContext = {
+        chat: { id: number };
+        reply: (text: string) => Promise<{ message_id: number }>;
+        telegram: {
+            editMessageText: (
+                chatId: number,
+                messageId: number,
+                inlineMessageId: string | undefined,
+                text: string
+            ) => Promise<unknown>;
+        };
+    };
+
     function toErrorMessage(error: unknown): string {
         if (error instanceof Error) return error.message;
         if (typeof error === 'string') return error;
@@ -24,24 +39,44 @@ if (bot) {
         }
     }
 
+    function isConversationNotFoundError(error: unknown): boolean {
+        const message = toErrorMessage(error);
+
+        if (message.includes('conversationNotFound')) return true;
+        if (message.toLowerCase().includes('conversation') && message.toLowerCase().includes('not found')) return true;
+
+        try {
+            const parsed = JSON.parse(message);
+            return parsed?.code === 'conversationNotFound';
+        } catch {
+            return false;
+        }
+    }
+
     /**
      * Helper to handle chat requests
      */
-    async function handleChat(ctx: any, question: string) {
+    async function handleChat(ctx: ChatContext, question: string) {
         const chatId = ctx.chat.id;
-        const conversationId = `tg-${chatId}`;
+        const conversationId = conversationIdsByChatId.get(chatId);
 
         // Send an initial "typing" or placeholder message
         const placeholder = await ctx.reply('🤔 Thinking...');
-        let fullContent = '';
-        let lastUpdate = Date.now();
 
-        try {
-            for await (const chunk of streamChatWithAgent(question, conversationId)) {
+        const streamResponse = async (conversationIdForRequest?: string) => {
+            let fullContent = '';
+            let lastUpdate = Date.now();
+            let latestConversationId = conversationIdForRequest;
+
+            for await (const chunk of streamChatWithAgent(question, conversationIdForRequest)) {
+                if (chunk.conversationId) {
+                    latestConversationId = chunk.conversationId;
+                }
+
                 if (chunk.content) {
                     fullContent += chunk.content;
 
-                    // Telegram edit limit is ~1 per second. 
+                    // Telegram edit limit is ~1 per second.
                     // We buffer chunks to avoid hitting rate limits.
                     if (Date.now() - lastUpdate > 1000) {
                         await ctx.telegram.editMessageText(
@@ -57,6 +92,36 @@ if (bot) {
                 if (chunk.error) {
                     throw new Error(chunk.error);
                 }
+            }
+
+            return { fullContent, latestConversationId };
+        };
+
+        try {
+            let result;
+
+            try {
+                result = await streamResponse(conversationId);
+            } catch (firstError) {
+                if (!isConversationNotFoundError(firstError)) {
+                    throw firstError;
+                }
+
+                // Conversation may have expired server-side; retry once without conversation_id.
+                conversationIdsByChatId.delete(chatId);
+                await ctx.telegram.editMessageText(
+                    chatId,
+                    placeholder.message_id,
+                    undefined,
+                    '🔄 Session expired, starting a new chat...'
+                );
+                result = await streamResponse(undefined);
+            }
+
+            const { fullContent, latestConversationId } = result;
+
+            if (latestConversationId) {
+                conversationIdsByChatId.set(chatId, latestConversationId);
             }
 
             // Final update with the complete message

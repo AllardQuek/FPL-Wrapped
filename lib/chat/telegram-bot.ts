@@ -295,7 +295,7 @@ if (bot) {
     bot.command('chat', async (ctx) => {
         const text = ctx.message.text.replace('/chat', '').trim();
         if (!text) {
-            return ctx.reply('Please provide a question! Example: `/chat who should I captain?`');
+            return ctx.reply('Please provide a question! Example: `/chat Who had the biggest bench regrets in league 1305804?`');
         }
         await handleChat(ctx, text);
     });

@@ -408,10 +408,10 @@ export default function ChatPage() {
               </div>
               <div className="flex flex-wrap justify-center gap-3">
                 {[
-                  "Who had the biggest bench disaster in league 1305804?",
-                  "Find the 'knee-jerker' of the season",
-                  "Who takes the most impulsive hits?",
-                  "Show historical trends for my league"
+                  "What happened in GW26 in league 1305804?",
+                  "Who had the biggest bench regrets in league 1305804?",
+                  "Analyze the captaincy picks in league 1305804",
+                  "Compare the top performers in league 1305804"
                 ].map((q, i) => (
                   <button
                     key={i}

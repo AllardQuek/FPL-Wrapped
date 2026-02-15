@@ -187,24 +187,107 @@ if (bot) {
         }
     }
 
+    /**
+     * Helper to handle indexing
+     */
+    async function handleIndexing(ctx: any, type: 'manager' | 'league', id: string) {
+        const targetId = parseInt(id);
+        if (isNaN(targetId)) {
+            return ctx.reply(`❌ Invalid ID provided. Please provide a numeric ${type === 'manager' ? 'Manager' : 'League'} ID.`);
+        }
+
+        const statusMessage = await ctx.reply(`🚀 Starting ${type} indexing for ${id}...`);
+        const chatId = ctx.chat.id;
+
+        const renderProgressBar = (current: number, total: number) => {
+            const size = 10;
+            const progress = Math.round((current / total) * size);
+            const empty = size - progress;
+            return `[${'■'.repeat(progress)}${'□'.repeat(empty)}] ${Math.round((current / total) * 100)}%`;
+        };
+
+        let lastUpdate = Date.now();
+
+        try {
+            const { indexManagerAllGameweeks, indexLeagueAllGameweeks } = await import('@/lib/elasticsearch/indexing-service');
+
+            if (type === 'manager') {
+                await indexManagerAllGameweeks(targetId, 1, undefined, (progress) => {
+                    if (Date.now() - lastUpdate > 1500) {
+                        ctx.telegram.editMessageText(
+                            chatId,
+                            statusMessage.message_id,
+                            undefined,
+                            `⏳ Indexing Manager ${targetId}...\n\n${renderProgressBar(progress.current, progress.total)}\n${progress.message}`
+                        ).catch(() => { });
+                        lastUpdate = Date.now();
+                    }
+                });
+            } else {
+                await indexLeagueAllGameweeks(targetId, 1, undefined, (progress) => {
+                    if (Date.now() - lastUpdate > 1500) {
+                        const progressText = progress.type === 'manager'
+                            ? `⏳ Indexing League ${targetId}...\nManager ${progress.current}/${progress.total}: ${progress.name || 'Unknown'}\n\n${renderProgressBar(progress.current, progress.total)}`
+                            : `⏳ Indexing League ${targetId}...\n${progress.message}`;
+
+                        ctx.telegram.editMessageText(
+                            chatId,
+                            statusMessage.message_id,
+                            undefined,
+                            progressText
+                        ).catch(() => { });
+                        lastUpdate = Date.now();
+                    }
+                });
+            }
+
+            await ctx.telegram.editMessageText(
+                chatId,
+                statusMessage.message_id,
+                undefined,
+                `✅ Successfully indexed ${type} ${targetId}!\n\nYou can now ask me questions about this data.`
+            );
+        } catch (error: any) {
+            console.error('Indexing error:', error);
+            await ctx.telegram.editMessageText(
+                chatId,
+                statusMessage.message_id,
+                undefined,
+                `❌ Indexing failed: ${error.message || 'Unknown error'}\n\nTry manual indexing at: ${process.env.NEXT_PUBLIC_APP_URL || 'fpl-wrapped-live.vercel.app'}/onboard`
+            );
+        }
+    }
+
     // Handle start command
     bot.start((ctx) => {
+        const onboardUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'fpl-wrapped-live.vercel.app'}/onboard`;
         ctx.reply(
             "👋 Welcome to FPL Wrapped Chat!\n\n" +
-            "I'm your AI assistant for all things Fantasy Premier League. You can just send me a message directly, or use these commands:\n\n" +
-            "💬 /chat <question> - Ask me a question\n" +
-            "❓ /help - Show this help message"
+            "I'm your AI assistant for all things Fantasy Premier League.\n\n" +
+            "⚡ **Quick Start:**\n" +
+            "If I don't have your data yet, you can index yourself directly:\n" +
+            "• `/index_manager <your_id>`\n" +
+            "• `/index_league <league_id>`\n\n" +
+            "💬 **Chat:**\n" +
+            "Just send me a message directly or use `/chat <question>`\n\n" +
+            "ℹ️ **Missing Data?**\n" +
+            `If commands fail, visit ${onboardUrl} to manually index your data.`
         );
     });
 
     // Handle help command
     bot.help((ctx) => {
+        const onboardUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'fpl-wrapped-live.vercel.app'}/onboard`;
         ctx.reply(
-            "🔍 FPL Wrapped Help\n\n" +
-            "You can send any normal message, or use commands.\n\n" +
-            "Commands:\n" +
-            "• /chat <question> - Ask a specific question\n" +
-            "• /help - Show this help"
+            "🔍 **FPL Wrapped Help**\n\n" +
+            "**Commands:**\n" +
+            "• `/chat <question>` - Ask me anything\n" +
+            "• `/index_manager <id>` - Index a specific team\n" +
+            "• `/index_league <id>` - Index an entire league\n" +
+            "• `/help` - Show this message\n\n" +
+            "**Missing Data?**\n" +
+            "We might not have indexed everyone yet. If you can't get results, index manually here:\n" +
+            `${onboardUrl}`
         );
     });
 
@@ -215,6 +298,20 @@ if (bot) {
             return ctx.reply('Please provide a question! Example: `/chat who should I captain?`');
         }
         await handleChat(ctx, text);
+    });
+
+    // Handle /index_manager command
+    bot.command('index_manager', async (ctx) => {
+        const id = ctx.message.text.split(' ')[1];
+        if (!id) return ctx.reply('Usage: `/index_manager <manager_id>`');
+        await handleIndexing(ctx, 'manager', id);
+    });
+
+    // Handle /index_league command
+    bot.command('index_league', async (ctx) => {
+        const id = ctx.message.text.split(' ')[1];
+        if (!id) return ctx.reply('Usage: `/index_league <league_id>`');
+        await handleIndexing(ctx, 'league', id);
     });
 
     // Handle text messages

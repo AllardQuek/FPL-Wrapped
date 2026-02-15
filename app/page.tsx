@@ -67,29 +67,30 @@ export default function Home() {
       </div>
 
       {/* Top Navigation / Fallbacks */}
-      <div className="absolute top-6 right-6 z-20">
+      <div className="fixed md:absolute bottom-6 md:bottom-auto md:top-6 right-4 md:right-6 z-20 flex justify-end">
         <a
           href="/chat"
           target="_blank"
           rel="noopener noreferrer"
-          className="group flex items-center gap-4 pl-5 pr-2 py-2 rounded-2xl bg-[#e90052]/10 border border-[#e90052]/30 hover:border-[#e90052]/60 transition-all active:scale-95 shadow-[0_0_30px_rgba(233,0,82,0.15)] hover:shadow-[0_0_40px_rgba(233,0,82,0.3)] relative overflow-hidden block"
+          className="group flex items-center gap-3 pl-4 md:pl-5 pr-1.5 md:pr-2 py-1.5 md:py-2 rounded-2xl bg-[#e90052]/10 border border-[#e90052]/30 hover:border-[#e90052]/60 transition-all active:scale-95 shadow-[0_0_30px_rgba(233,0,82,0.15)] hover:shadow-[0_0_40px_rgba(233,0,82,0.3)] relative overflow-hidden block backdrop-blur-md"
         >
           {/* Shimmer effect */}
           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-100%] group-hover:animate-[shimmer_2s_infinite] transition-transform duration-1000"></div>
 
-          <div className="relative flex items-center gap-3">
+          <div className="relative flex items-center gap-2 md:gap-3">
             <div className="flex flex-col items-center leading-none">
-              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#e90052] mb-1.5 flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#e90052] animate-pulse"></span>
-                Beta Access
+              <span className="text-[8px] md:text-[10px] font-black uppercase tracking-[0.2em] text-[#e90052] mb-1 md:mb-1.5 flex items-center gap-1 md:gap-1.5">
+                <span className="w-1 md:w-1.5 h-1 md:h-1.5 rounded-full bg-[#e90052] animate-pulse"></span>
+                Beta
               </span>
-              <span className="text-sm font-black uppercase tracking-wider text-white">FPL Chat</span>
+              <span className="text-xs md:text-sm font-black uppercase tracking-wider text-white">FPL Chat</span>
             </div>
 
-            <div className="h-8 w-[1px] bg-[#e90052]/20 mx-1"></div>
+            <div className="h-6 md:h-8 w-[1px] bg-[#e90052]/20 mx-0.5 md:mx-1"></div>
 
-            <div className="w-10 h-10 rounded-xl bg-[#e90052] flex items-center justify-center text-white shadow-[0_4px_15px_rgba(233,0,82,0.5)] group-hover:scale-110 transition-transform duration-300">
-              <ExternalLink size={18} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+            <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-xl bg-[#e90052] flex items-center justify-center text-white shadow-[0_4px_10px_rgba(233,0,82,0.4)] group-hover:scale-110 transition-transform duration-300">
+              <ExternalLink size={14} className="md:hidden group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+              <ExternalLink size={18} className="hidden md:block group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
             </div>
           </div>
         </a>

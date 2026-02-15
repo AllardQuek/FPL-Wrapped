@@ -13,6 +13,17 @@ if (!token) {
 export const bot = token ? new Telegraf(token) : null;
 
 if (bot) {
+    function toErrorMessage(error: unknown): string {
+        if (error instanceof Error) return error.message;
+        if (typeof error === 'string') return error;
+        if (error == null) return 'Unknown error';
+        try {
+            return JSON.stringify(error);
+        } catch {
+            return String(error);
+        }
+    }
+
     /**
      * Helper to handle chat requests
      */
@@ -55,13 +66,14 @@ if (bot) {
                 undefined,
                 fullContent
             );
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Telegram bot error:', error);
+            const errorMessage = toErrorMessage(error);
             await ctx.telegram.editMessageText(
                 chatId,
                 placeholder.message_id,
                 undefined,
-                `❌ Sorry, I encountered an error: ${error.message}`
+                `❌ Sorry, I encountered an error: ${errorMessage}`
             );
         }
     }
@@ -79,11 +91,11 @@ if (bot) {
     // Handle help command
     bot.help((ctx) => {
         ctx.reply(
-            "🔍 **FPL Wrapped Help**\n\n" +
-            "You can chat with me naturally about your FPL team, stats, and choices.\n\n" +
-            "**Commands:**\n" +
-            "/chat - Followed by your question\n" +
-            "/help - Shows help information"
+            "🔍 FPL Wrapped Help\n\n" +
+            "You can send any normal message, or use commands.\n\n" +
+            "Commands:\n" +
+            "• /chat <question> - Ask a specific question\n" +
+            "• /help - Show this help"
         );
     });
 

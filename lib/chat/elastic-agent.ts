@@ -24,6 +24,17 @@ export interface ChatStreamChunk {
   error?: string;
 }
 
+function toErrorMessage(value: unknown): string {
+  if (value instanceof Error) return value.message;
+  if (typeof value === 'string') return value;
+  if (value == null) return 'Unknown error';
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return String(value);
+  }
+}
+
 /**
  * Stream chat with Elastic Agent via Kibana Agent Builder API
  * Uses async endpoint for real-time streaming responses
@@ -169,7 +180,7 @@ export async function* streamChatWithAgent(
               yield { done: true, conversationId: finalConversationId };
               return;
             } else if (eventType === 'error' || parsed.error) {
-              yield { error: parsed.error || eventData?.error || 'Unknown error', done: true };
+              yield { error: toErrorMessage(parsed.error ?? eventData?.error), done: true };
               return;
             } else {
               // Unknown event type, check if it has content anyway
@@ -185,7 +196,7 @@ export async function* streamChatWithAgent(
       }
     }
   } catch (error) {
-    yield { error: error instanceof Error ? error.message : 'Stream error', done: true };
+    yield { error: toErrorMessage(error), done: true };
   } finally {
     reader.releaseLock();
   }

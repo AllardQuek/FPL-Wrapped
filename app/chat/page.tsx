@@ -5,6 +5,7 @@ import { flushSync } from 'react-dom';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import Image from 'next/image';
+import { Info } from 'lucide-react';
 import { PERSONA_MAP } from '@/lib/analysis/persona/constants';
 import { getPersonaImagePath } from '@/lib/constants/persona-images';
 import { getCurrentFPLSeason } from '@/lib/season';
@@ -351,21 +352,21 @@ export default function ChatPage() {
             {/* Introduction & Guidance */}
             <div className="text-center space-y-4 pt-4">
               <div className="inline-block px-3 py-1 rounded-full bg-[#00ff87]/10 border border-[#00ff87]/20 text-[10px] font-black tracking-widest text-[#00ff87] uppercase mb-2">
-                Analytical Field Manual
+                AI Assistant
               </div>
               <h2 className="text-4xl font-black text-white uppercase tracking-tight leading-none italic">
                 FPL <span className="text-[#00ff87] glow-text not-italic">CHAT</span>
               </h2>
               <p className="text-sm text-white/50 max-w-xl mx-auto leading-relaxed font-medium">
-                Scout tactical identities or query historical performance below. <br className="hidden md:block" />
-                Click an archetype to audit your league or use the research pills.
+                Ask anything about your league's managers, performance, and trends. <br className="hidden md:block" />
+                Select a profile to explore or try a suggestion below.
               </p>
             </div>
 
             {/* Manager Archetypes Section */}
             <div className="space-y-6">
               <div className="flex flex-col items-center gap-2">
-                <h3 className="text-xs font-black uppercase tracking-[0.3em] text-[#00ff87]">Manager Archetypes</h3>
+                <h3 className="text-xs font-black uppercase tracking-[0.3em] text-[#00ff87]">Manager Profiles</h3>
               </div>
 
               <div className="flex flex-wrap justify-center gap-6 md:gap-8">
@@ -402,7 +403,7 @@ export default function ChatPage() {
             <div className="space-y-4">
               <div className="flex items-center gap-3">
                 <div className="h-px flex-1 bg-gradient-to-r from-transparent via-white/10 to-transparent" />
-                <span className="text-[9px] font-black uppercase tracking-[0.2em] text-white/30 whitespace-nowrap">Strategic Discovery</span>
+                <span className="text-[9px] font-black uppercase tracking-[0.2em] text-white/30 whitespace-nowrap">Try a Question</span>
                 <div className="h-px flex-1 bg-gradient-to-r from-transparent via-white/10 to-transparent" />
               </div>
               <div className="flex flex-wrap justify-center gap-3">
@@ -615,6 +616,28 @@ export default function ChatPage() {
 
           {/* Input */}
           <div className="mt-auto pb-8 pt-4">
+            <div className="flex justify-end mb-2 px-2">
+              <div className="group relative">
+                <div className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest text-white/20 hover:text-[#00ff87] cursor-help transition-colors">
+                  <Info size={10} />
+                  Missing Data?
+                </div>
+                <div className="absolute right-0 bottom-full mb-3 w-56 p-3 bg-[#0d0015]/95 border border-white/10 rounded-xl text-[10px] text-white/50 font-medium normal-case tracking-normal opacity-0 group-hover:opacity-100 transition-all pointer-events-none backdrop-blur-xl z-[100] shadow-2xl origin-bottom-right scale-95 group-hover:scale-100">
+                  <div className="text-white font-black uppercase tracking-widest text-[8px] mb-1.5 flex items-center gap-1.5">
+                    <span className="w-1 h-1 rounded-full bg-[#00ff87]"></span>
+                    Data Coverage
+                  </div>
+                  <p className="leading-relaxed">
+                    Missing results? We may not have indexed your manager or league ID yet.
+                  </p>
+                  <a href="/onboard" className="mt-2 inline-block text-[#00ff87] hover:underline pointer-events-auto font-black">
+                    Manual Onboarding &rarr;
+                  </a>
+                  {/* Arrow */}
+                  <div className="absolute -bottom-1 right-3 w-2 h-2 bg-[#0d0015] border-b border-r border-white/10 rotate-45"></div>
+                </div>
+              </div>
+            </div>
             <form onSubmit={handleSubmit} className="relative group">
               <div className="absolute -inset-0.5 bg-gradient-to-r from-[#00ff87] to-[#e90052] rounded-2xl blur opacity-20 group-focus-within:opacity-40 transition duration-500"></div>
               <div className="relative flex gap-2 glass-card p-2 rounded-2xl border-white/20">

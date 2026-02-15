@@ -14,6 +14,7 @@ export const bot = token ? new Telegraf(token) : null;
 
 if (bot) {
     const conversationIdsByChatId = new Map<number, string>();
+    const TELEGRAM_MESSAGE_LIMIT = 4096;
 
     type ChatContext = {
         chat: { id: number };
@@ -53,6 +54,49 @@ if (bot) {
         }
     }
 
+    function renderTelegramText(markdown: string): string {
+        let text = markdown;
+
+        // Fenced code blocks -> plain code text
+        text = text.replace(/```[\s\S]*?```/g, (block) => {
+            const code = block
+                .replace(/^```[^\n]*\n?/, '')
+                .replace(/\n?```$/, '');
+            return `\n${code.trim()}\n`;
+        });
+
+        // Inline code
+        text = text.replace(/`([^`]+)`/g, '$1');
+
+        // Markdown links -> label (url)
+        text = text.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '$1 ($2)');
+
+        // Headings
+        text = text.replace(/^#{1,6}\s+/gm, '');
+
+        // Bold / italic markers
+        text = text.replace(/(\*\*|__)(.*?)\1/g, '$2');
+        text = text.replace(/(\*|_)(.*?)\1/g, '$2');
+
+        // Blockquotes and bullet styling
+        text = text.replace(/^>\s?/gm, '');
+        text = text.replace(/^\s*[-*]\s+/gm, '• ');
+
+        // Tighten spacing
+        text = text.replace(/\n{3,}/g, '\n\n').trim();
+
+        return text;
+    }
+
+    function toTelegramMessage(markdown: string): string {
+        const rendered = renderTelegramText(markdown);
+
+        if (!rendered) return '…';
+        if (rendered.length <= TELEGRAM_MESSAGE_LIMIT) return rendered;
+
+        return `${rendered.slice(0, TELEGRAM_MESSAGE_LIMIT - 2)}…`;
+    }
+
     /**
      * Helper to handle chat requests
      */
@@ -83,7 +127,7 @@ if (bot) {
                             chatId,
                             placeholder.message_id,
                             undefined,
-                            fullContent + '...'
+                            toTelegramMessage(fullContent + '...')
                         );
                         lastUpdate = Date.now();
                     }
@@ -129,7 +173,7 @@ if (bot) {
                 chatId,
                 placeholder.message_id,
                 undefined,
-                fullContent
+                toTelegramMessage(fullContent)
             );
         } catch (error: unknown) {
             console.error('Telegram bot error:', error);

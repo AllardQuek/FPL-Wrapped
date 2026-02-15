@@ -6,6 +6,7 @@ import { getCurrentFPLSeason } from '@/lib/season';
 import { PERSONA_MAP } from '@/lib/analysis/persona/constants';
 import { getPersonaImagePath } from '@/lib/constants/persona-images';
 import Image from 'next/image';
+import { ExternalLink } from 'lucide-react';
 
 export default function Home() {
   const [teamId, setTeamId] = useState('');
@@ -14,7 +15,7 @@ export default function Home() {
   const mounted = typeof window !== 'undefined';
   const router = useRouter();
   const currentSeason = getCurrentFPLSeason();
-  
+
   // Lazy initialize particles on client side only
   const [particles] = useState<Array<{ left: number; delay: number; duration: number }>>(() => {
     if (typeof window === 'undefined') return []; // Return empty array on server
@@ -65,6 +66,42 @@ export default function Home() {
         ))}
       </div>
 
+      {/* Top Navigation / Fallbacks */}
+      <div className="absolute top-6 right-6 z-20">
+        <a
+          href="/chat"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="group flex items-center gap-4 pl-5 pr-2 py-2 rounded-2xl bg-[#e90052]/10 border border-[#e90052]/30 hover:border-[#e90052]/60 transition-all active:scale-95 shadow-[0_0_30px_rgba(233,0,82,0.15)] hover:shadow-[0_0_40px_rgba(233,0,82,0.3)] relative overflow-hidden block"
+        >
+          {/* Shimmer effect */}
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-100%] group-hover:animate-[shimmer_2s_infinite] transition-transform duration-1000"></div>
+
+          <div className="relative flex items-center gap-3">
+            <div className="flex flex-col items-center leading-none">
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#e90052] mb-1.5 flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#e90052] animate-pulse"></span>
+                Beta Access
+              </span>
+              <span className="text-sm font-black uppercase tracking-wider text-white">FPL Chat</span>
+            </div>
+
+            <div className="h-8 w-[1px] bg-[#e90052]/20 mx-1"></div>
+
+            <div className="w-10 h-10 rounded-xl bg-[#e90052] flex items-center justify-center text-white shadow-[0_4px_15px_rgba(233,0,82,0.5)] group-hover:scale-110 transition-transform duration-300">
+              <ExternalLink size={18} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+            </div>
+          </div>
+        </a>
+      </div>
+
+      <style jsx>{`
+        @keyframes shimmer {
+          0% { transform: translateX(-100%); }
+          100% { transform: translateX(100%); }
+        }
+      `}</style>
+
       <div className="relative z-10 max-w-4xl w-full flex flex-col items-center">
         {/* Compact Hero */}
         <div className="text-center mb-8 md:mb-10 animate-slide-in">
@@ -98,9 +135,9 @@ export default function Home() {
                 disabled={isLoading}
                 className="bg-[#00ff87] hover:bg-[#00e67a] text-[#0d0015] font-black px-8 py-4 rounded-xl transition-all flex items-center justify-center whitespace-nowrap active:scale-95 shadow-lg sm:w-auto"
               >
-                <svg 
-                  className={`w-6 h-6 ${isLoading ? 'animate-spin' : 'animate-pulse'}`} 
-                  viewBox="0 0 24 24" 
+                <svg
+                  className={`w-6 h-6 ${isLoading ? 'animate-spin' : 'animate-pulse'}`}
+                  viewBox="0 0 24 24"
                   fill="currentColor"
                 >
                   <path d="M12 2C12 2 12.5 8.5 14.5 10.5C16.5 12.5 22 13 22 13C22 13 16.5 13.5 14.5 15.5C12.5 17.5 12 24 12 24C12 24 11.5 17.5 9.5 15.5C7.5 13.5 2 13 2 13C2 13 7.5 12.5 9.5 10.5C11.5 8.5 12 2 12 2Z" />
@@ -112,6 +149,7 @@ export default function Home() {
             <p className="text-[10px] text-white/30 uppercase tracking-widest font-bold">Find ID in Points tab URL</p>
             {error && <p className="text-xs text-[#e90052] font-black uppercase italic animate-pulse">{error}</p>}
           </div>
+
         </div>
 
         <p className="text-center text-white/50 text-[12px] font-bold uppercase tracking-[0.4em] mb-4 md:mb-6">

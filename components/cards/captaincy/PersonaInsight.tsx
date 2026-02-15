@@ -1,7 +1,7 @@
 import { ManagerPersona } from '@/lib/types';
 import { getPersonaImagePath } from '@/lib/constants/persona-images';
 import { CAPTAINCY_THRESHOLDS } from '@/lib/constants/captaincyThresholds';
-import { InfoTooltip } from '@/components/ui/Tooltip';
+import { InfoTooltip } from '@/components/ui/CustomTooltip';
 
 interface PersonaInsightProps {
   successRate: number;

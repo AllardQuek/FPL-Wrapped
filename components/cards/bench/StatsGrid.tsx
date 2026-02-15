@@ -1,7 +1,7 @@
 'use client';
 
 import { SeasonSummary, BenchAnalysis } from '@/lib/types';
-import { InfoTooltip } from '@/components/ui/Tooltip';
+import { InfoTooltip } from '@/components/ui/CustomTooltip';
 import { InfoDialog } from '@/components/ui/InfoDialog';
 import { SelectionErrorsDialog } from './SelectionErrorsDialog';
 

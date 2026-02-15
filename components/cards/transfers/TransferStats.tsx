@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { InfoTooltip } from '@/components/ui/Tooltip';
+import { InfoTooltip } from '@/components/ui/CustomTooltip';
 import { TransferTimingAnalysis } from '@/lib/types';
 
 interface TransferStatsProps {

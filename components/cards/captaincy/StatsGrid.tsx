@@ -1,5 +1,5 @@
 import { InfoDialog } from '@/components/ui/InfoDialog';
-import { InfoTooltip } from '@/components/ui/Tooltip';
+import { InfoTooltip } from '@/components/ui/CustomTooltip';
 import { SeasonSummary } from '@/lib/types';
 import { AccuracyBreakdown } from './AccuracyBreakdown';
 import { getAccuracyColor } from './constants';

@@ -1,38 +1,57 @@
-"use client";
+"use client"
 
-import * as TooltipPrimitive from "@radix-ui/react-tooltip";
-import { Info } from "lucide-react";
-import React from "react";
+import * as React from "react"
+import { Tooltip as TooltipPrimitive } from "radix-ui"
 
-interface InfoTooltipProps {
-    content: React.ReactNode;
-    side?: "top" | "right" | "bottom" | "left";
-    maxWidth?: string;
-    variant?: "light" | "dark";
+import { cn } from "@/lib/utils"
+
+function TooltipProvider({
+  delayDuration = 0,
+  ...props
+}: React.ComponentProps<typeof TooltipPrimitive.Provider>) {
+  return (
+    <TooltipPrimitive.Provider
+      data-slot="tooltip-provider"
+      delayDuration={delayDuration}
+      {...props}
+    />
+  )
 }
 
-export function InfoTooltip({ content, side = "top", maxWidth = "max-w-[200px]", variant = "dark" }: InfoTooltipProps) {
-    const iconColor = variant === "light" ? "text-black/40 hover:text-black/70" : "text-white/70 hover:text-white/90";
-    
-    return (
-        <TooltipPrimitive.Provider delayDuration={300}>
-            <TooltipPrimitive.Root>
-                <TooltipPrimitive.Trigger asChild>
-                    <button className="inline-flex items-center justify-center p-1 opacity-50 hover:opacity-100 transition-opacity focus:outline-none">
-                        <Info className={`w-3 h-3 ${iconColor}`} />
-                    </button>
-                </TooltipPrimitive.Trigger>
-                <TooltipPrimitive.Portal>
-                    <TooltipPrimitive.Content
-                        side={side}
-                        className={`z-50 overflow-y-auto max-h-[80vh] rounded-md border border-white/10 bg-[#0d0015]/95 px-3 py-2 text-xs text-white shadow-md animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 backdrop-blur-sm ${maxWidth} leading-relaxed scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent`}
-                        sideOffset={5}
-                    >
-                        {content}
-                        <TooltipPrimitive.Arrow className="fill-white/10" />
-                    </TooltipPrimitive.Content>
-                </TooltipPrimitive.Portal>
-            </TooltipPrimitive.Root>
-        </TooltipPrimitive.Provider>
-    );
+function Tooltip({
+  ...props
+}: React.ComponentProps<typeof TooltipPrimitive.Root>) {
+  return <TooltipPrimitive.Root data-slot="tooltip" {...props} />
 }
+
+function TooltipTrigger({
+  ...props
+}: React.ComponentProps<typeof TooltipPrimitive.Trigger>) {
+  return <TooltipPrimitive.Trigger data-slot="tooltip-trigger" {...props} />
+}
+
+function TooltipContent({
+  className,
+  sideOffset = 0,
+  children,
+  ...props
+}: React.ComponentProps<typeof TooltipPrimitive.Content>) {
+  return (
+    <TooltipPrimitive.Portal>
+      <TooltipPrimitive.Content
+        data-slot="tooltip-content"
+        sideOffset={sideOffset}
+        className={cn(
+          "bg-foreground text-background animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 z-50 w-fit origin-(--radix-tooltip-content-transform-origin) rounded-md px-3 py-1.5 text-xs text-balance",
+          className
+        )}
+        {...props}
+      >
+        {children}
+        <TooltipPrimitive.Arrow className="bg-foreground fill-foreground z-50 size-2.5 translate-y-[calc(-50%_-_2px)] rotate-45 rounded-[2px]" />
+      </TooltipPrimitive.Content>
+    </TooltipPrimitive.Portal>
+  )
+}
+
+export { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider }

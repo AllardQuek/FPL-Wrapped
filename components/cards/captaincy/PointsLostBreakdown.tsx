@@ -1,5 +1,5 @@
 import { CaptaincyAnalysis } from '@/lib/types';
-import { InfoTooltip } from '@/components/ui/Tooltip';
+import { InfoTooltip } from '@/components/ui/CustomTooltip';
 
 interface PointsLostBreakdownProps {
   analyses: CaptaincyAnalysis[];

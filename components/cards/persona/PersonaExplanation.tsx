@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { SeasonSummary } from '@/lib/types';
-import { InfoTooltip } from '@/components/ui/Tooltip';
+import { InfoTooltip } from '@/components/ui/CustomTooltip';
 
 interface PersonaExplanationProps {
     summary: SeasonSummary;

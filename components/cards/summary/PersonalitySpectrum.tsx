@@ -1,4 +1,4 @@
-import { InfoTooltip } from '@/components/ui/Tooltip';
+import { InfoTooltip } from '@/components/ui/CustomTooltip';
 
 interface SpectrumEnd {
   emoji: string;

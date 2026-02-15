@@ -2,7 +2,7 @@
 
 import { HelpCircle } from "lucide-react";
 import React from "react";
-import { Dialog } from "./Dialog";
+import { Dialog } from "./CustomDialog";
 
 interface InfoDialogProps {
   title: string;

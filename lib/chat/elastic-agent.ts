@@ -84,7 +84,7 @@ export async function* streamChatWithAgent(
   try {
     while (true) {
       const { done, value } = await reader.read();
-      
+
       if (done) {
         // Yield final chunk with conversationId
         yield { done: true, conversationId: finalConversationId };
@@ -115,7 +115,7 @@ export async function* streamChatWithAgent(
 
         if (line.startsWith('data: ')) {
           const data = line.slice(6);
-          
+
           if (data === '[DONE]') {
             yield { done: true, conversationId: finalConversationId };
             return;
@@ -123,26 +123,26 @@ export async function* streamChatWithAgent(
 
           try {
             const parsed = JSON.parse(data);
-            
+
             // Event type comes from the 'event:' line in the SSE stream
             const eventType = currentEvent;
-            
+
             // Extract data (API structure is { data: {...} })
             const eventData = parsed.data;
-            
+
             // Handle different event types based on actual API response
             if (eventType === 'conversation_id_set' && eventData?.conversation_id) {
               finalConversationId = eventData.conversation_id;
-            } else if (eventType === 'reasoning' && eventData?.reasoning) {
+            } else if (eventType === 'reasoning' && (eventData?.reasoning || eventData?.thought)) {
               // Chain of thought reasoning
-              yield { reasoning: eventData.reasoning, conversationId: finalConversationId };
-            } else if (eventType === 'tool_call' && eventData?.tool_id) {
+              yield { reasoning: eventData.reasoning || eventData.thought, conversationId: finalConversationId };
+            } else if ((eventType === 'tool_call' || eventType === 'call') && (eventData?.tool_id || eventData?.name)) {
               // Agent is calling a tool
               yield {
                 toolCall: {
-                  tool_id: eventData.tool_id,
-                  tool_call_id: eventData.tool_call_id,
-                  params: eventData.params,
+                  tool_id: eventData.tool_id || eventData.name,
+                  tool_call_id: eventData.tool_call_id || eventData.id,
+                  params: eventData.params || eventData.arguments,
                 },
                 conversationId: finalConversationId,
               };
@@ -155,20 +155,31 @@ export async function* streamChatWithAgent(
                 },
                 conversationId: finalConversationId,
               };
-            } else if (eventType === 'message_chunk' && eventData?.text_chunk) {
+            } else if ((eventType === 'message_chunk' || eventType === 'text' || eventType === 'message') &&
+              (eventData?.text_chunk || eventData?.text || eventData?.chunk || eventData?.content)) {
               // Actual message content (streaming text)
-              yield { content: eventData.text_chunk, conversationId: finalConversationId };
-            } else if (eventType === 'round_complete') {
+              const chunk = eventData.text_chunk || eventData.text || eventData.chunk || eventData.content;
+              yield { content: chunk, conversationId: finalConversationId };
+            } else if (eventType === 'round_complete' || eventType === 'complete') {
+              // Sometimes round_complete contains the final text
+              if (eventData?.text || eventData?.content) {
+                yield { content: eventData.text || eventData.content, conversationId: finalConversationId };
+              }
               // Round complete signals we're done
               yield { done: true, conversationId: finalConversationId };
               return;
             } else if (eventType === 'error' || parsed.error) {
               yield { error: parsed.error || eventData?.error || 'Unknown error', done: true };
               return;
+            } else {
+              // Unknown event type, check if it has content anyway
+              if (eventData?.text || eventData?.content || eventData?.chunk) {
+                yield { content: eventData.text || eventData.content || eventData.chunk, conversationId: finalConversationId };
+              }
             }
           } catch (e) {
             // Skip malformed JSON
-            console.warn('Failed to parse SSE data:', data , 'Error:', e);
+            console.warn('Failed to parse SSE data:', data, 'Error:', e);
           }
         }
       }

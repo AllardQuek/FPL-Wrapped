@@ -66,7 +66,13 @@ export async function* streamChatWithAgent(
     '```vega-lite',
     '{ "$schema": "https://vega.github.io/schema/vega-lite/v5.json", "data": { "values": [...] }, ... }',
     '```',
-    'Also, if possible include a PNG fallback encoded as a data URI in the tool_result. Do not include external URLs.',
+    'CHART DESIGN GUIDELINES:',
+    '- Orientation: Use horizontal bar charts (y-encoding for names) when labels are long (e.g. manager names).',
+    '- Titles: Always include a descriptive "title" field at the top level of your JSON.',
+    '- Sorting: For rankings/comparisons, always sort the data (e.g. "sort": "-x") to show top performers first.',
+    '- Interactivity: Always include "tooltip": true or "tooltip": {"content": "data"} in your encodings.',
+    '- Colors: Avoid hardcoding specific hex colors; the system theme will apply the FPL branding automatically.',
+    '- Simplicity: Focus on clear, high-impact visualizations (bars, lines, areas) that work well in a chat interface.',
   ].join('\n');
 
   let input = message;

@@ -113,6 +113,11 @@ export function transformToGameweekDecision(
   bootstrap: FPLBootstrap,
   leagueIds: number[] = []
 ): GameweekDecisionDocument {
+  // Ensure league_ids is always an array of unique numbers
+  const normalizedLeagueIds = Array.isArray(leagueIds) 
+    ? Array.from(new Set(leagueIds.map(id => Number(id))))
+    : [Number(leagueIds)];
+
   // Filter transfers for this specific gameweek
   const gwTransfers = transfers.filter(t => t.event === gameweek);
 
@@ -179,7 +184,7 @@ export function transformToGameweekDecision(
     manager_id: managerId,
     manager_name: `${managerInfo.player_first_name} ${managerInfo.player_last_name}`.trim(),
     team_name: managerInfo.name,
-    league_ids: leagueIds,
+    league_ids: normalizedLeagueIds,
     gameweek,
     season,
     transfers: transformedTransfers,

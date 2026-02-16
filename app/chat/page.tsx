@@ -1,14 +1,18 @@
 'use client';
 
-import { useState, useRef, useEffect, type ReactNode } from 'react';
+import { useState, useRef, useEffect, useMemo, memo, type ReactNode } from 'react';
 import { flushSync } from 'react-dom';
 import ReactMarkdown from 'react-markdown';
+import type { Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import Image from 'next/image';
-import { Info } from 'lucide-react';
+import { Info, ChevronDown } from 'lucide-react';
+import { motion, AnimatePresence, animate } from 'framer-motion';
 import { PERSONA_MAP } from '@/lib/analysis/persona/constants';
 import { getPersonaImagePath } from '@/lib/constants/persona-images';
 import { getCurrentFPLSeason } from '@/lib/season';
+import { parseVegaSpec, prepareSpec, createSecureLoader } from '@/lib/chat/charts';
+import type { VisualizationSpec } from 'vega-embed';
 
 /**
  * Convert technical errors into user-friendly messages
@@ -59,183 +63,199 @@ function getToolDisplayName(toolId: string): string {
   return toolMap[toolId] || `🔧 ${toolId.split('.').pop() || toolId}`;
 }
 
-// Basic sanitizer for incoming Vega(-Lite) specs: remove external URLs and inline unsafe fields
-function sanitizeVegaSpec(spec: any) {
-  if (!spec || typeof spec !== 'object') return spec;
+/**
+ * A collapsible table component for Raw Data
+ */
+function CollapsibleTable({ children, hasChart }: { children: ReactNode; hasChart: boolean }) {
+  const [isOpen, setIsOpen] = useState(false);
 
-  // Deep-clone and strip any external fetch hints like url, format.url, image.url
-  try {
-    const clone = JSON.parse(JSON.stringify(spec));
+  const tableContent = (
+    <div className="my-6 overflow-x-auto rounded-xl border border-white/10 custom-scrollbar shadow-2xl bg-black/20">
+      <table className="w-full border-collapse text-left text-sm">
+        {children}
+      </table>
+    </div>
+  );
 
-    const strip = (obj: any) => {
-      if (!obj || typeof obj !== 'object') return;
-      if (Array.isArray(obj)) {
-        obj.forEach(strip);
-        return;
-      }
-      for (const k of Object.keys(obj)) {
-        const v = obj[k];
-        // Remove typical external URL fields
-        if (k === 'url' && typeof v === 'string') {
-          delete obj[k];
-          continue;
-        }
-        if ((k === 'data' || k === 'format') && v && typeof v === 'object' && v.url) {
-          delete obj[k].url;
-        }
-        // Remove obvious expression/signal fields to reduce risk
-        if (k === 'signal' || k === 'expr' || k === 'expression') {
-          delete obj[k];
-          continue;
-        }
-        // Remove nested image URLs
-        if (k === 'image' && v && typeof v === 'object' && v.url) {
-          delete obj[k].url;
-        }
+  if (!hasChart) return tableContent;
 
-        strip(v);
-      }
-    };
-
-    strip(clone);
-    return clone;
-  } catch {
-    return spec;
-  }
+  return (
+    <div className="group my-4">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        aria-expanded={isOpen}
+        className="flex items-center gap-3 cursor-pointer text-[10px] font-black uppercase tracking-widest text-white/30 hover:text-[#00ff87] transition-colors outline-none"
+      >
+        <span
+          className={`w-6 h-6 flex items-center justify-center rounded bg-white/5 border border-white/10 transition-transform ${isOpen ? 'rotate-180 text-[#00ff87] border-[#00ff87]/30' : 'text-white/80'}`}
+          aria-hidden
+        >
+          <ChevronDown className="w-4 h-4" />
+        </span>
+        Raw Data Source
+      </button>
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div 
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.3, ease: 'easeInOut' }}
+            className="overflow-hidden"
+          >
+            <div className="mt-2">
+              {tableContent}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
 }
 
-function ChartRenderer({ spec }: { spec: string | object }) {
+const ChartRenderer = memo(function ChartRenderer({ spec }: { spec: string | object }) {
   const el = useRef<HTMLDivElement | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+  const [isReady, setIsReady] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [title, setTitle] = useState<string | null>(null);
 
+  // Keep track of the last successfully rendered spec to avoid flickering
+  const lastValidSpec = useRef<string | null>(null);
+
   useEffect(() => {
     let cancelled = false;
-    (async () => {
+    
+    // Use a small delay for streaming content to avoid parsing partial JSON
+    const timeout = setTimeout(async () => {
       if (!el.current) return;
-      setLoading(true);
-      setError(null);
-      setTitle(null);
+      
       try {
-        const vegaEmbed: any = (await import('vega-embed')).default;
-
-        // Parse spec robustly: accept raw JSON, fenced codeblocks, or relaxed JSON (json5)
-        let parsed: any = spec;
-        if (typeof spec === 'string') {
-          let s = spec.trim();
-
-          // Remove fenced code block markers if present
-          const fenceMatch = s.match(/^```(?:vega-lite|vega)?\n([\s\S]*)\n```$/i);
-          if (fenceMatch) s = fenceMatch[1];
-
-          // Try strict JSON parse first
-          try {
-            parsed = JSON.parse(s);
-          } catch (errJson) {
-            // Try json5 if available (allows single quotes, trailing commas)
-            try {
-              const json5: any = await import('json5');
-              parsed = json5.parse(s);
-            } catch {
-              // Last-resort: extract first {...} object and try parse
-              const objMatch = s.match(/(\{[\s\S]*\})/);
-              if (objMatch) {
-                try {
-                  parsed = JSON.parse(objMatch[1]);
-                } catch {
-                  throw errJson;
-                }
-              } else {
-                throw errJson;
-              }
-            }
-          }
-        }
-
-        // Extract title if present
+        const vegaEmbed = (await import('vega-embed')).default;
+        
+        // 1. Parse the spec. If it fails, we assume it's still streaming/invalidly formatted.
+        let parsed;
         try {
-          if (parsed) {
-            const t = parsed.title || (parsed.config && parsed.config.title);
-            if (typeof t === 'string') setTitle(t);
-            else if (t && typeof t === 'object' && typeof t.text === 'string') setTitle(t.text);
-          }
-        } catch {}
-
-        // Sanitize and enforce transparent background
-        const safeSpecRaw = sanitizeVegaSpec(parsed);
-        const safeSpec = (typeof safeSpecRaw === 'object' && safeSpecRaw) ? safeSpecRaw : {};
-
-        // Ensure transparent background for embedding and no stroke around view
-        try {
-          safeSpec.background = 'transparent';
-          if (!safeSpec.config) safeSpec.config = {};
-          if (!safeSpec.config.view) safeSpec.config.view = {};
-          safeSpec.config.view.stroke = 'transparent';
-          safeSpec.config.view.fill = 'transparent';
-        } catch {}
-
-        // Create a loader that blocks external fetches
-        const vega: any = await import('vega');
-        let loader: any = undefined;
-        try {
-          loader = (vega && typeof vega.loader === 'function') ? vega.loader() : undefined;
-          if (loader && typeof loader.fetch === 'function') {
-            loader.fetch = () => Promise.reject(new Error('External loads disabled for embedded charts'));
-          }
+          parsed = await parseVegaSpec(spec);
         } catch {
-          loader = undefined;
+          // If we haven't rendered anything yet, keep loading. 
+          // If we have, just stay on the last valid one until this one is fixed.
+          return;
         }
 
         if (cancelled) return;
-        await vegaEmbed(el.current, safeSpec as any, { actions: false, renderer: 'canvas', loader });
-      } catch (err) {
-        // eslint-disable-next-line no-console
-        console.error('Chart render error', err);
-        if (!cancelled) {
-          setError(typeof err === 'string' ? err : err instanceof Error ? getUserFriendlyError(err.message) : String(err));
+
+        // 2. Prepare the spec
+        const { safeSpec, title: extractedTitle } = prepareSpec(parsed);
+        
+        // Compare with last valid to avoid redundant re-renders
+        const specString = JSON.stringify(safeSpec);
+        if (lastValidSpec.current === specString) {
+          setLoading(false);
+          setIsReady(true);
+          return;
         }
-      } finally {
-        if (!cancelled) setLoading(false);
+
+        // 3. Create secure loader and render
+        const loader = await createSecureLoader();
+        if (cancelled) return;
+
+        // Only show loading if we haven't rendered anything successful yet
+        if (!lastValidSpec.current) {
+          setLoading(true);
+          setIsReady(false);
+        }
+        setError(null);
+
+        await vegaEmbed(el.current, safeSpec as VisualizationSpec, { 
+          actions: false, 
+          renderer: 'svg', 
+          loader,
+          tooltip: true,
+          theme: 'dark'
+        });
+
+        if (!cancelled) {
+          lastValidSpec.current = specString;
+          if (extractedTitle) setTitle(extractedTitle);
+          setLoading(false);
+          
+          // Small delay to ensure browser has painted the SVG before we fade it in
+          requestAnimationFrame(() => {
+            if (!cancelled) setIsReady(true);
+          });
+        }
+      } catch (err) {
+        // Only show error if we've completely stopped streaming or it's a fatal render error
+        if (!cancelled) {
+          setError(err instanceof Error ? getUserFriendlyError(err.message) : String(err));
+          setLoading(false);
+        }
       }
-    })();
-    return () => { cancelled = true; };
+    }, typeof spec === 'string' && spec.length < 1000 ? 100 : 0); // Smaller delay for small specs
+    
+    return () => { 
+      cancelled = true; 
+      clearTimeout(timeout);
+    };
   }, [spec]);
 
   return (
-    <div className="w-full my-4 relative">
-      <div className="chart-wrapper glass-card w-full rounded-xl">
+    <div className="w-full my-6 relative group overflow-visible">
+      <div className="glass-card w-full rounded-2xl border border-white/10 shadow-2xl overflow-hidden transition-all hover:border-[#00ff87]/30">
         {title && (
-          <div className="chart-header">
-            <div className="title">{title}</div>
-          </div>
-        )}
-
-        <div ref={el} className="w-full rounded-xl" />
-
-        {loading && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/30 rounded-xl">
-            <div className="flex flex-col items-center gap-2">
-              <div className="accent-spinner" />
-              <div className="text-white/80 text-xs">Rendering chart…</div>
+          <div className="px-5 py-4 border-b border-white/5 bg-gradient-to-r from-white/10 to-transparent flex items-center justify-between">
+            <div className="text-[11px] font-black uppercase tracking-[0.25em] text-[#00ff87] drop-shadow-[0_0_8px_rgba(0,255,135,0.4)]">{title}</div>
+            <div className="flex gap-1.5 opacity-30 group-hover:opacity-100 transition-opacity">
+              <div className="w-1.5 h-1.5 rounded-full bg-[#00ff87] animate-pulse" />
+              <div className="w-1.5 h-1.5 rounded-full bg-[#00d4ff]" />
             </div>
           </div>
         )}
 
+        <div className="p-1 sm:p-2 bg-black/20 flex items-center justify-center relative min-h-[300px]">
+          <div 
+            ref={el} 
+            className={`w-full flex justify-center items-center interactive-chart overflow-hidden transition-opacity duration-500 [&>.vega-embed]:!max-w-full [&>.vega-embed]:!w-full [&_svg]:mx-auto ${isReady ? 'opacity-100' : 'opacity-0'}`} 
+          />
+          
+          <AnimatePresence mode="wait">
+            {(loading && !lastValidSpec.current) && (
+              <motion.div 
+                key="loading-spinner"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.3 }}
+                className="absolute inset-0 flex items-center justify-center bg-[#0d0015]/40 backdrop-blur-[2px] z-10"
+              >
+                <div className="flex flex-col items-center gap-3 animate-pulse">
+                  <div className="w-10 h-10 border-2 border-[#00ff87]/5 border-t-[#00ff87] rounded-full animate-spin" />
+                  <div className="text-[#00ff87] text-[10px] font-black uppercase tracking-widest">Generating Visualization...</div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
         {error && (
-          <div className="chart-error">
-            <div className="card">{error}</div>
+          <div className="p-4 bg-red-500/10 border-t border-red-500/20">
+            <div className="text-red-400 text-xs font-medium flex items-center gap-2">
+              <span className="text-lg">⚠️</span> {error}
+            </div>
           </div>
         )}
       </div>
     </div>
   );
-}
+});
+
 
 interface ToolCall {
   tool_id: string;
   tool_call_id: string;
   params?: Record<string, unknown>;
+  results?: unknown[];
 }
 
 interface Message {
@@ -244,6 +264,153 @@ interface Message {
   content: string;
   reasoning?: string[];
   toolCalls?: ToolCall[];
+}
+
+/**
+ * Shared markdown components that don't depend on message state
+ */
+const BASE_MARKDOWN_COMPONENTS: Components = {
+  p: ({ children }) => (
+    <p className="mt-4 first:mt-0 mb-4 last:mb-0 leading-relaxed text-white/90">{children}</p>
+  ),
+  ul: ({ children }) => (
+    <ul className="list-disc list-inside space-y-2 mt-6 mb-8 pl-2 border-l-2 border-[#00ff87]/20 bg-white/5 p-4 rounded-xl shadow-inner">{children}</ul>
+  ),
+  ol: ({ children }) => (
+    <ol className="list-decimal list-inside space-y-2 mt-6 mb-8 pl-2 border-l-2 border-[#00ff87]/20 bg-white/5 p-4 rounded-xl shadow-inner">{children}</ol>
+  ),
+  li: ({ children }) => (
+    <li className="text-white/80 mb-1 last:mb-0">{children}</li>
+  ),
+  thead: ({ children }) => (
+    <thead className="bg-white/5 border-b border-white/10 whitespace-nowrap">
+      {children}
+    </thead>
+  ),
+  th: ({ children }) => (
+    <th className="px-4 py-3 font-black uppercase tracking-widest text-[10px] text-[#00ff87]">
+      {children}
+    </th>
+  ),
+  td: ({ children }) => (
+    <td className="px-4 py-3 border-b border-white/5 text-white/80 whitespace-nowrap">
+      {children}
+    </td>
+  ),
+};
+
+/**
+ * MessageContent handles memoized markdown rendering to prevent flickering 
+ * on unrelated state changes (like input typing)
+ */
+const MessageContent = memo(function MessageContent({ message }: { message: Message }) {
+  const md = useMemo(() => transformVisualizations(message.content || ''), [message.content]);
+
+  const components: Components = useMemo(() => ({
+          ...BASE_MARKDOWN_COMPONENTS,
+          table: ({ children }) => {
+            const hasChart = message.content?.includes('viz://') || message.content?.includes('```vega-lite');
+            return <CollapsibleTable hasChart={hasChart}>{children}</CollapsibleTable>;
+          },
+          code: ({ className, children }) => {
+            const isInline = !className;
+            if (!isInline && className?.includes('language-vega-lite')) {
+              const content = Array.isArray(children) ? children.join('') : String(children || '');
+              return <ChartRenderer spec={content} />;
+            }
+            return isInline ? (
+              <code className="px-1.5 py-0.5 bg-[#37003c] text-[#00ff87] rounded font-mono text-xs border border-white/10">
+                {children}
+              </code>
+            ) : (
+              <div className="relative group">
+                <pre className="p-4 bg-black/40 rounded-xl border border-white/5 overflow-x-auto font-mono text-xs my-4">
+                  <code className={className}>{children}</code>
+                </pre>
+              </div>
+            );
+          },
+          img: (props) => {
+            const { src, alt } = props;
+            
+            // Validate src: must be a non-empty string to work with Next.js Image.
+            if (!src || src.trim() === '' || src === 'null' || src === 'undefined') {
+              return null;
+            }
+
+            if (src.startsWith('viz://')) {
+              const id = src.slice('viz://'.length);
+              const tc = message.toolCalls?.find((t) => t.tool_call_id === id);
+              if (tc?.results && Array.isArray(tc.results) && tc.results.length > 0) {
+                // Tool results can be complex objects
+                const first = tc.results[0] as Record<string, unknown>;
+                
+                // If the tool result is a visualization spec, render it using ChartRenderer.
+                const possibleSpec = (first?.vega || first?.spec || first?.['vega-lite'] || first?.vega_lite) as string | object | undefined;
+                if (possibleSpec) {
+                  return <ChartRenderer spec={possibleSpec} />;
+                }
+                
+                // If the tool result is a data URI, render it as an optimized Image.
+                if (typeof first === 'string' && (first as string).startsWith('data:image')) {
+                  return (
+                    <Image 
+                      src={first as string} 
+                      alt={alt || 'Visual representation'} 
+                      width={800} 
+                      height={600} 
+                      sizes="100vw" 
+                      className="w-full h-auto rounded-xl object-contain my-4 px-1" 
+                      unoptimized 
+                    />
+                  );
+                }
+                
+                const dataObj = first?.data as { values: unknown[] } | undefined;
+                if (dataObj && Array.isArray(dataObj.values)) {
+                  const vegaSpec = { 
+                    $schema: 'https://vega.github.io/schema/vega-lite/v5.json', 
+                    data: { values: dataObj.values }, 
+                    mark: 'bar', 
+                    encoding: {} 
+                  };
+                  return <ChartRenderer spec={vegaSpec} />;
+                }
+                return <pre className="p-3 bg-black/20 rounded-xl text-sm mt-2">{JSON.stringify(tc.results, null, 2)}</pre>;
+              }
+              return <div className="italic text-white/60 p-4 border border-white/5 rounded-xl my-4">Generating visualization...</div>;
+            }
+            
+            return (
+              <Image 
+                src={src} 
+                alt={alt || 'Image'} 
+                width={800} 
+                height={600} 
+                sizes="100vw" 
+                className="w-full h-auto rounded-xl object-contain my-4 px-1" 
+              />
+            );
+          },
+        }), [message.content, message.toolCalls]);
+
+  return (
+    <div className="prose prose-invert prose-sm max-w-none prose-headings:text-[#00ff87] prose-a:text-[#00ff87] prose-strong:text-[#00ff87] prose-strong:font-black">
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        components={components}
+      >
+        {md}
+      </ReactMarkdown>
+    </div>
+  );
+});
+
+// Replace <visualization tool-result-id="ID"/> with an image placeholder src 'viz://ID'
+function transformVisualizations(content: string) {
+  if (!content) return '';
+  const regex = /<visualization[^>]*tool-result-id="([^"]+)"[^>]*\/>/g;
+  return content.replace(regex, (_m, id) => `\n\n![](viz://${id})\n\n`);
 }
 
 export default function ChatPage() {
@@ -255,6 +422,7 @@ export default function ChatPage() {
   const [showTools, setShowTools] = useState<Record<number, boolean>>({});
   const abortControllerRef = useRef<AbortController | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const currentSeason = getCurrentFPLSeason();
   const mounted = typeof window !== 'undefined';
 
@@ -275,13 +443,90 @@ export default function ChatPage() {
     image: getPersonaImagePath(key),
   }));
 
-  // Auto-scroll to bottom when new messages arrive
+  // Auto-scroll to bottom when new messages arrive or container height changes
   useEffect(() => {
-    // Use 'auto' behavior during active streaming to prevent choppy animations
-    messagesEndRef.current?.scrollIntoView({
-      behavior: isStreaming ? 'auto' : 'smooth',
-      block: 'end'
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    let isInternalScroll = false;
+    let lastUserScrollTime = 0;
+    let rafId: number;
+    let animation: { stop: () => void } | null = null;
+
+    const handleUserScroll = () => {
+      if (!isInternalScroll) {
+        lastUserScrollTime = Date.now();
+        if (animation) animation.stop();
+      }
+    };
+
+    container.addEventListener('scroll', handleUserScroll, { passive: true });
+
+    const scrollToBottom = (behavior: ScrollBehavior = 'auto') => {
+      if (!container) return;
+      
+      const targetScrollTop = container.scrollHeight - container.clientHeight;
+      if (Math.abs(container.scrollTop - targetScrollTop) < 2) return; 
+
+      if (animation) animation.stop();
+
+      isInternalScroll = true;
+      if (behavior === 'smooth') {
+        animation = animate(container.scrollTop, targetScrollTop, {
+          type: "spring",
+          stiffness: 150,
+          damping: 25,
+          onUpdate: (latest) => {
+            container.scrollTop = latest;
+          },
+          onComplete: () => {
+            isInternalScroll = false;
+            animation = null;
+          }
+        });
+      } else {
+        container.scrollTop = targetScrollTop;
+        setTimeout(() => { isInternalScroll = false; }, 100);
+      }
+    };
+
+    let lastScrollHeight = container.scrollHeight;
+
+    const resizeObserver = new ResizeObserver(() => {
+      const currentScrollHeight = container.scrollHeight;
+      const isShrinking = currentScrollHeight < lastScrollHeight;
+      lastScrollHeight = currentScrollHeight;
+
+      if (isShrinking && !isStreaming) return;
+      if (Date.now() - lastUserScrollTime < 2000) return;
+
+      const threshold = 150;
+      const distanceFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
+      const isAtBottom = distanceFromBottom < threshold;
+      
+      if (isAtBottom || (isStreaming && distanceFromBottom < 500)) {
+        cancelAnimationFrame(rafId);
+        rafId = requestAnimationFrame(() => {
+          scrollToBottom(isStreaming ? 'smooth' : 'auto');
+        });
+      }
     });
+
+    resizeObserver.observe(container);
+
+    if (messages.length > 0) {
+      const lastMessage = messages[messages.length - 1];
+      if (lastMessage.role === 'user') {
+        scrollToBottom('smooth');
+      }
+    }
+
+    return () => {
+      container.removeEventListener('scroll', handleUserScroll);
+      resizeObserver.disconnect();
+      cancelAnimationFrame(rafId);
+      if (animation) animation.stop();
+    };
   }, [messages, isStreaming]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -411,16 +656,19 @@ export default function ChatPage() {
                 });
               }
               if (parsed.toolResult) {
-                const tr = parsed.toolResult as { tool_call_id?: string; results?: unknown[] };
+                const tr = parsed.toolResult as { tool_call_id: string; results: unknown[] };
                 // Attach results to an existing accumulated tool call if present
                 const idx = accumulatedToolCalls.findIndex((tc) => tc.tool_call_id === tr.tool_call_id);
                 if (idx !== -1) {
-                  // @ts-expect-error assign results onto the tool call
-                  (accumulatedToolCalls[idx] as any).results = tr.results;
+                  accumulatedToolCalls[idx].results = tr.results;
                 } else {
                   // If no matching call, push a synthetic entry so UI can still reference it
-                  // @ts-expect-error synthetic tool call shape
-                  accumulatedToolCalls.push({ tool_id: 'tool-result', tool_call_id: tr.tool_call_id, params: {}, results: tr.results } as any);
+                  accumulatedToolCalls.push({ 
+                    tool_id: 'tool-result', 
+                    tool_call_id: tr.tool_call_id, 
+                    params: {}, 
+                    results: tr.results 
+                  });
                 }
 
                 // Refresh UI so any visualization tags referencing this tool_call_id render
@@ -505,13 +753,6 @@ export default function ChatPage() {
     setIsStreaming(false);
   };
 
-  // Replace <visualization tool-result-id="ID"/> with an image placeholder src 'viz://ID'
-  function transformVisualizations(content: string) {
-    if (!content) return '';
-    const regex = /<visualization[^>]*tool-result-id="([^"]+)"[^>]*\/>/g;
-    return content.replace(regex, (_m, id) => `\n\n![](viz://${id})\n\n`);
-  }
-
   return (
     <div className="relative min-h-screen gradient-bg overflow-hidden flex flex-col">
       {/* Background particles */}
@@ -531,7 +772,11 @@ export default function ChatPage() {
 
       <div className="relative z-10 flex flex-col h-screen max-w-5xl mx-auto w-full px-4 pt-4">
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto pt-4 space-y-8 scroll-smooth custom-scrollbar">
+        <div 
+          ref={scrollContainerRef}
+          className="flex-1 overflow-y-auto pt-4 space-y-8 custom-scrollbar"
+          style={{ overflowAnchor: 'auto' }}
+        >
           {/* Sticky Mini-Info Indicator */}
           <div className="sticky top-0 z-20 flex justify-center pointer-events-none pb-4">
             <div className="px-3 py-1 rounded-full bg-black/40 backdrop-blur-md border border-white/5 text-white/30 text-[9px] font-black tracking-[0.2em] uppercase shadow-2xl">
@@ -599,10 +844,11 @@ export default function ChatPage() {
               </div>
               <div className="flex flex-wrap justify-center gap-3">
                 {[
-                  "What happened in GW26 in league 1305804?",
+                  "Summarise GW26 in league 1305804?",
                   "Who had the biggest bench regrets in league 1305804?",
                   "Analyze the captaincy picks in league 1305804",
-                  "Compare the top performers in league 1305804"
+                  "Compare the top performers in league 1305804",
+                  "Who took the most hits in league 1305804?"
                 ].map((q, i) => (
                   <button
                     key={i}
@@ -617,12 +863,15 @@ export default function ChatPage() {
           </div>
 
           <div className="max-w-4xl mx-auto w-full space-y-8 px-4">
-            {messages.map((message, messageIndex) => (
-              <div
-                key={message.id}
-                className={`flex gap-3 ${message.role === 'user' ? 'flex-row-reverse' : 'flex-row'} animate-slide-in`}
-                style={{ animationDelay: `${messageIndex * 50}ms` }}
-              >
+            {messages.map((message, messageIndex) => {
+              const isLatestUserMessage = message.role === 'user' && messageIndex === messages.length - 1;
+              const isLatestAssistantMessage = message.role === 'assistant' && messageIndex === messages.length - 1;
+              
+              return (
+                <div
+                  key={message.id}
+                  className={`flex gap-3 ${message.role === 'user' ? 'flex-row-reverse' : 'flex-row'} ${isLatestUserMessage || (isLatestAssistantMessage && !message.content) ? 'animate-slide-in' : ''}`}
+                >
                 {/* Avatar Placeholder */}
                 <div className={`w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center border ${message.role === 'user'
                   ? 'bg-purple-600 border-purple-400 text-white'
@@ -653,32 +902,44 @@ export default function ChatPage() {
                                 [messageIndex]: !prev[messageIndex],
                               }))
                             }
-                            className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-cyan-400 hover:brightness-125 w-full text-left"
+                            className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-[#00d4ff] hover:brightness-125 transition-all outline-none"
                             aria-expanded={showTools[messageIndex]}
                           >
-                            <span className="text-[8px]">{showTools[messageIndex] ? '▼' : '▶'}</span>
+                            <span className={`w-3.5 h-3.5 flex items-center justify-center rounded-sm bg-[#00d4ff]/10 border border-[#00d4ff]/20 transition-transform ${showTools[messageIndex] ? 'rotate-180 text-[#00d4ff]' : 'text-white/80'}`} aria-hidden>
+                              <ChevronDown className="w-3 h-3" />
+                            </span>
                             <span>System Operations ({message.toolCalls.length})</span>
                           </button>
-                          {showTools[messageIndex] && (
-                            <div className="mt-3 space-y-3">
-                              {message.toolCalls.map((tool, toolIdx) => (
-                                <div
-                                  key={toolIdx}
-                                  className="p-3 bg-black/20 rounded-xl text-[11px] border border-white/5"
-                                >
-                                  <div className="font-bold text-cyan-400 mb-2 flex items-center gap-2">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"></span>
-                                    {getToolDisplayName(tool.tool_id)}
-                                  </div>
-                                  {tool.params && Object.keys(tool.params).length > 0 && (
-                                    <pre className="text-white/50 bg-black/30 p-2 rounded-lg overflow-x-auto whitespace-pre-wrap font-mono mt-1">
-                                      {JSON.stringify(tool.params, null, 2)}
-                                    </pre>
-                                  )}
+                          <AnimatePresence>
+                            {showTools[messageIndex] && (
+                              <motion.div 
+                                initial={{ height: 0, opacity: 0 }}
+                                animate={{ height: 'auto', opacity: 1 }}
+                                exit={{ height: 0, opacity: 0 }}
+                                transition={{ duration: 0.3, ease: 'easeInOut' }}
+                                className="overflow-hidden"
+                              >
+                                <div className="mt-3 space-y-3">
+                                  {message.toolCalls.map((tool, toolIdx) => (
+                                    <div
+                                      key={toolIdx}
+                                      className="p-3 bg-black/20 rounded-xl text-[11px] border border-white/5"
+                                    >
+                                      <div className="font-bold text-cyan-400 mb-2 flex items-center gap-2">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"></span>
+                                        {getToolDisplayName(tool.tool_id)}
+                                      </div>
+                                      {tool.params && Object.keys(tool.params).length > 0 && (
+                                        <pre className="text-white/50 bg-black/30 p-2 rounded-lg overflow-x-auto whitespace-pre-wrap font-mono mt-1">
+                                          {JSON.stringify(tool.params, null, 2)}
+                                        </pre>
+                                      )}
+                                    </div>
+                                  ))}
                                 </div>
-                              ))}
-                            </div>
-                          )}
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
                         </div>
                       )}
 
@@ -692,166 +953,79 @@ export default function ChatPage() {
                                 [messageIndex]: !prev[messageIndex],
                               }))
                             }
-                            className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-purple-400 hover:brightness-125 w-full text-left"
+                            className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-[#a855f7] hover:brightness-125 transition-all outline-none"
                             aria-expanded={showReasoning[messageIndex]}
                           >
-                            <span className="text-[8px]">{showReasoning[messageIndex] ? '▼' : '▶'}</span>
+                            <span className={`w-3.5 h-3.5 flex items-center justify-center rounded-sm bg-[#a855f7]/10 border border-[#a855f7]/20 transition-transform ${showReasoning[messageIndex] ? 'rotate-180 text-[#a855f7]' : 'text-white/80'}`} aria-hidden>
+                              <ChevronDown className="w-3 h-3" />
+                            </span>
                             <span>Manager Logic {message.reasoning && message.reasoning.length > 0 ? `(${message.reasoning.length})` : ''}</span>
                             {isStreaming && messageIndex === messages.length - 1 && (
                               <span className="ml-auto flex items-center gap-2">
-                                <span className="text-[8px] font-black tracking-widest opacity-50">FIELD REPORT IN PROGRESS</span>
+                                <span className="text-[8px] font-black tracking-widest opacity-40">PROCESSING LOGS</span>
                                 <span className="w-1.5 h-1.5 rounded-full bg-[#00ff87] animate-pulse"></span>
                               </span>
                             )}
                           </button>
 
-                          {showReasoning[messageIndex] && (
-                            <div className="mt-3 space-y-3">
-                              {message.reasoning?.map((thought, thoughtIdx) => {
-                                const isLatest = isStreaming && messageIndex === messages.length - 1 && thoughtIdx === message.reasoning!.length - 1;
-                                return (
-                                  <div
-                                    key={thoughtIdx}
-                                    className={`flex items-start gap-2.5 text-[12px] transition-all duration-300 ${isLatest ? 'text-[#00ff87] font-bold' : 'text-white/70'}`}
-                                  >
-                                    <span className={`mt-1 font-bold ${isLatest ? 'text-[#00ff87] animate-pulse' : 'text-purple-500'}`}>
-                                      {isLatest ? '▶' : '↳'}
-                                    </span>
-                                    <span className={`${isLatest ? '' : 'italic'} leading-relaxed`}>{thought}</span>
-                                  </div>
-                                );
-                              })}
+                          <AnimatePresence>
+                            {showReasoning[messageIndex] && (
+                              <motion.div 
+                                initial={{ height: 0, opacity: 0 }}
+                                animate={{ height: 'auto', opacity: 1 }}
+                                exit={{ height: 0, opacity: 0 }}
+                                transition={{ duration: 0.3, ease: 'easeInOut' }}
+                                className="overflow-hidden"
+                              >
+                                <div className="mt-3 space-y-3">
+                                  {message.reasoning?.map((thought, thoughtIdx) => {
+                                    const isLatest = isStreaming && messageIndex === messages.length - 1 && thoughtIdx === message.reasoning!.length - 1;
+                                    return (
+                                      <div
+                                        key={thoughtIdx}
+                                        className={`flex items-start gap-2.5 text-[12px] transition-all duration-300 ${isLatest ? 'text-[#00ff87] font-bold' : 'text-white/70'}`}
+                                      >
+                                        <span className={`mt-1 font-bold ${isLatest ? 'text-[#00ff87] animate-pulse' : 'text-purple-500'}`}>
+                                          {isLatest ? '▶' : '↳'}
+                                        </span>
+                                        <span className={`${isLatest ? '' : 'italic'} leading-relaxed`}>{thought}</span>
+                                      </div>
+                                    );
+                                  })}
 
-                              {/* Pulse for starting state or tool calls if no reasoning yet */}
-                              {isStreaming && messageIndex === messages.length - 1 && (!message.reasoning || message.reasoning.length === 0) && (
-                                <div className="flex items-center gap-3 px-1 text-[#00ff87]">
-                                  <div className="flex gap-1.5">
-                                    <div className="w-1 h-1 bg-[#00ff87] rounded-full animate-bounce [animation-delay:-0.3s]"></div>
-                                    <div className="w-1 h-1 bg-[#00ff87] rounded-full animate-bounce [animation-delay:-0.15s]"></div>
-                                    <div className="w-1 h-1 bg-[#00ff87] rounded-full animate-bounce"></div>
-                                  </div>
-                                  <span className="text-[10px] font-black uppercase tracking-[0.2em] animate-pulse">
-                                    {message.toolCalls && message.toolCalls.length > 0
-                                      ? getToolDisplayName(message.toolCalls[message.toolCalls.length - 1].tool_id).replace(/^[^\s]+\s+/, '')
-                                      : 'Strategizing'}
-                                  </span>
+                                  {/* Pulse for starting state or tool calls if no reasoning yet */}
+                                  {isStreaming && messageIndex === messages.length - 1 && (!message.reasoning || message.reasoning.length === 0) && (
+                                    <div className="flex items-center gap-3 px-1 text-[#00ff87]">
+                                      <div className="flex gap-1.5">
+                                        <div className="w-1 h-1 bg-[#00ff87] rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+                                        <div className="w-1 h-1 bg-[#00ff87] rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+                                        <div className="w-1 h-1 bg-[#00ff87] rounded-full animate-bounce"></div>
+                                      </div>
+                                      <span className="text-[10px] font-black uppercase tracking-[0.2em] animate-pulse">
+                                        {message.toolCalls && message.toolCalls.length > 0
+                                          ? getToolDisplayName(message.toolCalls[message.toolCalls.length - 1].tool_id).replace(/^[^\s]+\s+/, '')
+                                          : 'Strategizing'}
+                                      </span>
+                                    </div>
+                                  )}
                                 </div>
-                              )}
-                            </div>
-                          )}
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
                         </div>
                       )}
 
                       {/* Main Response content */}
-                      <div className="prose prose-invert prose-sm max-w-none prose-headings:text-[#00ff87] prose-a:text-[#00ff87] prose-strong:text-[#00ff87] prose-strong:font-black">
-                        {/* Transform <visualization> tags into viz:// placeholders and render once */}
-                        {
-                          (() => {
-                            const md = transformVisualizations(message.content || '');
-                            return (
-                              <ReactMarkdown
-                                remarkPlugins={[remarkGfm]}
-                                components={{
-                            p: ({ children }: { children?: ReactNode }) => (
-                              <p className="mt-4 first:mt-0 mb-4 last:mb-0 leading-relaxed text-white/90">{children}</p>
-                            ),
-                            ul: ({ children }: { children?: ReactNode }) => (
-                              <ul className="list-disc list-inside space-y-2 mt-6 mb-8 pl-2 border-l-2 border-[#00ff87]/20 bg-white/5 p-4 rounded-xl shadow-inner">{children}</ul>
-                            ),
-                            ol: ({ children }: { children?: ReactNode }) => (
-                              <ol className="list-decimal list-inside space-y-2 mt-6 mb-8 pl-2 border-l-2 border-[#00ff87]/20 bg-white/5 p-4 rounded-xl shadow-inner">{children}</ol>
-                            ),
-                            li: ({ children }: { children?: ReactNode }) => (
-                              <li className="text-white/80 mb-1 last:mb-0">{children}</li>
-                            ),
-                            table: ({ children }: { children?: ReactNode }) => (
-                              <div className="my-6 overflow-x-auto rounded-xl border border-white/10 custom-scrollbar">
-                                <table className="w-full border-collapse text-left text-sm">
-                                  {children}
-                                </table>
-                              </div>
-                            ),
-                            thead: ({ children }: { children?: ReactNode }) => (
-                              <thead className="bg-white/5 border-b border-white/10 whitespace-nowrap">
-                                {children}
-                              </thead>
-                            ),
-                            th: ({ children }: { children?: ReactNode }) => (
-                              <th className="px-4 py-3 font-black uppercase tracking-widest text-[10px] text-[#00ff87]">
-                                {children}
-                              </th>
-                            ),
-                            td: ({ children }: { children?: ReactNode }) => (
-                              <td className="px-4 py-3 border-b border-white/5 text-white/80 whitespace-nowrap">
-                                {children}
-                              </td>
-                            ),
-                            code: ({ className, children }: { className?: string; children?: ReactNode }) => {
-                              const isInline = !className;
-
-                              // Handle fenced vega-lite blocks: ```vega-lite\n{...}```
-                              if (!isInline && className?.includes('language-vega-lite')) {
-                                const content = Array.isArray(children) ? children.join('') : String(children || '');
-                                return <ChartRenderer spec={content} />;
-                              }
-
-                              return isInline ? (
-                                <code className="px-1.5 py-0.5 bg-[#37003c] text-[#00ff87] rounded font-mono text-xs border border-white/10">
-                                  {children}
-                                </code>
-                              ) : (
-                                <div className="relative group">
-                                  <pre className="p-4 bg-black/40 rounded-xl border border-white/5 overflow-x-auto font-mono text-xs my-4">
-                                    <code className={className}>{children}</code>
-                                  </pre>
-                                </div>
-                              );
-                            },
-                            img: ({ src, alt }: { src?: string; alt?: string }) => {
-                              if (!src) return null;
-                              // Handle viz placeholders: viz://<tool_call_id>
-                              if (src.startsWith('viz://')) {
-                                const id = src.slice('viz://'.length);
-                                const tc = message.toolCalls?.find((t) => t.tool_call_id === id) as any | undefined;
-
-                                if (tc?.results && Array.isArray(tc.results) && tc.results.length > 0) {
-                                  const first = tc.results[0] as any;
-                                  if (first?.vega || first?.spec || first?.['vega-lite'] || first?.vega_lite) {
-                                    const spec = first.vega || first.spec || first['vega-lite'] || first.vega_lite;
-                                    return <ChartRenderer spec={spec} />;
-                                  }
-                                  if (typeof first === 'string' && first.startsWith('data:image')) {
-                                    return <img src={first} alt={alt} className="w-full rounded-xl object-contain my-4" />;
-                                  }
-                                  if (first?.data && Array.isArray(first.data.values)) {
-                                    const vegaSpec = { $schema: 'https://vega.github.io/schema/vega-lite/v5.json', data: { values: first.data.values }, mark: 'bar', encoding: {} };
-                                    return <ChartRenderer spec={vegaSpec} />;
-                                  }
-                                  // Fallback: show JSON in a compact block
-                                  return <pre className="p-3 bg-black/20 rounded-xl text-sm mt-2">{JSON.stringify(tc.results, null, 2)}</pre>;
-                                }
-
-                                return <div className="italic text-white/60">Rendering chart...</div>;
-                              }
-
-                              // Default: render normal images (including data URLs)
-                              return <img src={src} alt={alt} className="w-full rounded-xl object-contain my-4" />;
-                            },
-                                }}
-                              >
-                                {md}
-                              </ReactMarkdown>
-                            );
-                          })()
-                        }
-                      </div>
+                      <MessageContent message={message} />
                     </>
                   )}
                 </div>
               </div>
-            ))}
-            <div ref={messagesEndRef} className="h-4" />
-          </div>
+            );
+          })}
+          <div ref={messagesEndRef} className="h-4" />
+        </div>
+      </div>
 
           {/* Input */}
           <div className="mt-auto pb-8 pt-4">
@@ -917,6 +1091,5 @@ export default function ChatPage() {
           </div>
         </div>
       </div>
-    </div >
-  );
+    );
 }

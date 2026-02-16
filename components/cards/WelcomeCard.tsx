@@ -2,6 +2,7 @@
 
 import { SeasonSummary } from '@/lib/types';
 import { getCurrentFPLSeason } from '@/lib/season';
+import Image from 'next/image';
 import { useState } from 'react';
 import { SharedImageFooter } from '../ui/wrapped/SharedImageFooter';
 
@@ -46,12 +47,13 @@ function ManagerAvatar({ image, name, emoji, isActive, isMystery }: { image: str
               <span className="text-4xl md:text-5xl font-black text-[#00ff87] relative z-10 drop-shadow-[0_2px_8px_rgba(0,255,135,0.5)]">?</span>
             </div>
           ) : !imageError ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={image}
+            <Image
+              src={image || ''}
               alt={name}
-              className="object-cover w-full h-full"
+              fill
+              className="object-cover"
               onError={() => setImageError(true)}
+              unoptimized={image?.startsWith('data:')}
             />
           ) : (
             <span className="text-2xl md:text-3xl">{emoji}</span>

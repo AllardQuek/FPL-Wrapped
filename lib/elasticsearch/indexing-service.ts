@@ -69,6 +69,8 @@ export async function indexManagerGameweek(
                 // Use update with upsert and a Painless script to atomically merge
                 // league IDs while updating other fields. Skip copying `league_ids`
                 // from params.doc into ctx._source to avoid overwriting the merged array.
+                // We ensure league_ids is always treated as a list to avoid scalar issues 
+                // in aggregations/ES|QL.
                 await client.update<GameweekDecisionDocument>({
                     index: indexName,
                     id: docId,
@@ -77,8 +79,17 @@ export async function indexManagerGameweek(
                         lang: 'painless',
                         source: `
                             if (ctx._source.league_ids == null) {
-                                ctx._source.league_ids = params.ids;
+                                ctx._source.league_ids = new ArrayList(params.ids);
                             } else {
+                                // Ensure existing is a list if it was indexed as scalar
+                                if (!(ctx._source.league_ids instanceof List)) {
+                                    def oldId = ctx._source.league_ids;
+                                    ctx._source.league_ids = new ArrayList();
+                                    if (oldId != null) {
+                                        ctx._source.league_ids.add(oldId);
+                                    }
+                                }
+                                // Add new IDs if not already present
                                 for (id in params.ids) {
                                     if (!ctx._source.league_ids.contains(id)) {
                                         ctx._source.league_ids.add(id);

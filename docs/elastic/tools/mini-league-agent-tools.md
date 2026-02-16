@@ -120,7 +120,7 @@ Index Search can't aggregate — these ES|QL tools fill that gap.
 - Sort: `SORT field DESC` (not `SORT -field`)
 - Agg functions: `COUNT_DISTINCT` (not `DISTINCT_COUNT`), `STD_DEV` (not `STDDEV`)
 - Text fields: use `manager_name.keyword` in `BY` / `KEEP` clauses
-- League filter: `?league_id IN (league_ids)`
+- League filter: `league_ids == ?league_id`
 
 ---
 
@@ -132,7 +132,8 @@ Counts how many managers in the league picked each captain. Identifies consensus
 
 ```esql
 FROM fpl-gameweek-decisions
-| WHERE gameweek == ?GW AND ?league_id IN (league_ids)
+| MV_EXPAND league_ids
+| WHERE gameweek == ?GW AND league_ids == ?league_id
 | STATS picks = COUNT(*) BY captain.name
 | SORT picks DESC
 ```
@@ -147,12 +148,12 @@ Helper ES|QL tool — returns the number of distinct managers in a league for a 
 
 ```esql
 FROM fpl-gameweek-decisions
-| WHERE gameweek == ?GW AND ?league_id IN (league_ids)
+| MV_EXPAND league_ids
+| WHERE gameweek == ?GW AND league_ids == ?league_id
 | STATS league_size = COUNT_DISTINCT(manager_id)
 ```
 
 Agent guidance: If `?league_size` is not supplied to `fpl.differential_detection`, call `fpl.league_size` first and pass its `league_size` result into `fpl.differential_detection`.
-
 
 ---
 
@@ -164,7 +165,8 @@ Captain picks with actual points scored. Shows which captain choice paid off pos
 
 ```esql
 FROM fpl-gameweek-decisions
-| WHERE gameweek == ?GW AND ?league_id IN (league_ids)
+| MV_EXPAND league_ids
+| WHERE gameweek == ?GW AND league_ids == ?league_id
 | STATS picks = COUNT(*),
         avg_captain_pts = AVG(captain.points),
         total_captain_pts = SUM(captain.points)
@@ -182,7 +184,8 @@ Counts chip usage across the league for a GW.
 
 ```esql
 FROM fpl-gameweek-decisions
-| WHERE gameweek == ?GW AND ?league_id IN (league_ids)
+| MV_EXPAND league_ids
+| WHERE gameweek == ?GW AND league_ids == ?league_id
 | STATS chip_count = COUNT(*) BY chip_used
 | SORT chip_count DESC
 ```
@@ -197,7 +200,8 @@ Points left on bench per manager. Higher = more wasted points.
 
 ```esql
 FROM fpl-gameweek-decisions
-| WHERE gameweek == ?GW AND ?league_id IN (league_ids)
+| MV_EXPAND league_ids
+| WHERE gameweek == ?GW AND league_ids == ?league_id
 | STATS benched_points = SUM(points_on_bench) BY manager_id, manager_name.keyword
 | SORT benched_points DESC
 ```
@@ -212,7 +216,8 @@ Bench Boost chip ROI — how many bench points each BB user got. Returns empty i
 
 ```esql
 FROM fpl-gameweek-decisions
-| WHERE gameweek == ?GW AND chip_used == "bench_boost" AND ?league_id IN (league_ids)
+| MV_EXPAND league_ids
+| WHERE gameweek == ?GW AND chip_used == "bench_boost" AND league_ids == ?league_id
 | STATS bench_boost_points = SUM(points_on_bench) BY manager_id, manager_name.keyword
 | SORT bench_boost_points DESC
 ```
@@ -227,8 +232,9 @@ Rolling N-week total points per manager. Identifies hot streaks and cold slumps.
 
 ```esql
 FROM fpl-gameweek-decisions
+| MV_EXPAND league_ids
 | WHERE gameweek >= (?GW - ?N + 1) AND gameweek <= ?GW
-    AND ?league_id IN (league_ids)
+    AND league_ids == ?league_id
 | STATS recent_points = SUM(gw_points) BY manager_id, manager_name.keyword
 | SORT recent_points DESC
 ```
@@ -243,7 +249,8 @@ League-season consistency — standard deviation of weekly points (season inferr
 
 ```esql
 FROM fpl-gameweek-decisions
-| WHERE ?league_id IN (league_ids)
+| MV_EXPAND league_ids
+| WHERE league_ids == ?league_id
 | STATS volatility = STD_DEV(gw_points),
         avg_pts = AVG(gw_points),
         gws = COUNT(*)
@@ -261,7 +268,8 @@ Season-long aggregate stats for each manager in a league (season inferred from t
 
 ```esql
 FROM fpl-gameweek-decisions
-| WHERE ?league_id IN (league_ids)
+| MV_EXPAND league_ids
+| WHERE league_ids == ?league_id
 | STATS total_pts = SUM(gw_points),
         avg_pts = AVG(gw_points),
         best_gw = MAX(gw_points),
@@ -282,7 +290,8 @@ Rich per-manager profile card for the league. Captures team-building style (team
 
 ```esql
 FROM fpl-gameweek-decisions
-| WHERE ?league_id IN (league_ids)
+| MV_EXPAND league_ids
+| WHERE league_ids == ?league_id
 | STATS total_gameweeks = COUNT(*),
         total_gw_points = SUM(gw_points),
         avg_team_value = AVG(team_value),
@@ -318,7 +327,8 @@ For aggregation over nested data (e.g. "most owned starters", "most transferred-
 
 ```esql
 FROM fpl-gameweek-decisions
-| WHERE gameweek == ?GW AND ?league_id IN (league_ids)
+| MV_EXPAND league_ids
+| WHERE gameweek == ?GW AND league_ids == ?league_id
 | MV_EXPAND transfer_in_names
 | STATS transfers_in = COUNT(*) BY transfer_in_names
 | SORT transfers_in DESC
@@ -332,7 +342,8 @@ This tool identifies template/core players by returning starters that are owned 
 
 ```esql
 FROM fpl-gameweek-decisions
-| WHERE gameweek == ?GW AND ?league_id IN (league_ids)
+| MV_EXPAND league_ids
+| WHERE gameweek == ?GW AND league_ids == ?league_id
 | MV_EXPAND starter_names
 | STATS owners = COUNT_DISTINCT(manager_id) BY starter_names
 | WHERE owners > (?league_size * 0.5)
@@ -343,7 +354,8 @@ FROM fpl-gameweek-decisions
 
 ```esql
 FROM fpl-gameweek-decisions
-| WHERE gameweek == ?GW AND ?league_id IN (league_ids)
+| MV_EXPAND league_ids
+| WHERE gameweek == ?GW AND league_ids == ?league_id
 | MV_EXPAND starter_names
 | STATS owner_count = COUNT(*) BY starter_names
 | SORT owner_count DESC
@@ -353,7 +365,8 @@ FROM fpl-gameweek-decisions
 
 ```esql
 FROM fpl-gameweek-decisions
-| WHERE gameweek == ?GW AND ?league_id IN (league_ids) AND total_transfer_cost > 0
+| MV_EXPAND league_ids
+| WHERE gameweek == ?GW AND league_ids == ?league_id AND total_transfer_cost > 0
 | KEEP manager_id, manager_name.keyword, gw_points, total_transfer_cost, transfer_count
 | SORT total_transfer_cost DESC
 ```

@@ -300,6 +300,57 @@ section:focus-visible {
   }
 }
 
+/* Chart-specific styles */
+.chart-wrapper {
+  padding: 12px;
+  border-radius: 14px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+  border: 1px solid rgba(255,255,255,0.05);
+}
+
+.chart-header {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.chart-header .title {
+  font-weight: 800;
+  color: var(--accent-secondary);
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.chart-header .subtitle {
+  color: rgba(255,255,255,0.65);
+  font-size: 12px;
+}
+
+.accent-spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid rgba(255,255,255,0.12);
+  border-top-color: var(--accent-secondary);
+  border-radius: 999px;
+  animation: spin 0.9s linear infinite;
+}
+
+.chart-error {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.chart-error .card {
+  background: rgba(0,0,0,0.6);
+  border: 1px solid rgba(255,255,255,0.06);
+  padding: 12px 14px;
+  border-radius: 10px;
+  color: #fff;
+  font-size: 13px;
+}
+
 /* Floating particles effect */
 .particles {
   position: fixed;

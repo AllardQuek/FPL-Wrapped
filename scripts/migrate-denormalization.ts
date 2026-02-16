@@ -65,13 +65,21 @@ async function migrate() {
                 }
             }
 
-            // scrollSearch yields response objects
-            // Based on debug output, the hits are typically in response.body.hits.hits
-            const body = ((response as { body?: unknown }).body as unknown) ?? response;
-            const bodyRecord = body as Record<string, unknown> | undefined;
-            const hits = (bodyRecord?.['hits'] as { hits?: Array<{ _source?: GameweekDecisionDocument; _id?: string }> } | undefined)?.hits ?? [];
+            // Compatibility check for different ES client versions / response formats
+            const body = (response as any).body || response;
+            const hits = body?.hits?.hits || [];
 
-            for (const hit of hits) {
+            if (hits.length === 0) {
+              // Sometimes ES results are directly on the result if it's a newer helper version
+              // but we'll log a sample if it's repeatedly empty
+              if (processedConnect < 1 && (response as any).hits?.hits) {
+                console.log('DEBUG: Found hits on direct response object');
+              }
+            }
+
+            const actualHits = hits.length > 0 ? hits : ((response as any).hits?.hits || []);
+
+            for (const hit of actualHits) {
                 const doc = hit._source as GameweekDecisionDocument;
                 if (!hit._id) {
                     // Skip documents without an id (shouldn't happen, defensive)
@@ -117,6 +125,13 @@ async function migrate() {
                         updates.total_transfer_cost = totalCost;
                     }
 
+                    // League IDs normalization (ensure it's always an array for ES|QL compatibility)
+                    if (doc.league_ids !== undefined && doc.league_ids !== null) {
+                        if (!Array.isArray(doc.league_ids)) {
+                            updates.league_ids = [doc.league_ids];
+                        }
+                    }
+
                     // Remove old typo fields if they exist
                     if ('transfers_in_names' in doc) {
                         updates.transfers_in_names = null;
@@ -130,12 +145,21 @@ async function migrate() {
                         await client.update({
                             index: indexName,
                             id: docId,
-                            // apply denormalized doc updates
-                            doc: updates,
-                            // remove legacy `cost` property from each transfer entry if present
                             script: {
-                                source: "if (ctx._source.transfers != null) { for (int i=0;i<ctx._source.transfers.length;i++) { ctx._source.transfers[i].remove('cost'); } }",
-                                lang: 'painless'
+                                source: `
+                                    if (ctx._source.transfers != null) { 
+                                        for (int i=0; i < ctx._source.transfers.length; i++) { 
+                                            ctx._source.transfers[i].remove('cost'); 
+                                        } 
+                                    }
+                                    for (entry in params.updates.entrySet()) {
+                                        ctx._source[entry.getKey()] = entry.getValue();
+                                    }
+                                `,
+                                lang: 'painless',
+                                params: {
+                                    updates: updates
+                                }
                             }
                         });
                         updatedCount++;

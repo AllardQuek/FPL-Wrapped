@@ -46,7 +46,7 @@ These templates only use top-level fields (no UNNEST, no JOIN) and are fixable.
 ```
 verification_exception: Found 3 problems
 line 2:25: first argument of [gameweek == ?GW] is [numeric] so second argument must also be [numeric] but was [null]
-line 2:69: first argument of [?league_id IN (league_ids)] is [null] so second argument must also be [null] but was [integer]
+line 2:69: first argument of [league_ids == ?league_id] is [null] so second argument must also be [null] but was [integer]
 line 2:125: first argument of [manager_id == ?manager_id] is [numeric] so second argument must also be [numeric] but was [null]
 ```
 
@@ -60,8 +60,8 @@ line 2:125: first argument of [manager_id == ?manager_id] is [numeric] so second
 -- Instead of: (?GW == null OR gameweek == ?GW)
 -- Use:        gameweek == COALESCE(?GW, gameweek)
 
--- Instead of: (?league_id == null OR ?league_id IN (league_ids))
--- Use:        COALESCE(?league_id, 0) == 0 OR ?league_id IN (league_ids)
+-- Instead of: (?league_id == null OR league_ids == ?league_id)
+-- Use:        COALESCE(?league_id, 0) == 0 OR league_ids == ?league_id
 -- NOTE: league_ids is multi-valued, so COALESCE approach is trickier.
 -- Best approach: build WHERE clause dynamically in the tool runner.
 
@@ -219,7 +219,7 @@ If the tool runner passes `""` (empty string) instead of `null`:
 
 ### Multi-Valued `league_ids`
 
-The `?league_id IN (league_ids)` pattern may behave unexpectedly. In ES|QL, `IN` is typically `value IN (list)`, but `league_ids` is a multi-valued field. The correct approach depends on the ES|QL version — you may need:
+The `league_ids == ?league_id` pattern may behave unexpectedly. In ES|QL, `IN` is typically `value IN (list)`, but `league_ids` is a multi-valued field. The correct approach depends on the ES|QL version — you may need:
 ```esql
 -- Check if a single value exists in a multi-valued field:
 | WHERE ?league_id == league_ids   -- ES|QL auto-matches against MV fields

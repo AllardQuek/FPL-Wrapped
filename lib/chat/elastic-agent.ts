@@ -41,7 +41,8 @@ function toErrorMessage(value: unknown): string {
  */
 export async function* streamChatWithAgent(
   message: string,
-  conversationId?: string
+  conversationId?: string,
+  options?: { includeVegaHint?: boolean }
 ): AsyncGenerator<ChatStreamChunk, void, unknown> {
   const esUrl = process.env.ELASTICSEARCH_URL?.replace(':443', '').replace(':9200', '');
   const agentId = process.env.ELASTIC_AGENT_ID;
@@ -53,12 +54,39 @@ export async function* streamChatWithAgent(
   // Convert Elasticsearch URL to Kibana URL (.es. -> .kb.)
   const kibanaUrl = esUrl.replace('.es.', '.kb.');
 
+  // For this app, always ask the agent to return Vega-Lite when relevant
+  const shouldAppendVegaHint = (msg: string) => msg.length > 0;
+
+  const VEGA_HINT = [
+    '',
+    '<!-- VEGA_HINT_ADDED -->',
+    'When returning charts, please include BOTH:',
+    '1) An Elastic visualization tag referencing the tool result: <visualization tool-result-id="{tool_result_id}" chart-type="Bar"/>',
+    '2) A fenced vega-lite JSON block that contains the complete Vega-Lite spec using inline data (data.values), for example:',
+    '```vega-lite',
+    '{ "$schema": "https://vega.github.io/schema/vega-lite/v5.json", "data": { "values": [...] }, ... }',
+    '```',
+    'CHART DESIGN GUIDELINES:',
+    '- Orientation: Use horizontal bar charts (y-encoding for names) when labels are long (e.g. manager names).',
+    '- Titles: Always include a descriptive "title" field at the top level of your JSON.',
+    '- Sorting: For rankings/comparisons, always sort the data (e.g. "sort": "-x") to show top performers first.',
+    '- Interactivity: Always include "tooltip": true or "tooltip": {"content": "data"} in your encodings.',
+    '- Colors: Avoid hardcoding specific hex colors; the system theme will apply the FPL branding automatically.',
+    '- Simplicity: Focus on clear, high-impact visualizations (bars, lines, areas) that work well in a chat interface.',
+  ].join('\n');
+
+  let input = message;
+  const includeVegaHint = options?.includeVegaHint ?? true;
+  if (includeVegaHint && shouldAppendVegaHint(input) && !input.includes('<!-- VEGA_HINT_ADDED -->')) {
+    input += VEGA_HINT;
+  }
+
   const requestBody: {
     input: string;
     agent_id: string;
     conversation_id?: string;
   } = {
-    input: message,
+    input,
     agent_id: agentId,
   };
 

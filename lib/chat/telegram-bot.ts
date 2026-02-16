@@ -12,6 +12,23 @@ if (!token) {
  */
 export const bot = token ? new Telegraf(token) : null;
 
+// Registry for webhook-sent quick-acks. The webhook can register an
+// acknowledgement message_id for a chat so the bot can edit that message
+// instead of sending a duplicate "Thinking..." placeholder.
+const webhookAcks = new Map<number, number>();
+
+export function registerWebhookAck(chatId: number, messageId: number) {
+    webhookAcks.set(chatId, messageId);
+    // Auto-expire the ack after 60s to avoid stale mappings
+    setTimeout(() => webhookAcks.delete(chatId), 60_000).unref?.();
+}
+
+export function consumeWebhookAck(chatId: number): number | undefined {
+    const id = webhookAcks.get(chatId);
+    if (id) webhookAcks.delete(chatId);
+    return id;
+}
+
 if (bot) {
     const conversationIdsByChatId = new Map<number, string>();
     const TELEGRAM_MESSAGE_LIMIT = 4096;
@@ -127,8 +144,16 @@ if (bot) {
         const chatId = ctx.chat.id;
         const conversationId = conversationIdsByChatId.get(chatId);
 
-        // Send an initial "typing" or placeholder message
-        const placeholder = await ctx.reply('🤔 Thinking...');
+        // Send an initial "typing" or placeholder message. If the webhook
+        // already sent a quick ack, consume it so we edit that message
+        // instead of creating a duplicate.
+        let placeholder: { message_id: number };
+        const ackId = consumeWebhookAck(chatId);
+        if (ackId) {
+            placeholder = { message_id: ackId };
+        } else {
+            placeholder = await ctx.reply('🤔 Thinking...');
+        }
 
         const streamResponse = async (conversationIdForRequest?: string) => {
             let fullContent = '';

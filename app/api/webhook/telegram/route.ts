@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { bot } from '@/lib/chat/telegram-bot';
+import { waitUntil } from '@vercel/functions';
+import { bot, registerWebhookAck } from '@/lib/chat/telegram-bot';
 
 export const runtime = 'nodejs';
+// Allow longer background processing on Vercel (seconds). Adjust to your plan limits.
+export const maxDuration = 60;
 
 export async function POST(req: NextRequest) {
     if (!bot) {
@@ -11,12 +14,39 @@ export async function POST(req: NextRequest) {
     try {
         const body = await req.json();
 
-        // Process the update in the background and respond immediately.
-        // This prevents Telegram from retrying while we wait for AI/indexing.
-        // We catch errors internally to prevent unhandled promise rejections.
-        bot.handleUpdate(body).catch((err) => {
-            console.error('Background bot error:', err);
-        });
+        // Return 200 immediately to stop Telegram retries, then perform both
+        // the quick ack and the full bot handling in the background via
+        // `waitUntil`. This keeps the response path fast and lets Vercel keep
+        // the invocation alive up to `maxDuration` for the background work.
+        waitUntil((async () => {
+            try {
+                const chatId = (body as any)?.message?.chat?.id
+                    || (body as any)?.callback_query?.message?.chat?.id
+                    || (body as any)?.channel_post?.chat?.id;
+
+                if (chatId) {
+                    try {
+                        const msg = await bot.telegram.sendMessage(
+                            chatId,
+                            '✅ Got it — processing your request. I will update you here when ready.'
+                        );
+                        if (msg && (msg as any).message_id) {
+                            registerWebhookAck(chatId, (msg as any).message_id);
+                        }
+                    } catch (err) {
+                        console.error('Failed to send background ack to Telegram user:', err);
+                    }
+                }
+            } catch (err) {
+                console.error('Failed to determine chatId for background ack:', err);
+            }
+
+            try {
+                await bot.handleUpdate(body);
+            } catch (err) {
+                console.error('Background bot error:', err);
+            }
+        })());
 
         return NextResponse.json({ ok: true });
     } catch (error: any) {

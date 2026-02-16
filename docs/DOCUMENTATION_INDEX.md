@@ -33,6 +33,8 @@ Quick reference to all project documentation, organized by purpose and task.
 - **[API Wrapper Patterns](architecture/api-wrappers.md)** - Rationale for thin HTTP wrappers, caching, and testability.
 - **[Telegram Bot Architecture](architecture/telegram-bot.md)** - Handling long-running tasks and webhook retries.
 - **[Elasticsearch Denormalization](architecture/elasticsearch-denormalization.md)** - Flattening nested fields for ES|QL compatibility.
+- **[Scripts Standardization Guide](scripts/STANDARDIZATION_GUIDE.md)** - Image naming and standardization process for script workflows.
+- **[Scripts Image Audit Report](scripts/IMAGE_AUDIT_REPORT.md)** - Current image audit output and findings.
 
 ## ✍️ Content & Copy
 *The "Voice" of the application.*
@@ -48,14 +50,15 @@ Quick reference to all project documentation, organized by purpose and task.
 - **[Resources & Assets](research/resources.md)** - External links, image assets, and reference materials.
 
 ### 🔍 Elasticsearch & AI Integration
-- **[Requirements & Use Cases](research/elastic/requirements/my-use-cases.md)** - Business goals for the search-driven analytics.
-- **[Mini-League Implementation Plan](research/elastic/requirements/plan.md)** - Phase-by-phase roadmap for indexing and reports.
-- **[Chat Feature Plan](research/elastic/requirements/plan-chat.md)** - Strategy for natural language to ES|QL queries.
-- **[High-Level AI Approaches](research/elastic/high-level-approaches.md)** - Extensive research on AI integration patterns.
-- **[Indexing Strategy](research/elastic/indexing-data.md)** - Technical approach to bulk indexing and incremental updates.
-- **[Denormalization Example](research/elastic/denormalization-example.md)** - Practical example of mapping transforms.
-- **[ES|QL Query Tools](research/elastic/tools/mini-league-agent-tools.md)** - Definitions for the Agentic AI tools.
-- **[ES|QL Performance Review](research/elastic/tools/mini-league-esql-review.md)** - Evaluation of ES|QL against standard queries.
+- **[Elastic Chat Product README](chat/README.md) ⭐** - End-to-end overview of chat capabilities, APIs, indexing workflows, Telegram integration, and Vega charting.
+- **[Requirements & Use Cases](chat/requirements/my-use-cases.md)** - Business goals for the search-driven analytics.
+- **[Mini-League Implementation Plan](chat/requirements/plan.md)** - Phase-by-phase roadmap for indexing and reports.
+- **[Chat Feature Plan](chat/requirements/plan-chat.md)** - Strategy for natural language to ES|QL queries.
+- **[High-Level AI Approaches](chat/indexing/high-level-approaches.md)** - Extensive research on AI integration patterns.
+- **[Indexing Strategy](chat/indexing/indexing-data.md)** - Technical approach to bulk indexing and incremental updates.
+- **[Denormalization Example](chat/indexing/denormalization-example.md)** - Practical example of mapping transforms.
+- **[ES|QL Query Tools](chat/es-tools/mini-league-agent-tools.md)** - Definitions for the Agentic AI tools.
+- **[ES|QL Performance Review](chat/es-tools/mini-league-esql-review.md)** - Evaluation of ES|QL against standard queries.
 
 ---
 
@@ -68,7 +71,7 @@ Quick reference to all project documentation, organized by purpose and task.
 | **Change the Scoring Logic** | [Algorithm V3](engine/persona-algorithm-v3-criteria-based.md) & `lib/analysis/persona/scoring.ts` |
 | **Update the UI/UX Flow** | [Navigation Enhancement](ux/navigation-enhancement.md) & [Design Decisions](architecture/design-decisions.md) |
 | **Understand Data Signals** | [Behavioral Signals](engine/behavioral-signals.md) & [Transfer Timing Psychology](research/transfer-timing-psychology.md) |
-| **Implement AI Tools** | [ES\|QL Query Tools](research/elastic/tools/mini-league-agent-tools.md) |
+| **Implement AI Tools** | [ES\|QL Query Tools](chat/es-tools/mini-league-agent-tools.md) |
 
 ---
 
@@ -82,4 +85,4 @@ Quick reference to all project documentation, organized by purpose and task.
 
 ---
 
-**Last Updated**: February 16, 2026
+**Last Updated**: February 17, 2026

@@ -2,6 +2,12 @@
 
 This directory contains various utility scripts for the FPL Wrapped project.
 
+## 📄 Script Documentation
+
+Long-form script documentation has been moved to `docs/scripts/`:
+- `docs/scripts/STANDARDIZATION_GUIDE.md`
+- `docs/scripts/IMAGE_AUDIT_REPORT.md`
+
 ## 📊 Elasticsearch Indexing
 
 ### Async Indexing API Smoke Test

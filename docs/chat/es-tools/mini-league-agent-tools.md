@@ -36,6 +36,7 @@ ES|QL tools require **all parameters to be required** — the verifier rejects n
 
 - **Index Search** → flexible filtering (any combo of manager, league, GW, season)
 - **ES|QL tools** → aggregation patterns where correctness matters (STATS, COUNT, SUM, AVG, STD_DEV)
+- **Coverage workflow** → preflight check for indexed gameweek coverage before search/indexing
 
 ---
 
@@ -61,6 +62,31 @@ Use this as the primary indexing tool for the cleanest agent setup. It can compl
 - runtime knobs are fixed in workflow for safety (`max_steps=5`, `max_iterations=8`)
 
 For long-running jobs, call `fpl.index-and-wait` again with the same inputs; backend resume is handled automatically.
+
+### Coverage preflight workflow: `fpl.check-indexed-data`
+
+Use this before query execution when the user asks about a specific league/manager and GW or GW range.
+
+**Why:**
+- Avoid empty-result loops caused by partial indexing.
+- Detect sparse coverage (for example GW 1-3 and 6-8 present, 4-5 missing).
+- Index only missing GWs instead of re-indexing full ranges.
+
+**Inputs:**
+- `league_id` (number, optional)
+- `manager_id` (number, optional)
+- `gameweek` (number, optional)
+- `from_gw` (number, optional)
+- `to_gw` (number, optional)
+
+**Output expectations:**
+- Return present GW coverage (`VALUES(gameweek)`), manager count, and last update marker.
+- Agent computes and explains missing GWs from the requested range.
+
+**Agent routing policy:**
+- Run `fpl.check-indexed-data` first when coverage uncertainty exists.
+- If required GWs are missing, offer `fpl.index-and-wait` scoped only to missing GW range(s).
+- If coverage exists, continue with normal search/aggregation tools.
 
 ### 1. `run-fpl-indexing-execution`
 Processes a chunk of work for an existing execution (manual troubleshooting/continuation only).

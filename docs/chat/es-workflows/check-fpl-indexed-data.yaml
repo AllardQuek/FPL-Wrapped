@@ -1,0 +1,116 @@
+name: fpl.check-indexed-data
+description: Check indexed FPL coverage for league or manager (single tool, routed by conditions)
+enabled: true
+triggers:
+  - type: manual
+
+inputs:
+  - name: league_id
+    type: number
+    required: false
+  - name: manager_id
+    type: number
+    required: false
+  - name: gameweek
+    type: number
+    required: false
+  - name: from_gw
+    type: number
+    required: false
+  - name: to_gw
+    type: number
+    required: false
+
+steps:
+  - name: route_by_scope
+    type: if
+    condition: inputs.league_id > 0
+    steps:
+      - name: league_single_or_range
+        type: if
+        condition: inputs.gameweek > 0
+        steps:
+          - name: league_gw_coverage
+            type: elasticsearch.esql.query
+            with:
+              query: >-
+                FROM fpl-gameweek-decisions
+                | MV_EXPAND league_ids
+                | WHERE league_ids == {{inputs.league_id}} AND gameweek == {{inputs.gameweek}}
+                | STATS gameweeks = VALUES(gameweek),
+                        manager_count = COUNT_DISTINCT(manager_id),
+                        last_updated = MAX(@timestamp)
+              format: json
+        else:
+          - name: league_range_or_all
+            type: if
+            condition: inputs.from_gw > 0 and inputs.to_gw > 0
+            steps:
+              - name: league_range_coverage
+                type: elasticsearch.esql.query
+                with:
+                  query: >-
+                    FROM fpl-gameweek-decisions
+                    | MV_EXPAND league_ids
+                    | WHERE league_ids == {{inputs.league_id}} AND gameweek >= {{inputs.from_gw}} AND gameweek <= {{inputs.to_gw}}
+                    | STATS gameweeks = VALUES(gameweek),
+                            manager_count = COUNT_DISTINCT(manager_id),
+                            last_updated = MAX(@timestamp)
+                  format: json
+            else:
+              - name: league_all_coverage
+                type: elasticsearch.esql.query
+                with:
+                  query: >-
+                    FROM fpl-gameweek-decisions
+                    | MV_EXPAND league_ids
+                    | WHERE league_ids == {{inputs.league_id}}
+                    | STATS gameweeks = VALUES(gameweek),
+                            manager_count = COUNT_DISTINCT(manager_id),
+                            last_updated = MAX(@timestamp)
+                  format: json
+    else:
+      - name: route_manager
+        type: if
+        condition: inputs.manager_id > 0
+        steps:
+          - name: manager_single_or_range
+            type: if
+            condition: inputs.gameweek > 0
+            steps:
+              - name: manager_gw_coverage
+                type: elasticsearch.esql.query
+                with:
+                  query: >-
+                    FROM fpl-gameweek-decisions
+                    | WHERE manager_id == {{inputs.manager_id}} AND gameweek == {{inputs.gameweek}}
+                    | STATS gameweeks = VALUES(gameweek),
+                            manager_count = COUNT_DISTINCT(manager_id),
+                            last_updated = MAX(@timestamp)
+                  format: json
+            else:
+              - name: manager_range_or_all
+                type: if
+                condition: inputs.from_gw > 0 and inputs.to_gw > 0
+                steps:
+                  - name: manager_range_coverage
+                    type: elasticsearch.esql.query
+                    with:
+                      query: >-
+                        FROM fpl-gameweek-decisions
+                        | WHERE manager_id == {{inputs.manager_id}} AND gameweek >= {{inputs.from_gw}} AND gameweek <= {{inputs.to_gw}}
+                        | STATS gameweeks = VALUES(gameweek),
+                                manager_count = COUNT_DISTINCT(manager_id),
+                                last_updated = MAX(@timestamp)
+                      format: json
+                else:
+                  - name: manager_all_coverage
+                    type: elasticsearch.esql.query
+                    with:
+                      query: >-
+                        FROM fpl-gameweek-decisions
+                        | WHERE manager_id == {{inputs.manager_id}}
+                        | STATS gameweeks = VALUES(gameweek),
+                                manager_count = COUNT_DISTINCT(manager_id),
+                                last_updated = MAX(@timestamp)
+                      format: json

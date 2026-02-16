@@ -1,4 +1,4 @@
-name: run-fpl-indexing-execution
+name: fpl.run-indexing-execution
 description: Process the next chunk for an indexing execution_id
 enabled: false
 tags:

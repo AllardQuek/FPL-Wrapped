@@ -1,4 +1,4 @@
-name: index-fpl-and-wait
+name: fpl.index-and-wait
 description: Queue and process indexing in one call with bounded iterations
 enabled: true
 tags:

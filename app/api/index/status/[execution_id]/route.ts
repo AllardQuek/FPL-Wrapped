@@ -15,7 +15,7 @@ export async function GET(
             return NextResponse.json(
                 {
                     status: 'not_found',
-                    message: `No indexing execution found with ID: ${execution_id}`
+                    message: `No indexing execution found with ID: ${execution_id}. Make sure you use the indexing execution_id returned in the API response body (not the workflow execution id).`
                 },
                 { status: 404 }
             );

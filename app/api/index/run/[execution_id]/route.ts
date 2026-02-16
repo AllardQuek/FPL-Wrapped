@@ -19,7 +19,7 @@ export async function POST(
             return NextResponse.json(
                 {
                     status: 'not_found',
-                    message: `No indexing execution found: ${execution_id}`
+                    message: `No indexing execution found: ${execution_id}. Use the indexing execution_id returned by index-fpl-and-wait (response body.execution_id), not the workflow execution id.`
                 },
                 { status: 404 }
             );

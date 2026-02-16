@@ -49,6 +49,11 @@ See detailed architecture + runbook: `docs/elastic/indexing/on-demand-indexing-a
 
 Use this as the primary indexing tool for the cleanest agent setup. It can complete small jobs in one call and returns `running` + `execution_id` for larger jobs.
 
+**Workflow tool summaries:**
+- `fpl.index-and-wait`: Start indexing and attempt to finish within a safe per-request budget.
+- `fpl.run-indexing-execution`: Continue a still-running execution by processing the next chunk.
+- `fpl.get-indexing-status`: Read the latest execution state/progress without doing more work.
+
 **Inputs:**
 - `type` (`league` or `manager`)
 - `league_id` or `manager_id`

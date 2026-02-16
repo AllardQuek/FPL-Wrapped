@@ -11,7 +11,7 @@ inputs:
   - name: execution_id
     type: string
     required: true
-    description: Execution ID returned by queue workflow
+    description: Indexing execution ID from `index-fpl-and-wait` response body.execution_id
   - name: max_steps
     type: number
     required: false

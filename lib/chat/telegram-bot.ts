@@ -32,6 +32,7 @@ export function consumeWebhookAck(chatId: number): number | undefined {
 if (bot) {
     const conversationIdsByChatId = new Map<number, string>();
     const TELEGRAM_MESSAGE_LIMIT = 4096;
+    const TELEGRAM_CHUNK_LIMIT = 3900;
     const processedUpdates = new Set<number>();
     const MAX_PROCESSED_UPDATES_CACHE = 1000;
 
@@ -58,15 +59,29 @@ if (bot) {
 
     type ChatContext = {
         chat: { id: number };
-        reply: (text: string) => Promise<{ message_id: number }>;
+        reply: (
+            text: string,
+            extra?: {
+                parse_mode?: 'HTML' | 'MarkdownV2';
+                disable_web_page_preview?: boolean;
+            }
+        ) => Promise<{ message_id: number }>;
         telegram: {
             editMessageText: (
                 chatId: number,
                 messageId: number,
                 inlineMessageId: string | undefined,
-                text: string
+                text: string,
+                extra?: {
+                    parse_mode?: 'HTML' | 'MarkdownV2';
+                    disable_web_page_preview?: boolean;
+                }
             ) => Promise<unknown>;
         };
+    };
+
+    type IndexingContext = ChatContext & {
+        message: { text: string };
     };
 
     function toErrorMessage(error: unknown): string {
@@ -94,47 +109,141 @@ if (bot) {
         }
     }
 
-    function renderTelegramText(markdown: string): string {
-        let text = markdown;
-
-        // Fenced code blocks -> plain code text
-        text = text.replace(/```[\s\S]*?```/g, (block) => {
-            const code = block
-                .replace(/^```[^\n]*\n?/, '')
-                .replace(/\n?```$/, '');
-            return `\n${code.trim()}\n`;
-        });
-
-        // Inline code
-        text = text.replace(/`([^`]+)`/g, '$1');
-
-        // Markdown links -> label (url)
-        text = text.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '$1 ($2)');
-
-        // Headings
-        text = text.replace(/^#{1,6}\s+/gm, '');
-
-        // Bold / italic markers
-        text = text.replace(/(\*\*|__)(.*?)\1/g, '$2');
-        text = text.replace(/(\*|_)(.*?)\1/g, '$2');
-
-        // Blockquotes and bullet styling
-        text = text.replace(/^>\s?/gm, '');
-        text = text.replace(/^\s*[-*]\s+/gm, '• ');
-
-        // Tighten spacing
-        text = text.replace(/\n{3,}/g, '\n\n').trim();
-
-        return text;
+    function escapeHtml(text: string): string {
+        return text
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
     }
 
-    function toTelegramMessage(markdown: string): string {
-        const rendered = renderTelegramText(markdown);
+    function decodeHtmlEntities(text: string): string {
+        return text
+            .replace(/&quot;/g, '"')
+            .replace(/&#39;/g, "'")
+            .replace(/&gt;/g, '>')
+            .replace(/&lt;/g, '<')
+            .replace(/&amp;/g, '&');
+    }
 
-        if (!rendered) return '…';
-        if (rendered.length <= TELEGRAM_MESSAGE_LIMIT) return rendered;
+    function stripHtmlTags(text: string): string {
+        return decodeHtmlEntities(text.replace(/<[^>]+>/g, ''));
+    }
 
-        return `${rendered.slice(0, TELEGRAM_MESSAGE_LIMIT - 2)}…`;
+    function renderTelegramHtml(markdown: string): string {
+        if (!markdown) return '';
+
+        let text = markdown;
+        const tokenMap = new Map<string, string>();
+        let tokenIndex = 0;
+        const nextToken = () => `@@TG_TOKEN_${tokenIndex++}@@`;
+
+        text = text.replace(/```([a-zA-Z0-9_-]+)?\n([\s\S]*?)```/g, (_match, _lang, code) => {
+            const token = nextToken();
+            tokenMap.set(token, `<pre><code>${escapeHtml(String(code).trim())}</code></pre>`);
+            return token;
+        });
+
+        text = text.replace(/`([^`]+)`/g, (_match, code) => {
+            const token = nextToken();
+            tokenMap.set(token, `<code>${escapeHtml(String(code).trim())}</code>`);
+            return token;
+        });
+
+        text = text.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, (_match, label, url) => {
+            const token = nextToken();
+            tokenMap.set(token, `<a href="${escapeHtml(String(url))}">${escapeHtml(String(label))}</a>`);
+            return token;
+        });
+
+        text = escapeHtml(text);
+
+        text = text.replace(/^#{1,6}\s+(.+)$/gm, '<b>$1</b>');
+        text = text.replace(/^&gt;\s?(.+)$/gm, '<blockquote>$1</blockquote>');
+
+        text = text.replace(/^\s*[-*]\s+/gm, '• ');
+        text = text.replace(/^\s*(\d+)\.\s+/gm, '$1) ');
+
+        text = text.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
+        text = text.replace(/__(.+?)__/g, '<b>$1</b>');
+        text = text.replace(/(^|\W)\*([^*\n]+)\*(?=\W|$)/g, '$1<i>$2</i>');
+        text = text.replace(/(^|\W)_([^_\n]+)_(?=\W|$)/g, '$1<i>$2</i>');
+
+        for (const [token, html] of tokenMap.entries()) {
+            text = text.replaceAll(token, html);
+        }
+
+        return text.replace(/\n{3,}/g, '\n\n').trim();
+    }
+
+    function splitTelegramMessage(html: string): string[] {
+        const normalized = html.trim();
+        if (!normalized) return ['…'];
+        if (normalized.length <= TELEGRAM_CHUNK_LIMIT) return [normalized];
+
+        const chunks: string[] = [];
+        const blocks = normalized.split(/\n{2,}/);
+        let current = '';
+
+        const pushCurrent = () => {
+            if (current.trim()) chunks.push(current.trim());
+            current = '';
+        };
+
+        const pushOversized = (block: string) => {
+            const plain = stripHtmlTags(block);
+            let start = 0;
+            while (start < plain.length) {
+                const slice = plain.slice(start, start + TELEGRAM_CHUNK_LIMIT);
+                chunks.push(slice);
+                start += TELEGRAM_CHUNK_LIMIT;
+            }
+        };
+
+        for (const block of blocks) {
+            const candidate = current ? `${current}\n\n${block}` : block;
+            if (candidate.length <= TELEGRAM_CHUNK_LIMIT) {
+                current = candidate;
+                continue;
+            }
+
+            if (current) pushCurrent();
+
+            if (block.length <= TELEGRAM_CHUNK_LIMIT) {
+                current = block;
+                continue;
+            }
+
+            pushOversized(block);
+        }
+
+        pushCurrent();
+        return chunks.length > 0 ? chunks : ['…'];
+    }
+
+    async function safeEditMessageHtml(ctx: ChatContext, chatId: number, messageId: number, html: string) {
+        try {
+            await ctx.telegram.editMessageText(chatId, messageId, undefined, html, {
+                parse_mode: 'HTML',
+                disable_web_page_preview: true,
+            });
+            return;
+        } catch {
+            await ctx.telegram.editMessageText(chatId, messageId, undefined, stripHtmlTags(html));
+        }
+    }
+
+    async function safeReplyHtml(ctx: ChatContext, html: string) {
+        try {
+            await ctx.reply(html, {
+                parse_mode: 'HTML',
+                disable_web_page_preview: true,
+            });
+            return;
+        } catch {
+            await ctx.reply(stripHtmlTags(html));
+        }
     }
 
     /**
@@ -171,12 +280,9 @@ if (bot) {
                     // Telegram edit limit is ~1 per second.
                     // We buffer chunks to avoid hitting rate limits.
                     if (Date.now() - lastUpdate > 1000) {
-                        await ctx.telegram.editMessageText(
-                            chatId,
-                            placeholder.message_id,
-                            undefined,
-                            toTelegramMessage(fullContent + '...')
-                        );
+                        const previewHtml = renderTelegramHtml(`${fullContent}\n\n<i>…thinking</i>`);
+                        const previewChunk = splitTelegramMessage(previewHtml)[0].slice(0, TELEGRAM_MESSAGE_LIMIT);
+                        await safeEditMessageHtml(ctx, chatId, placeholder.message_id, previewChunk);
                         lastUpdate = Date.now();
                     }
                 }
@@ -216,13 +322,20 @@ if (bot) {
                 conversationIdsByChatId.set(chatId, latestConversationId);
             }
 
-            // Final update with the complete message
-            await ctx.telegram.editMessageText(
+            // Final update with chunked HTML-rendered message
+            const finalHtml = renderTelegramHtml(fullContent);
+            const finalChunks = splitTelegramMessage(finalHtml);
+
+            await safeEditMessageHtml(
+                ctx,
                 chatId,
                 placeholder.message_id,
-                undefined,
-                toTelegramMessage(fullContent)
+                finalChunks[0].slice(0, TELEGRAM_MESSAGE_LIMIT)
             );
+
+            for (let i = 1; i < finalChunks.length; i++) {
+                await safeReplyHtml(ctx, finalChunks[i]);
+            }
         } catch (error: unknown) {
             console.error('Telegram bot error:', error);
             const errorMessage = toErrorMessage(error);
@@ -238,7 +351,7 @@ if (bot) {
     /**
      * Helper to handle indexing
      */
-    async function handleIndexing(ctx: any, type: 'manager' | 'league', id: string) {
+    async function handleIndexing(ctx: IndexingContext, type: 'manager' | 'league', id: string) {
         const targetId = parseInt(id);
         if (isNaN(targetId)) {
             return ctx.reply(`❌ Invalid ID provided. Please provide a numeric ${type === 'manager' ? 'Manager' : 'League'} ID.`);
@@ -295,13 +408,13 @@ if (bot) {
                 undefined,
                 `✅ Successfully indexed ${type} ${targetId}!\n\nYou can now ask me questions about this data.`
             );
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Indexing error:', error);
             await ctx.telegram.editMessageText(
                 chatId,
                 statusMessage.message_id,
                 undefined,
-                `❌ Indexing failed: ${error.message || 'Unknown error'}\n\nTry manual indexing at: ${process.env.NEXT_PUBLIC_APP_URL || 'fpl-wrapped-live.vercel.app'}/onboard`
+                `❌ Indexing failed: ${toErrorMessage(error)}\n\nTry manual indexing at: ${process.env.NEXT_PUBLIC_APP_URL || 'fpl-wrapped-live.vercel.app'}/onboard`
             );
         }
     }

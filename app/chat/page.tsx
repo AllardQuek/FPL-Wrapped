@@ -6,7 +6,7 @@ import ReactMarkdown from 'react-markdown';
 import type { Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import Image from 'next/image';
-import { Info, ChevronDown } from 'lucide-react';
+import { Info, ChevronRight, Copy } from 'lucide-react';
 import { motion, AnimatePresence, animate } from 'framer-motion';
 import { PERSONA_MAP } from '@/lib/analysis/persona/constants';
 import { getPersonaImagePath } from '@/lib/constants/persona-images';
@@ -90,7 +90,7 @@ function CollapsibleTable({ children, hasChart }: { children: ReactNode; hasChar
           className={`w-6 h-6 flex items-center justify-center rounded bg-white/5 border border-white/10 transition-transform ${isOpen ? 'rotate-180 text-[#00ff87] border-[#00ff87]/30' : 'text-white/80'}`}
           aria-hidden
         >
-          <ChevronDown className="w-4 h-4" />
+          <ChevronRight className="w-4 h-4" />
         </span>
         Raw Data Source
       </button>
@@ -435,6 +435,24 @@ export default function ChatPage() {
       duration: 15 + Math.random() * 10,
     }));
   });
+
+  // Dynamic question suggestions state
+  const [suggestionIndex, setSuggestionIndex] = useState(0);
+  const suggestionPrefixes = useMemo(() => [
+    "Summarise GW26",
+    "Who had the biggest bench regrets",
+    "Analyze the captaincy picks",
+    "Compare managers",
+    "Who took the most hits"
+  ], []);
+
+  useEffect(() => {
+    if (messages.length > 0) return;
+    const interval = setInterval(() => {
+      setSuggestionIndex((prev) => (prev + 1) % suggestionPrefixes.length);
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [messages.length, suggestionPrefixes.length]);
 
   // Featured personas for the empty state
   const featuredPersonaKeys = ['PEP', 'AMORIM', 'ARTETA', 'EMERY'] as const;
@@ -784,83 +802,121 @@ export default function ChatPage() {
             </div>
           </div>
           {/* Persistent Discovery Header */}
-          <div className="max-w-4xl mx-auto w-full space-y-12 mb-12 animate-fade-in px-4">
-            {/* Introduction & Guidance */}
-            <div className="text-center space-y-4 pt-4">
-              <div className="inline-block px-3 py-1 rounded-full bg-[#00ff87]/10 border border-[#00ff87]/20 text-[10px] font-black tracking-widest text-[#00ff87] uppercase mb-2">
-                AI Assistant
+          {messages.length === 0 && (
+            <div className="max-w-4xl mx-auto w-full space-y-12 mb-12 animate-fade-in px-4">
+              {/* Introduction & Guidance */}
+              <div className="text-center space-y-6 pt-4">
+              <div className="space-y-3">
+                <h2 className="text-4xl font-black text-white uppercase tracking-tight leading-none italic">
+                  FPL <span className="text-[#00ff87] glow-text not-italic">CHAT</span>
+                </h2>
+                <p className="text-sm text-white/50 max-w-lg mx-auto font-medium">
+                  Analyze league trends, manager styles, and performance.
+                </p>
               </div>
-              <h2 className="text-4xl font-black text-white uppercase tracking-tight leading-none italic">
-                FPL <span className="text-[#00ff87] glow-text not-italic">CHAT</span>
-              </h2>
-              <p className="text-sm text-white/50 max-w-xl mx-auto leading-relaxed font-medium">
-                Ask anything about your league&apos;s managers, performance, and trends. <br className="hidden md:block" />
-                Select a profile to explore or try a suggestion below.
-              </p>
+
+              <div className="inline-flex items-start md:items-center gap-3 px-4 py-2.5 max-w-lg mx-auto text-left">
+                <span className="shrink-0 text-[10px] font-black uppercase text-[#00ff87]/60 border border-[#00ff87]/10 px-1.5 py-0.5 rounded leading-none mt-0.5 md:mt-0">Beta</span>
+                <p className="text-[11px] text-white/30 leading-normal font-medium">
+                  Data is indexed on a best-effort basis and may not always succeed. If you&apos;re missing results, try pre-loading via 
+                  <a href="/onboard" className="text-[#00ff87]/40 hover:text-[#00ff87] hover:underline ml-1 transition-colors">/onboard</a>.
+                </p>
+              </div>
             </div>
 
-            {/* Manager Archetypes Section */}
-            <div className="space-y-6">
-              <div className="flex flex-col items-center gap-2">
-                <h3 className="text-xs font-black uppercase tracking-[0.3em] text-[#00ff87]">Manager Profiles</h3>
-              </div>
-
-              <div className="flex flex-wrap justify-center gap-6 md:gap-8">
-                {featuredPersonas.map((p, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setQuestion(`Which managers in my league follow a strategic style similar to ${p.name.split(' ').pop()}?`)}
-                    className="group flex flex-col items-center gap-3 transition-all hover:scale-105 active:scale-95"
+            {/* Discovery Engine Controls */}
+            <div className="space-y-12 pt-4">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-5xl mx-auto">
+                {/* Left: Quick Explore */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3 px-4">
+                    <span className="text-[10px] font-black uppercase tracking-[0.3em] text-white/20 whitespace-nowrap">Try a question</span>
+                    <div className="h-px flex-1 bg-gradient-to-r from-white/10 to-transparent" />
+                  </div>
+                  
+                  <motion.div
+                    whileHover={{ scale: 1.01, translateY: -4, rotateX: 2, rotateY: -1 }}
+                    transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+                    style={{ perspective: '1000px', transformStyle: 'preserve-3d' }}
                   >
-                    <div className="relative w-14 h-14 rounded-full overflow-hidden border-2 border-white/10 group-hover:border-[#00ff87] transition-all shadow-xl">
-                      <Image
-                        src={p.image}
-                        alt={p.name}
-                        fill
-                        className="object-cover grayscale group-hover:grayscale-0 transition-all duration-500"
-                        sizes="56px"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-center pb-2">
-                        <span className="text-[8px] font-black text-[#00ff87] uppercase tracking-tighter">Scout</span>
+                    <button
+                      onClick={() => setQuestion(`${suggestionPrefixes[suggestionIndex]} in league [ID]`)}
+                      className="group w-full flex flex-col items-center justify-center gap-4 px-8 py-10 rounded-3xl bg-white/[0.02] border border-white/5 hover:border-[#00ff87]/30 hover:bg-[#00ff87]/5 transition-all duration-500 relative overflow-hidden h-[180px] shadow-2xl shadow-black/50"
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-r from-[#00ff87]/0 via-[#00ff87]/5 to-[#00ff87]/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
+                      
+                      <div className="relative h-8 flex items-center justify-center w-full z-10" style={{ transform: 'translateZ(30px)' }}>
+                        <AnimatePresence mode="wait">
+                          <motion.span
+                            key={suggestionIndex}
+                            initial={{ y: 10, opacity: 0 }}
+                            animate={{ y: 0, opacity: 1 }}
+                            exit={{ y: -10, opacity: 0 }}
+                            transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+                            className="absolute whitespace-nowrap text-white/90 font-medium text-sm md:text-base text-center italic tracking-tight px-4"
+                          >
+                            &ldquo;{suggestionPrefixes[suggestionIndex]}&rdquo;
+                          </motion.span>
+                        </AnimatePresence>
                       </div>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-[8px] font-black tracking-widest text-[#00ff87]/60 uppercase leading-none mb-1">{p.title}</p>
-                      <h4 className="text-[10px] font-black text-white uppercase group-hover:text-[#00ff87] transition-colors tracking-wider">
-                        {p.name.split(' ').pop()}
-                      </h4>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
 
-            {/* Strategic Research Pills */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-white/10 to-transparent" />
-                <span className="text-[9px] font-black uppercase tracking-[0.2em] text-white/30 whitespace-nowrap">Try a Question</span>
-                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-white/10 to-transparent" />
-              </div>
-              <div className="flex flex-wrap justify-center gap-3">
-                {[
-                  "Summarise GW26 in league 1305804",
-                  "Who had the biggest bench regrets in league 1305804?",
-                  "Analyze the captaincy picks in league 1305804",
-                  "Compare managers in league 1305804",
-                  "Who took the most hits in league 1305804?"
-                ].map((q, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setQuestion(q)}
-                    className="flex items-center gap-2 px-4 py-2 rounded-full glass-card border-white/5 hover:border-[#00ff87]/30 hover:bg-[#00ff87]/5 transition-all text-[11px] font-bold text-white/60 hover:text-[#00ff87]"
-                  >
-                    {q}
-                  </button>
-                ))}
+                      <div 
+                        className="flex items-center gap-3 z-10 mt-2"
+                        style={{ transform: 'translateZ(20px)' }}
+                      >
+                        <div className="flex items-center gap-2 text-white/30 font-medium text-[11px] md:text-sm">
+                          <span>in league</span>
+                          <span className="text-[#00ff87]/50 font-mono border-b border-[#00ff87]/20 pb-0.5">[ID]</span>
+                        </div>
+                        <Copy className="w-3.5 h-3.5 md:w-4 md:h-4 text-[#00ff87]/30 group-hover:text-[#00ff87]/80 transition-all duration-300" />
+                      </div>
+                    </button>
+                  </motion.div>
+                </div>
+
+                {/* Right: Scout Personas */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3 px-4">
+                    <span className="text-[10px] font-black uppercase tracking-[0.3em] text-white/20 whitespace-nowrap">Scout Personas</span>
+                    <div className="h-px flex-1 bg-gradient-to-r from-white/10 to-transparent" />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4 h-[180px]">
+                    {featuredPersonas.map((p, i) => (
+                      <motion.div
+                        key={i}
+                        whileHover={{ scale: 1.02, translateY: -2, rotateX: 1, rotateY: 1 }}
+                        transition={{ duration: 0.3 }}
+                        style={{ perspective: '1000px', transformStyle: 'preserve-3d' }}
+                      >
+                        <button
+                          onClick={() => setQuestion(`Which managers in league [ID] follow a strategic style similar to ${p.name.split(' ').pop()}?`)}
+                          className="group w-full h-full flex items-center gap-3 px-4 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-[#00ff87]/30 hover:bg-[#00ff87]/5 transition-all duration-300 relative overflow-hidden shadow-xl shadow-black/40"
+                        >
+                          <div className="relative w-10 h-10 rounded-full overflow-hidden border border-white/10 group-hover:border-[#00ff87]/40 transition-all shrink-0" style={{ transform: 'translateZ(20px)' }}>
+                            <Image
+                              src={p.image}
+                              alt={p.name}
+                              fill
+                              className="object-cover grayscale group-hover:grayscale-0 transition-all duration-500"
+                              sizes="40px"
+                            />
+                          </div>
+                          <div className="text-left min-w-0" style={{ transform: 'translateZ(10px)' }}>
+                            <p className="text-[7px] font-black tracking-widest text-[#00ff87]/40 uppercase leading-none mb-1 truncate">{p.title}</p>
+                            <h4 className="text-[10px] font-bold text-white/80 uppercase group-hover:text-[#00ff87] transition-colors truncate">
+                              {p.name.split(' ').pop()}
+                            </h4>
+                          </div>
+                        </button>
+                      </motion.div>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
+          )}
 
           <div className="max-w-4xl mx-auto w-full space-y-8 px-4">
             {messages.map((message, messageIndex) => {
@@ -906,7 +962,7 @@ export default function ChatPage() {
                             aria-expanded={showTools[messageIndex]}
                           >
                             <span className={`w-3.5 h-3.5 flex items-center justify-center rounded-sm bg-[#00d4ff]/10 border border-[#00d4ff]/20 transition-transform ${showTools[messageIndex] ? 'rotate-180 text-[#00d4ff]' : 'text-white/80'}`} aria-hidden>
-                              <ChevronDown className="w-3 h-3" />
+                              <ChevronRight className="w-3 h-3" />
                             </span>
                             <span>System Operations ({message.toolCalls.length})</span>
                           </button>
@@ -957,7 +1013,7 @@ export default function ChatPage() {
                             aria-expanded={showReasoning[messageIndex]}
                           >
                             <span className={`w-3.5 h-3.5 flex items-center justify-center rounded-sm bg-[#a855f7]/10 border border-[#a855f7]/20 transition-transform ${showReasoning[messageIndex] ? 'rotate-180 text-[#a855f7]' : 'text-white/80'}`} aria-hidden>
-                              <ChevronDown className="w-3 h-3" />
+                              <ChevronRight className="w-3 h-3" />
                             </span>
                             <span>Manager Logic {message.reasoning && message.reasoning.length > 0 ? `(${message.reasoning.length})` : ''}</span>
                             {isStreaming && messageIndex === messages.length - 1 && (
@@ -1058,7 +1114,7 @@ export default function ChatPage() {
                   type="text"
                   value={question}
                   onChange={(e) => setQuestion(e.target.value)}
-                  placeholder="Ask your FPL Data Analyst..."
+                  placeholder="Chat with your FPL data"
                   aria-label="FPL chat question"
                   className="flex-1 bg-transparent border-none focus:ring-0 text-white placeholder-white/20 px-4 py-3 text-base font-bold min-w-0"
                   disabled={isStreaming}
@@ -1081,7 +1137,7 @@ export default function ChatPage() {
                     aria-label="Send question"
                     className="bg-[#00ff87] hover:bg-[#00e67a] text-[#0d0015] font-black px-8 py-3 rounded-xl transition-all flex items-center justify-center whitespace-nowrap active:scale-95 shadow-lg disabled:opacity-30 disabled:grayscale disabled:scale-100"
                   >
-                    <svg className="w-5 h-5 rotate-90" viewBox="0 0 24 24" fill="currentColor">
+                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
                       <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
                     </svg>
                   </button>

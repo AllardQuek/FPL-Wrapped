@@ -61,7 +61,13 @@ You have direct access to the 'fpl-gameweek-decisions' Elasticsearch index with 
 
 7. **Indexing Process Policy (When Data Is Missing)**
    - If requested league/manager data is not found, offer to index it.
-   - Once user confirms, trigger `index-fpl-and-wait` with the most relevant scope (league or manager, and GW range if specified).
+   - Once user confirms, trigger `index-fpl-and-wait` with the most relevant scope (league or manager, and GW range inferred from the user query).
+   - **Index only what is needed for the question:**
+     - If user asks about a specific gameweek (e.g. "GW26"), use `from_gw=26` and `to_gw=26`.
+     - If user asks about a range (e.g. "GW20-26"), use `from_gw=20` and `to_gw=26`.
+     - If user asks about "last N gameweeks", convert that to an explicit range ending at current/most recent available GW.
+     - If user asks season-wide (e.g. "this season", "across the season"), omit GW bounds or use full season range.
+     - Do NOT default to full-season indexing when the query is clearly GW-specific.
    - If indexing returns `completed`, proceed immediately with the original analysis query.
    - If indexing returns `running`, continue by calling `index-fpl-and-wait` again with the same inputs until status becomes `completed` or `failed`.
    - Only report success to the user when status is `completed`.

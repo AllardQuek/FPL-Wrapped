@@ -557,13 +557,16 @@ export default function ChatPage() {
                           remarkPlugins={[remarkGfm]}
                           components={{
                             p: ({ children }: { children?: ReactNode }) => (
-                              <p className="mb-4 last:mb-0 leading-relaxed text-white/90">{children}</p>
+                              <p className="mt-4 first:mt-0 mb-4 last:mb-0 leading-relaxed text-white/90">{children}</p>
                             ),
                             ul: ({ children }: { children?: ReactNode }) => (
-                              <ul className="list-disc list-inside space-y-2 my-4 pl-2 border-l-2 border-[#00ff87]/20 bg-white/5 p-4 rounded-xl">{children}</ul>
+                              <ul className="list-disc list-inside space-y-2 mt-6 mb-8 pl-2 border-l-2 border-[#00ff87]/20 bg-white/5 p-4 rounded-xl shadow-inner">{children}</ul>
+                            ),
+                            ol: ({ children }: { children?: ReactNode }) => (
+                              <ol className="list-decimal list-inside space-y-2 mt-6 mb-8 pl-2 border-l-2 border-[#00ff87]/20 bg-white/5 p-4 rounded-xl shadow-inner">{children}</ol>
                             ),
                             li: ({ children }: { children?: ReactNode }) => (
-                              <li className="text-white/80">{children}</li>
+                              <li className="text-white/80 mb-1 last:mb-0">{children}</li>
                             ),
                             table: ({ children }: { children?: ReactNode }) => (
                               <div className="my-6 overflow-x-auto rounded-xl border border-white/10 custom-scrollbar">

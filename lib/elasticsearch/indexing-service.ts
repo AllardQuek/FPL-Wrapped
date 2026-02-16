@@ -79,7 +79,8 @@ export async function indexManagerAllGameweeks(
     managerId: number,
     fromGW: number = 1,
     toGW?: number,
-    onProgress?: ProgressCallback
+    onProgress?: ProgressCallback,
+    leagueIds: number[] = []
 ): Promise<{ success: number; failed: number; skipped: number }> {
     try {
         // Get bootstrap to determine current gameweek
@@ -113,7 +114,7 @@ export async function indexManagerAllGameweeks(
                 continue;
             }
 
-            const result = await indexManagerGameweek(managerId, gw);
+            const result = await indexManagerGameweek(managerId, gw, leagueIds);
             if (result) {
                 success++;
                 onProgress?.({
@@ -183,7 +184,7 @@ export async function indexLeagueAllGameweeks(
                 message: `Processing manager ${i + 1}/${managers.length}: ${manager.player_name}`
             });
 
-            const result = await indexManagerAllGameweeks(manager.entry, fromGW, toGW);
+            const result = await indexManagerAllGameweeks(manager.entry, fromGW, toGW, undefined, [leagueId]);
             totalSuccess += result.success;
             totalFailed += result.failed;
 

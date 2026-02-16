@@ -68,3 +68,38 @@ Reports generated after gameweek completes to analyze performance and outcomes.
 32. **Worst Decision of the Week** - The choice that cost someone most
 33. **"If Only" Analysis** - What if you'd captained X? What if you'd benched Y?
 34. **Cumulative Stats** - Season-long trends (who takes most hits, best captain success rate)
+
+## Additional Pre-Gameweek Questions (Planning Phase)
+
+35. **Manager Tendencies** - Which managers habitually make early transfers versus deadline-day shuffles?
+36. **Transfer Timing** - Who consistently transfers in the most-form players before the deadline?
+37. **Bench Depth Index** - How many managers carry 2+ bench players with realistic scoring potential?
+38. **Rolling Hits Strategy** - Which managers repeatedly take hits across consecutive weeks?
+39. **Emergency Coverage** - How many managers are exposed with only one playing goalkeeper or no backup midfield coverage?
+40. **Differential Timing Risk** - Are differentials being added early (higher conviction) or late (panic punts)?
+41. **Wildcard Momentum** - Who is most likely to play a wildcard soon based on transfers and fixtures?
+42. **Captaincy Safety Index** - Proportion of captains with high expected points vs volatile punts?
+43. **Injury/Rotation Exposure** - Which squads are over-indexed to rotation-prone teams this GW?
+44. **Free Hit / Bench Boost Fit** - Which squad structures would gain most from a Free Hit or Bench Boost?
+
+## Additional Post-Gameweek Questions (Review Phase)
+
+45. **Points vs Expected Distribution** - Identify managers who over/under-performed vs expected metrics (xG/xA).
+46. **Hot & Cold Streaks** - Which managers are on multi-week form runs or slumps?
+47. **Consistency Score** - Measure week-to-week variance to spot reliable scorers.
+48. **Transfer Accuracy** - Percentage of transfers that yielded a net points gain over the next 1–2 GWs.
+49. **Captaincy Volatility** - How often do managers change captains and how does that affect returns?
+50. **Bench Boost ROI** - Points per player produced by Bench Boost compared to baseline starters.
+51. **Fixture Swing Impact** - How did fixture swings (postponements/doubles) affect league rank changes?
+52. **Late Sub / Auto-Sub Impact** - Points gained or lost due to automatic substitutions and late returns.
+53. **Ownership Drift** - Notable ownership rises/falls in the mini-league after the GW.
+54. **Manager Responsiveness** - How quickly do managers react to injuries, press, or form drops?
+
+## Cross-Phase / Season-Long Insights
+
+55. **Aggregate Risk Appetite** - League-level average transfer volatility and hit-taking behavior.
+56. **Value Growth Leaders** - Managers who increased squad value most during the season.
+57. **Streak-Based Recommendations** - Suggest punts or safe moves based on current streaks across the league.
+58. **Best-Transfer Windows** - Historical analysis of when transfers tended to yield the highest ROI.
+59. **Behavioral Clusters** - Cluster managers into archetypes (template-driven, maverick, conservative, aggressive).
+60. **Predictive Movers** - Players with rising signals likely to increase ownership next GW in the mini-league.

@@ -1,0 +1,190 @@
+{
+  "mappings": {
+    "_meta": {
+      "description": "FPL (Fantasy Premier League) gameweek decision records. Each document represents one manager's team selection and results for a single gameweek. Use for questions about captain picks, chip usage, team performance, bench points, transfers, and league standings. Key fields: gameweek (int, 1-38), manager_id (int), manager_name (text, use .keyword for exact match), league_ids (int array of mini-league IDs the manager belongs to), captain.name/captain.points, chip_used (wildcard/bench_boost/triple_captain/free_hit or null), gw_points (total GW score), gw_rank (overall rank), points_on_bench, team_value, bank, season (e.g. '2024-25'). Nested fields: starters (array of player picks), bench (array of bench players), transfers (array of transfer activity). NOTES: league_ids is multi-valued — use 'terms' query to filter by league. manager_name is 'text' — use manager_name.keyword for exact match/aggregation."
+    },
+    "properties": {
+      "@timestamp": {
+        "type": "date"
+      },
+      "bank": {
+        "type": "float"
+      },
+      "bench": {
+        "type": "nested",
+        "properties": {
+          "element_type": {
+            "type": "keyword"
+          },
+          "name": {
+            "type": "keyword"
+          },
+          "player_id": {
+            "type": "integer"
+          },
+          "points": {
+            "type": "integer"
+          },
+          "position_index": {
+            "type": "integer"
+          }
+        }
+      },
+      "captain": {
+        "properties": {
+          "multiplier": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "keyword"
+          },
+          "ownership_percent": {
+            "type": "float"
+          },
+          "player_id": {
+            "type": "integer"
+          },
+          "points": {
+            "type": "integer"
+          }
+        }
+      },
+      "chip_used": {
+        "type": "keyword"
+      },
+      "gameweek": {
+        "type": "integer"
+      },
+      "gw_points": {
+        "type": "integer"
+      },
+      "gw_rank": {
+        "type": "integer"
+      },
+      "league_ids": {
+        "type": "integer"
+      },
+      "manager_id": {
+        "type": "integer"
+      },
+      "manager_name": {
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword"
+          }
+        }
+      },
+      "points_on_bench": {
+        "type": "integer"
+      },
+      "season": {
+        "type": "keyword"
+      },
+      "starters": {
+        "type": "nested",
+        "properties": {
+          "element_type": {
+            "type": "keyword"
+          },
+          "name": {
+            "type": "keyword"
+          },
+          "player_id": {
+            "type": "integer"
+          },
+          "points": {
+            "type": "integer"
+          },
+          "position_index": {
+            "type": "integer"
+          }
+        }
+      },
+      "team_name": {
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword"
+          }
+        }
+      },
+      "team_value": {
+        "type": "float"
+      },
+      "transfers": {
+        "type": "nested",
+        "properties": {
+          "cost": {
+            "type": "integer"
+          },
+          "player_in_id": {
+            "type": "integer"
+          },
+          "player_in_name": {
+            "type": "keyword"
+          },
+          "player_out_id": {
+            "type": "integer"
+          },
+          "player_out_name": {
+            "type": "keyword"
+          },
+          "timestamp": {
+            "type": "date"
+          }
+        }
+      },
+      "vice_captain": {
+        "properties": {
+          "name": {
+            "type": "keyword"
+          },
+          "player_id": {
+            "type": "integer"
+          }
+        }
+      }
+      ,
+      "starter_names": {
+        "type": "keyword"
+      },
+      "starter_element_types": {
+        "type": "keyword"
+      },
+      "starter_element_ids": {
+        "type": "integer"
+      },
+      "starter_points": {
+        "type": "integer"
+      },
+      "bench_names": {
+        "type": "keyword"
+      },
+      "bench_element_ids": {
+        "type": "integer"
+      },
+      "bench_points": {
+        "type": "integer"
+      },
+      "transfer_in_names": {
+        "type": "keyword"
+      },
+      "transfer_out_names": {
+        "type": "keyword"
+      },
+      "transfer_costs": {
+        "type": "integer"
+      },
+      "transfer_count": {
+        "type": "integer"
+      },
+      "total_transfer_cost": {
+        "type": "integer"
+      },
+      "transfer_timestamps": {
+        "type": "date"
+      }
+    }
+  }
+}

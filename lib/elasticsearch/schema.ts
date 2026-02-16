@@ -9,22 +9,22 @@ export function getGameweekDecisionsMapping(): Record<string, unknown> {
     properties: {
       // Manager identification
       manager_id: { type: 'integer' },
-      manager_name: { 
+      manager_name: {
         type: 'text',
         fields: { keyword: { type: 'keyword' } }
       },
-      team_name: { 
+      team_name: {
         type: 'text',
         fields: { keyword: { type: 'keyword' } }
       },
-      
+
       // League associations (manager can be in multiple leagues)
       league_ids: { type: 'integer' },
-      
+
       // Gameweek identification
       gameweek: { type: 'integer' },
       season: { type: 'keyword' },
-      
+
       // Transfer decisions for this gameweek
       transfers: {
         type: 'nested',
@@ -37,7 +37,7 @@ export function getGameweekDecisionsMapping(): Record<string, unknown> {
           timestamp: { type: 'date' },
         }
       },
-      
+
       // Captain selection
       captain: {
         properties: {
@@ -48,7 +48,7 @@ export function getGameweekDecisionsMapping(): Record<string, unknown> {
           multiplier: { type: 'integer' }, // 2 for captain, 3 for TC
         }
       },
-      
+
       // Vice captain
       vice_captain: {
         properties: {
@@ -56,7 +56,7 @@ export function getGameweekDecisionsMapping(): Record<string, unknown> {
           name: { type: 'keyword' },
         }
       },
-      
+
       // Bench players (position 12-15)
       bench: {
         type: 'nested',
@@ -68,7 +68,7 @@ export function getGameweekDecisionsMapping(): Record<string, unknown> {
           element_type: { type: 'keyword' }, // GKP, DEF, MID, FWD
         }
       },
-      
+
       // Starting XI (position 1-11)
       starters: {
         type: 'nested',
@@ -80,17 +80,37 @@ export function getGameweekDecisionsMapping(): Record<string, unknown> {
           element_type: { type: 'keyword' },
         }
       },
-      
+
       // Chip usage
       chip_used: { type: 'keyword' }, // null, "wildcard", "bboost", "3xc", "freehit"
-      
+
+      // Denormalized/Flattened fields for ES|QL analysis
+      starter_names: { type: 'keyword' },
+      starter_element_types: { type: 'keyword' },
+      starter_points: { type: 'integer' },
+      starter_element_ids: { type: 'integer' },
+
+      bench_names: { type: 'keyword' },
+      bench_points: { type: 'integer' },
+      bench_element_ids: { type: 'integer' },
+
+      // Transfer names (singular)
+
+      transfer_in_names: { type: 'keyword' },
+      transfer_out_names: { type: 'keyword' },
+      transfer_costs: { type: 'integer' },
+      transfer_costs_array: { type: 'integer' },
+      transfer_timestamps: { type: 'date' },
+      transfer_count: { type: 'integer' },
+      total_transfer_cost: { type: 'integer' },
+
       // Gameweek results
       gw_points: { type: 'integer' },
       gw_rank: { type: 'integer' },
       points_on_bench: { type: 'integer' },
       bank: { type: 'float' }, // Money in the bank (×10 to match FPL format)
       team_value: { type: 'float' }, // Squad value (×10)
-      
+
       // Timestamp for indexing
       '@timestamp': { type: 'date' },
     }
@@ -106,36 +126,36 @@ export async function createIndexIfNotExists(indexName: string): Promise<boolean
     console.warn('Elasticsearch not available, skipping index creation');
     return false;
   }
-  
+
   try {
     // Check if index exists
     const exists = await client.indices.exists({ index: indexName });
-    
+
     if (exists) {
       console.log(`✅ Index "${indexName}" already exists`);
       return true;
     }
-    
+
     // Check if serverless by attempting to get cluster info
     let isServerless = false;
     try {
       const info = await client.info();
       // Serverless doesn't return build_flavor or has specific version patterns
-      isServerless = info.tagline?.includes('serverless') || 
-                     info.version.build_flavor === 'serverless' ||
-                     !info.version.build_flavor;
+      isServerless = info.tagline?.includes('serverless') ||
+        info.version.build_flavor === 'serverless' ||
+        !info.version.build_flavor;
     } catch (e) {
       // Assume serverless if we can't determine
       console.log('Unable to detect mode, assuming serverless', e);
       isServerless = true;
     }
-    
+
     // Create index with appropriate settings
     const indexConfig: any = {
       index: indexName,
       mappings: getGameweekDecisionsMapping(),
     };
-    
+
     // Only add settings if NOT serverless
     if (!isServerless) {
       indexConfig.settings = {
@@ -144,9 +164,9 @@ export async function createIndexIfNotExists(indexName: string): Promise<boolean
         refresh_interval: '5s',
       };
     }
-    
+
     await client.indices.create(indexConfig);
-    
+
     console.log(`✅ Created index "${indexName}" with mapping${isServerless ? ' (serverless mode)' : ''}`);
     return true;
   } catch (error) {
@@ -161,14 +181,14 @@ export async function createIndexIfNotExists(indexName: string): Promise<boolean
 export async function deleteIndex(indexName: string): Promise<boolean> {
   const client = getESClient();
   if (!client) return false;
-  
+
   try {
     const exists = await client.indices.exists({ index: indexName });
     if (!exists) {
       console.log(`Index "${indexName}" doesn't exist`);
       return true;
     }
-    
+
     await client.indices.delete({ index: indexName });
     console.log(`✅ Deleted index "${indexName}"`);
     return true;
@@ -184,11 +204,11 @@ export async function deleteIndex(indexName: string): Promise<boolean> {
 export async function getIndexStats(indexName: string) {
   const client = getESClient();
   if (!client) return null;
-  
+
   try {
     const stats = await client.indices.stats({ index: indexName });
     const count = await client.count({ index: indexName });
-    
+
     return {
       name: indexName,
       documentCount: count.count,

@@ -11,7 +11,8 @@
     "es:init": "npx tsx scripts/es-init.ts",
     "es:health": "npx tsx scripts/es-health.ts",
     "es:index": "npx tsx scripts/index-manager-gameweek.ts",
-    "es:query": "npx tsx scripts/es-query-test.ts"
+    "es:query": "npx tsx scripts/es-query-test.ts",
+    "debug:transformer": "NODE_TLS_REJECT_UNAUTHORIZED=0 npx tsx scripts/debug-transformer.ts"
   },
   "dependencies": {
     "@ai-sdk/react": "^3.0.88",

@@ -844,10 +844,10 @@ export default function ChatPage() {
               </div>
               <div className="flex flex-wrap justify-center gap-3">
                 {[
-                  "Summarise GW26 in league 1305804?",
+                  "Summarise GW26 in league 1305804",
                   "Who had the biggest bench regrets in league 1305804?",
                   "Analyze the captaincy picks in league 1305804",
-                  "Compare the top performers in league 1305804",
+                  "Compare managers in league 1305804",
                   "Who took the most hits in league 1305804?"
                 ].map((q, i) => (
                   <button

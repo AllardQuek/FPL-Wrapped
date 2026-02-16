@@ -4,6 +4,7 @@
  */
 
 import * as dotenv from 'dotenv';
+import { streamChatWithAgent } from '../lib/chat/elastic-agent';
 
 dotenv.config({ path: '.env.local' });
 
@@ -58,83 +59,26 @@ async function testAgentAPI() {
 
   // Step 2: Test chat
   console.log('\n2️⃣  Testing chat conversation...');
-  const testMessage = "What indices do you have access to?";
+  // const testMessage = "What indices do you have access to?";
+  const testMessage = "Compare top performers in league 1305804 with a chart";
   console.log(`   💬 Question: "${testMessage}"\n`);
 
   try {
-    const response = await fetch(`${kibanaUrl}/api/agent_builder/converse/async`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({
-        input: testMessage,
-        agent_id: agentId,
-      }),
-    });
-
-    if (!response.ok) {
-      const error = await response.text();
-      console.log(`   ❌ Chat failed (${response.status}): ${error.slice(0, 200)}`);
-      process.exit(1);
-    }
-
-    const reader = response.body?.getReader();
-    const decoder = new TextDecoder();
-
-    if (!reader) {
-      console.log('   ❌ No response body');
-      process.exit(1);
-    }
-
-    let buffer = '';
-    let contentReceived = false;
-    let conversationId = '';
-    let currentEvent = '';
-
     process.stdout.write('   🤖 Response: ');
+    let contentReceived = false;
+    let finalConversationId = '';
 
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split('\n');
-      buffer = lines.pop() || '';
-
-      for (const line of lines) {
-        if (!line.trim()) {
-          currentEvent = '';
-          continue;
-        }
-        
-        if (line.startsWith(':')) continue;
-
-        if (line.startsWith('event: ')) {
-          currentEvent = line.slice(7).trim();
-          continue;
-        }
-
-        if (line.startsWith('data: ')) {
-          const data = line.slice(6);
-          
-          if (data === '[DONE]') break;
-
-          try {
-            const parsed = JSON.parse(data);
-            
-            if (currentEvent === 'conversation_id_set' && parsed.data?.conversation_id) {
-              conversationId = parsed.data.conversation_id;
-            } else if (currentEvent === 'message_chunk' && parsed.data?.text_chunk) {
-              process.stdout.write(parsed.data.text_chunk);
-              contentReceived = true;
-            } else if (currentEvent === 'error' || parsed.error) {
-              console.log(`\n   ❌ Agent error: ${parsed.error || parsed.data?.error}`);
-              process.exit(1);
-            }
-          } catch (e) {
-            // Skip malformed JSON
-            console.warn('Failed to parse SSE data:', data, 'Error:', e);
-          }
-        }
+    for await (const chunk of streamChatWithAgent(testMessage)) {
+      if (chunk.content) {
+        process.stdout.write(chunk.content);
+        contentReceived = true;
+      }
+      if (chunk.conversationId) {
+        finalConversationId = chunk.conversationId;
+      }
+      if (chunk.error) {
+        console.log(`\n   ❌ Agent error: ${chunk.error}`);
+        process.exit(1);
       }
     }
 
@@ -142,8 +86,8 @@ async function testAgentAPI() {
 
     if (contentReceived) {
       console.log(`   ✅ Chat streaming works!`);
-      if (conversationId) {
-        console.log(`   🆔 Conversation ID: ${conversationId}`);
+      if (finalConversationId) {
+        console.log(`   🆔 Conversation ID: ${finalConversationId}`);
       }
     } else {
       console.log(`   ⚠️  No content received from agent`);

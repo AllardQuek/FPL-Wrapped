@@ -3,6 +3,8 @@
  * Docs: https://www.elastic.co/docs/explore-analyze/ai-features/agent-builder/kibana-api
  */
 
+import * as fs from 'fs';
+
 export interface ToolCall {
   tool_id: string;
   tool_call_id: string;
@@ -94,6 +96,15 @@ export async function* streamChatWithAgent(
     requestBody.conversation_id = conversationId;
   }
 
+  // Clear log file if debugging is enabled
+  if (process.env.DEBUG_AGENT === 'true' && process.env.AGENT_LOG_FILE) {
+    try {
+      fs.writeFileSync(process.env.AGENT_LOG_FILE, `--- New Session: ${new Date().toISOString()} ---\n`);
+    } catch (err) {
+      console.error('Failed to clear agent log file:', err);
+    }
+  }
+
   const response = await fetch(`${kibanaUrl}/api/agent_builder/converse/async`, {
     method: 'POST',
     headers: {
@@ -162,6 +173,20 @@ export async function* streamChatWithAgent(
 
           try {
             const parsed = JSON.parse(data);
+            
+            // Log raw agent response for debugging
+            if (process.env.DEBUG_AGENT === 'true') {
+              const logEntry = `[Agent SSE] event: ${currentEvent}\ndata: ${JSON.stringify(parsed, null, 2)}\n---\n`;
+              console.log(logEntry);
+              
+              if (process.env.AGENT_LOG_FILE) {
+                try {
+                  fs.appendFileSync(process.env.AGENT_LOG_FILE, logEntry);
+                } catch (err) {
+                  console.error('Failed to write agent log to file:', err);
+                }
+              }
+            }
 
             // Event type comes from the 'event:' line in the SSE stream
             const eventType = currentEvent;

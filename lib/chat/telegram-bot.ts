@@ -31,7 +31,6 @@ export function consumeWebhookAck(chatId: number): number | undefined {
 
 if (bot) {
     const conversationIdsByChatId = new Map<number, string>();
-    const TELEGRAM_MESSAGE_LIMIT = 4096;
     const TELEGRAM_CHUNK_LIMIT = 3900;
     const processedUpdates = new Set<number>();
     const MAX_PROCESSED_UPDATES_CACHE = 1000;
@@ -165,10 +164,10 @@ if (bot) {
         text = text.replace(/^\s*[-*]\s+/gm, '• ');
         text = text.replace(/^\s*(\d+)\.\s+/gm, '$1) ');
 
-        text = text.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
-        text = text.replace(/__(.+?)__/g, '<b>$1</b>');
-        text = text.replace(/(^|\W)\*([^*\n]+)\*(?=\W|$)/g, '$1<i>$2</i>');
-        text = text.replace(/(^|\W)_([^_\n]+)_(?=\W|$)/g, '$1<i>$2</i>');
+        text = text.replace(/\*\*\s*([\s\S]+?)\s*\*\*/g, '<b>$1</b>');
+        text = text.replace(/__\s*([\s\S]+?)\s*__/g, '<b>$1</b>');
+        text = text.replace(/(^|\s)\*\s*([\s\S]+?)\s*\*(?=\s|$|\W)/g, '$1<i>$2</i>');
+        text = text.replace(/(^|\s)_\s*([\s\S]+?)\s*_(?=\s|$|\W)/g, '$1<i>$2</i>');
 
         for (const [token, html] of tokenMap.entries()) {
             text = text.replaceAll(token, html);
@@ -192,10 +191,9 @@ if (bot) {
         };
 
         const pushOversized = (block: string) => {
-            const plain = stripHtmlTags(block);
             let start = 0;
-            while (start < plain.length) {
-                const slice = plain.slice(start, start + TELEGRAM_CHUNK_LIMIT);
+            while (start < block.length) {
+                const slice = block.slice(start, start + TELEGRAM_CHUNK_LIMIT);
                 chunks.push(slice);
                 start += TELEGRAM_CHUNK_LIMIT;
             }
@@ -229,8 +227,13 @@ if (bot) {
                 disable_web_page_preview: true,
             });
             return;
-        } catch {
-            await ctx.telegram.editMessageText(chatId, messageId, undefined, stripHtmlTags(html));
+        } catch (error: unknown) {
+            const err = error as { response?: { error_code?: number }; message?: string; description?: string };
+            if (err?.response?.error_code === 429 || err?.message?.includes('too many requests')) {
+                return;
+            }
+            console.error('[Telegram] HTML edit failed, falling back to plain text:', err?.description || err?.message);
+            await ctx.telegram.editMessageText(chatId, messageId, undefined, stripHtmlTags(html)).catch(() => { });
         }
     }
 
@@ -241,8 +244,10 @@ if (bot) {
                 disable_web_page_preview: true,
             });
             return;
-        } catch {
-            await ctx.reply(stripHtmlTags(html));
+        } catch (error: unknown) {
+            const err = error as { description?: string; message?: string };
+            console.error('[Telegram] HTML reply failed, falling back to plain text:', err?.description || err?.message);
+            await ctx.reply(stripHtmlTags(html)).catch(() => { });
         }
     }
 
@@ -280,8 +285,9 @@ if (bot) {
                     // Telegram edit limit is ~1 per second.
                     // We buffer chunks to avoid hitting rate limits.
                     if (Date.now() - lastUpdate > 1000) {
-                        const previewHtml = renderTelegramHtml(`${fullContent}\n\n<i>…thinking</i>`);
-                        const previewChunk = splitTelegramMessage(previewHtml)[0].slice(0, TELEGRAM_MESSAGE_LIMIT);
+                        const rendered = renderTelegramHtml(fullContent);
+                        const previewHtml = `${rendered}\n\n<i>…thinking</i>`;
+                        const previewChunk = splitTelegramMessage(previewHtml)[0];
                         await safeEditMessageHtml(ctx, chatId, placeholder.message_id, previewChunk);
                         lastUpdate = Date.now();
                     }
@@ -330,7 +336,7 @@ if (bot) {
                 ctx,
                 chatId,
                 placeholder.message_id,
-                finalChunks[0].slice(0, TELEGRAM_MESSAGE_LIMIT)
+                finalChunks[0]
             );
 
             for (let i = 1; i < finalChunks.length; i++) {

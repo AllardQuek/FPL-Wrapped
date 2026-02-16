@@ -4,6 +4,24 @@ This directory contains various utility scripts for the FPL Wrapped project.
 
 ## 📊 Elasticsearch Indexing
 
+### Async Indexing API Smoke Test
+
+Use this to test the production-style async API flow (`queue -> run -> status`).
+
+```bash
+# Default safe smoke test (manager 1, GW1)
+pnpm test:indexing:async
+
+# Specific manager and GW range
+pnpm test:indexing:async -- --mode manager --manager 123456 --from 1 --to 3
+
+# League test (provide league id)
+pnpm test:indexing:async -- --mode league --league 1305804 --from 1 --to 1
+
+# Custom base URL (e.g. local dev)
+pnpm test:indexing:async -- --base http://localhost:3000
+```
+
 ### Quick Start
 
 ```bash

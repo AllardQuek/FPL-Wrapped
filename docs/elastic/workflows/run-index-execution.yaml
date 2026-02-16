@@ -1,0 +1,31 @@
+name: run-fpl-indexing-execution
+description: Process the next chunk for an indexing execution_id
+enabled: true
+tags:
+  - fpl
+  - indexing
+triggers:
+  - type: manual
+
+inputs:
+  - name: execution_id
+    type: string
+    required: true
+    description: Execution ID returned by queue workflow
+  - name: max_steps
+    type: number
+    required: false
+    default: 5
+    description: Number of gameweek steps to process in this call (1-50)
+
+steps:
+  - name: run_chunk
+    type: http
+    with:
+      url: "https://fpl-wrapped-live.vercel.app/api/index/run/${{inputs.execution_id}}"
+      method: POST
+      headers:
+        Content-Type: "application/json"
+      body:
+        max_steps: ${{inputs.max_steps}}
+      timeout: "60000"

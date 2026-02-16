@@ -1,0 +1,47 @@
+name: index-fpl-and-wait
+description: Queue and process indexing in one call with bounded iterations
+enabled: true
+tags:
+  - fpl
+  - indexing
+triggers:
+  - type: manual
+
+inputs:
+  - name: type
+    type: string
+    required: true
+    description: Target type (league or manager)
+  - name: league_id
+    type: number
+    required: false
+    description: Required when type is league
+  - name: manager_id
+    type: number
+    required: false
+    description: Required when type is manager
+  - name: from_gw
+    type: number
+    required: false
+    default: 1
+  - name: to_gw
+    type: number
+    required: false
+
+steps:
+  - name: orchestrate
+    type: http
+    with:
+      url: "https://fpl-wrapped-live.vercel.app/api/index/orchestrate"
+      method: POST
+      headers:
+        Content-Type: "application/json"
+      body:
+        type: ${{inputs.type}}
+        league_id: ${{inputs.league_id}}
+        manager_id: ${{inputs.manager_id}}
+        from_gw: ${{inputs.from_gw}}
+        to_gw: ${{inputs.to_gw}}
+        max_steps: 5
+        max_iterations: 8
+      timeout: "60000"

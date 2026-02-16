@@ -1,0 +1,22 @@
+name: get-fpl-indexing-status
+description: Retrieve status and progress for an indexing execution_id
+enabled: true
+tags:
+  - fpl
+  - indexing
+triggers:
+  - type: manual
+
+inputs:
+  - name: execution_id
+    type: string
+    required: true
+    description: Execution ID returned by queue workflow
+
+steps:
+  - name: get_status
+    type: http
+    with:
+      url: "https://fpl-wrapped-live.vercel.app/api/index/status/${{inputs.execution_id}}"
+      method: GET
+      timeout: "30000"

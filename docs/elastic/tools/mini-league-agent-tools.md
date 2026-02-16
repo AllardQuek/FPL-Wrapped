@@ -39,6 +39,41 @@ ES|QL tools require **all parameters to be required** — the verifier rejects n
 
 ---
 
+## Tool 0 — Indexing Workflows (On-demand)
+
+These workflows can be triggered by the agent when data for a requested league or manager is not found in the index.
+
+See detailed architecture + runbook: `docs/elastic/indexing/on-demand-indexing-api.md`.
+
+### Recommended default: `index-fpl-and-wait`
+
+Use this as the primary indexing tool for the cleanest agent setup. It can complete small jobs in one call and returns `running` + `execution_id` for larger jobs.
+
+**Inputs:**
+- `type` (`league` or `manager`)
+- `league_id` or `manager_id`
+- `from_gw`, `to_gw`
+- runtime knobs are fixed in workflow for safety (`max_steps=5`, `max_iterations=8`)
+
+### 1. `run-fpl-indexing-execution`
+Processes a chunk of work for an existing execution (fallback/continuation for long jobs).
+
+**Inputs:**
+- `execution_id` (text, required): ID returned by `index-fpl-and-wait`
+- `max_steps` (number, optional, default 5): number of gameweek steps per run
+
+**Endpoint:** `POST /api/index/run/{execution_id}`
+
+### 2. `get-fpl-indexing-status`
+Fetches status/progress for an execution (fallback/continuation for long jobs).
+
+**Inputs:**
+- `execution_id` (text, required): ID returned by `index-fpl-and-wait`
+
+**Endpoint:** `GET /api/index/status/{execution_id}`
+
+---
+
 ## Tool 1 — Index Search Tool (flexible queries)
 
 This is the **primary tool** for flexible querying. The LLM dynamically generates ES|QL or query DSL based on the user's natural language — no pre-defined params needed, no null-handling issues.

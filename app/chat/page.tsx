@@ -818,7 +818,7 @@ export default function ChatPage() {
               <div className="inline-flex items-start md:items-center gap-3 px-4 py-2.5 max-w-lg mx-auto text-left">
                 <span className="shrink-0 text-[10px] font-black uppercase text-[#00ff87]/60 border border-[#00ff87]/10 px-1.5 py-0.5 rounded leading-none mt-0.5 md:mt-0">Beta</span>
                 <p className="text-[11px] text-white/30 leading-normal font-medium">
-                  We may index data on a best-effort basis and may not always succeed. If you&apos;re missing results, try pre-loading via 
+                  We can index data on a best-effort basis but may not always succeed. If you&apos;re missing results, try pre-loading via 
                   <a href="/onboard" className="text-[#00ff87]/40 hover:text-[#00ff87] hover:underline ml-1 transition-colors">/onboard</a>.
                 </p>
               </div>

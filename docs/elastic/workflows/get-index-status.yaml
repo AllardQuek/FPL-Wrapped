@@ -1,6 +1,6 @@
 name: get-fpl-indexing-status
 description: Retrieve status and progress for an indexing execution_id
-enabled: true
+enabled: false
 tags:
   - fpl
   - indexing

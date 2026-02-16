@@ -8,6 +8,7 @@ export type IndexExecutionStatus = 'queued' | 'running' | 'completed' | 'failed'
 
 export interface IndexExecutionDocument {
     execution_id: string;
+    request_key: string;
     type: IndexExecutionType;
     status: IndexExecutionStatus;
     created_at: string;
@@ -42,6 +43,12 @@ async function ensureExecutionsIndex() {
 
     const exists = await client.indices.exists({ index: INDEXING_EXECUTIONS_INDEX });
     if (exists) {
+        await client.indices.putMapping({
+            index: INDEXING_EXECUTIONS_INDEX,
+            properties: {
+                request_key: { type: 'keyword' }
+            }
+        });
         return;
     }
 
@@ -50,6 +57,7 @@ async function ensureExecutionsIndex() {
         mappings: {
             properties: {
                 execution_id: { type: 'keyword' },
+                request_key: { type: 'keyword' },
                 type: { type: 'keyword' },
                 status: { type: 'keyword' },
                 created_at: { type: 'date' },
@@ -81,6 +89,7 @@ export async function createLeagueExecution(params: {
     managerIds: number[];
     fromGw: number;
     toGw: number;
+    requestKey: string;
 }): Promise<IndexExecutionDocument> {
     await ensureExecutionsIndex();
     const client = getESClient();
@@ -93,6 +102,7 @@ export async function createLeagueExecution(params: {
 
     const doc: IndexExecutionDocument = {
         execution_id,
+        request_key: params.requestKey,
         type: 'league',
         status: 'queued',
         created_at: now,
@@ -126,6 +136,7 @@ export async function createManagerExecution(params: {
     managerId: number;
     fromGw: number;
     toGw: number;
+    requestKey: string;
 }): Promise<IndexExecutionDocument> {
     await ensureExecutionsIndex();
     const client = getESClient();
@@ -138,6 +149,7 @@ export async function createManagerExecution(params: {
 
     const doc: IndexExecutionDocument = {
         execution_id,
+        request_key: params.requestKey,
         type: 'manager',
         status: 'queued',
         created_at: now,
@@ -188,6 +200,25 @@ export async function getExecution(executionId: string): Promise<IndexExecutionD
         }
         throw error;
     }
+}
+
+export async function getLatestExecutionByRequestKey(requestKey: string): Promise<IndexExecutionDocument | null> {
+    await ensureExecutionsIndex();
+    const client = getESClient();
+    if (!client) {
+        throw new Error('Elasticsearch client not available');
+    }
+
+    const res = await client.search<IndexExecutionDocument>({
+        index: INDEXING_EXECUTIONS_INDEX,
+        size: 1,
+        query: {
+            term: { request_key: requestKey }
+        },
+        sort: [{ updated_at: { order: 'desc' } }]
+    });
+
+    return res.hits.hits[0]?._source ?? null;
 }
 
 export async function saveExecution(doc: IndexExecutionDocument): Promise<IndexExecutionDocument> {

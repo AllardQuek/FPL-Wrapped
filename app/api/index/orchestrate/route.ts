@@ -3,6 +3,7 @@ import { getBootstrapData, getLeagueStandings } from '@/lib/fpl-api';
 import {
     createLeagueExecution,
     createManagerExecution,
+    getLatestExecutionByRequestKey,
     IndexExecutionDocument,
     IndexExecutionType
 } from '@/lib/elasticsearch/indexing-executions';
@@ -13,6 +14,19 @@ export const maxDuration = 60;
 
 function isTerminal(status: string): boolean {
     return status === 'completed' || status === 'failed';
+}
+
+function buildRequestKey(params: {
+    type: IndexExecutionType;
+    leagueId?: number;
+    managerId?: number;
+    fromGw: number;
+    toGw: number;
+}) {
+    const target = params.type === 'league'
+        ? `league:${params.leagueId}`
+        : `manager:${params.managerId}`;
+    return `${params.type}|${target}|from:${params.fromGw}|to:${params.toGw}`;
 }
 
 export async function POST(req: NextRequest) {
@@ -62,33 +76,63 @@ export async function POST(req: NextRequest) {
                 return NextResponse.json({ error: 'Invalid league_id' }, { status: 400 });
             }
 
-            const standings = await getLeagueStandings(leagueId, 1);
-            const managerIds = standings.standings.results.map(m => m.entry);
-            if (managerIds.length === 0) {
-                return NextResponse.json({ error: 'No managers found for league_id' }, { status: 404 });
-            }
-
-            execution = await createLeagueExecution({
+            const requestKey = buildRequestKey({
+                type,
                 leagueId,
-                managerIds,
                 fromGw,
                 toGw
             });
+
+            const existing = await getLatestExecutionByRequestKey(requestKey);
+            if (existing && existing.status !== 'failed') {
+                execution = existing;
+            } else {
+                const standings = await getLeagueStandings(leagueId, 1);
+                const managerIds = standings.standings.results.map(m => m.entry);
+                if (managerIds.length === 0) {
+                    return NextResponse.json({ error: 'No managers found for league_id' }, { status: 404 });
+                }
+
+                execution = await createLeagueExecution({
+                    leagueId,
+                    managerIds,
+                    fromGw,
+                    toGw,
+                    requestKey
+                });
+            }
         } else {
             const managerId = parseInt(managerIdRaw, 10);
             if (Number.isNaN(managerId)) {
                 return NextResponse.json({ error: 'Invalid manager_id' }, { status: 400 });
             }
 
-            execution = await createManagerExecution({
+            const requestKey = buildRequestKey({
+                type,
                 managerId,
                 fromGw,
                 toGw
             });
+
+            const existing = await getLatestExecutionByRequestKey(requestKey);
+            if (existing && existing.status !== 'failed') {
+                execution = existing;
+            } else {
+                execution = await createManagerExecution({
+                    managerId,
+                    fromGw,
+                    toGw,
+                    requestKey
+                });
+            }
         }
 
         let current = execution;
         for (let i = 0; i < maxIterations; i++) {
+            if (isTerminal(current.status)) {
+                break;
+            }
+
             const updated = await runExecutionChunk(current.execution_id, maxSteps);
             if (!updated) {
                 return NextResponse.json(
@@ -106,6 +150,7 @@ export async function POST(req: NextRequest) {
         const responsePayload = {
             status: current.status,
             execution_id: current.execution_id,
+            request_key: current.request_key,
             type: current.type,
             message: current.message,
             progress: {

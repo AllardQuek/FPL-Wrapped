@@ -48,7 +48,7 @@ Response:
 - `200` with `status: completed` when finished within this call
 - `202` with `status: running` + `execution_id` when more work remains
 
-If response is `running`, continue with `run` + `status` endpoints.
+If response is `running`, call `/api/index/orchestrate` again with the same inputs. The backend resumes the same execution using a deterministic `request_key`.
 
 ### 1) Run execution chunk
 
@@ -100,10 +100,8 @@ Current workflow files:
 1. User asks about league/manager data not in index.
 2. Agent calls `index-fpl-and-wait`.
 3. If result status is `completed`, proceed to answer original query.
-4. If result status is `running`, use returned `execution_id` and loop:
-  - call `get-fpl-indexing-status`
-  - if status is `running`, call `run-fpl-indexing-execution`
-  - stop when status is `completed` or `failed`
+4. If result status is `running`, call `index-fpl-and-wait` again with the same inputs.
+5. Repeat until status is `completed` or `failed`.
 5. On `completed`, retry original analytics query.
 
 ### Suggested guardrails in agent instructions
@@ -139,8 +137,8 @@ pnpm test:indexing:async -- --base https://fpl-wrapped-live.vercel.app --mode ma
 
 ## Production notes and limits
 
-- This design is safer than synchronous full-index calls, but still requires repeated run invocations.
-- Without a scheduler/queue trigger (cron, task queue, etc.), executions progress only when `run` is called.
+- This design is safer than synchronous full-index calls and supports repeated same-tool invocations.
+- Without a scheduler/queue trigger (cron, task queue, etc.), executions progress only when `index-fpl-and-wait` is called again.
 - Verify deployed routes/methods in production before Agent Builder rollout.
 - Add endpoint auth for write/run routes before exposing broadly.
 

@@ -50,9 +50,9 @@ See detailed architecture + runbook: `docs/elastic/indexing/on-demand-indexing-a
 Use this as the primary indexing tool for the cleanest agent setup. It can complete small jobs in one call and returns `running` + `execution_id` for larger jobs.
 
 **Workflow tool summaries:**
-- `fpl.index-and-wait`: Start indexing and attempt to finish within a safe per-request budget.
-- `fpl.run-indexing-execution`: Continue a still-running execution by processing the next chunk.
-- `fpl.get-indexing-status`: Read the latest execution state/progress without doing more work.
+- `fpl.index-and-wait`: Start/continue indexing and attempt to finish within a safe per-request budget (recommended and agent-facing).
+- `fpl.run-indexing-execution`: Manual troubleshooting/continuation tool (not agent-facing by default).
+- `fpl.get-indexing-status`: Manual troubleshooting/status tool (not agent-facing by default).
 
 **Inputs:**
 - `type` (`league` or `manager`)
@@ -60,8 +60,10 @@ Use this as the primary indexing tool for the cleanest agent setup. It can compl
 - `from_gw`, `to_gw`
 - runtime knobs are fixed in workflow for safety (`max_steps=5`, `max_iterations=8`)
 
+For long-running jobs, call `fpl.index-and-wait` again with the same inputs; backend resume is handled automatically.
+
 ### 1. `run-fpl-indexing-execution`
-Processes a chunk of work for an existing execution (fallback/continuation for long jobs).
+Processes a chunk of work for an existing execution (manual troubleshooting/continuation only).
 
 **Inputs:**
 - `execution_id` (text, required): ID returned by `index-fpl-and-wait`
@@ -70,7 +72,7 @@ Processes a chunk of work for an existing execution (fallback/continuation for l
 **Endpoint:** `POST /api/index/run/{execution_id}`
 
 ### 2. `get-fpl-indexing-status`
-Fetches status/progress for an execution (fallback/continuation for long jobs).
+Fetches status/progress for an execution (manual troubleshooting/status only).
 
 **Inputs:**
 - `execution_id` (text, required): ID returned by `index-fpl-and-wait`

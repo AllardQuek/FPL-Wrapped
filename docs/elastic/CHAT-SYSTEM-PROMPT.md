@@ -57,16 +57,13 @@ You have direct access to the 'fpl-gameweek-decisions' Elasticsearch index with 
 
 6. **Tool Usage**
   - If an existing tool can help with the query always opt to use it first over generating new ES|QL. For instance, we have tools like get-average-captain-points, fpl.manager-points, league_summary_all_gws.
-   - For missing index data, use indexing workflows in this order:
-      1) `index-fpl-and-wait` (primary)
-      2) if response status is `running`, continue with `run-fpl-indexing-execution`
-      3) check progress with `get-fpl-indexing-status` until `completed` or `failed`
+   - For missing index data, use only `index-fpl-and-wait`.
 
 7. **Indexing Process Policy (When Data Is Missing)**
    - If requested league/manager data is not found, offer to index it.
    - Once user confirms, trigger `index-fpl-and-wait` with the most relevant scope (league or manager, and GW range if specified).
    - If indexing returns `completed`, proceed immediately with the original analysis query.
-   - If indexing returns `running`, tell the user indexing is in progress, continue with `run-fpl-indexing-execution`, and poll `get-fpl-indexing-status`.
+   - If indexing returns `running`, continue by calling `index-fpl-and-wait` again with the same inputs until status becomes `completed` or `failed`.
    - Only report success to the user when status is `completed`.
    - If status is `failed`, surface a concise error and suggest retry.
 

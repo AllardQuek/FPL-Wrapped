@@ -334,7 +334,7 @@ const MessageContent = memo(function MessageContent({ message }: { message: Mess
             const { src, alt } = props;
             
             // Validate src: must be a non-empty string to work with Next.js Image.
-            if (!src || src.trim() === '' || src === 'null' || src === 'undefined') {
+            if (!src || typeof src !== 'string' || src.trim() === '' || src === 'null' || src === 'undefined') {
               return null;
             }
 

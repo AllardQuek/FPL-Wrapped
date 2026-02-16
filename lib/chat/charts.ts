@@ -58,8 +58,8 @@ export const FPL_VEGA_THEME = {
 /**
  * Robustly parse a Vega-Lite spec from LLM output
  */
-export async function parseVegaSpec(spec: string | object): Promise<any> {
-    let parsed: any = spec;
+export async function parseVegaSpec(spec: string | object): Promise<unknown> {
+    let parsed: unknown = spec;
     if (typeof spec === 'string') {
       let s = spec.trim();
 
@@ -72,7 +72,7 @@ export async function parseVegaSpec(spec: string | object): Promise<any> {
       } catch (errJson) {
         try {
           // Try json5 if available (allows single quotes, trailing commas)
-          const json5: any = await import('json5');
+          const json5 = await import('json5');
           parsed = json5.parse(s);
         } catch {
           // Last-resort: extract first {...} object and try parse
@@ -95,32 +95,35 @@ export async function parseVegaSpec(spec: string | object): Promise<any> {
 /**
  * Sanitize Vega spec by removing external URL references for security
  */
-export function sanitizeVegaSpec(spec: any) {
+export function sanitizeVegaSpec(spec: unknown) {
   if (!spec || typeof spec !== 'object') return spec;
 
   try {
     const clone = JSON.parse(JSON.stringify(spec));
 
-    const strip = (obj: any) => {
-      if (!obj || typeof obj !== 'object') return;
+    const strip = (obj: unknown) => {
+      if (!obj || typeof obj !== 'object' || obj === null) return;
+      
       if (Array.isArray(obj)) {
-        obj.forEach(strip);
+        obj.forEach((item) => strip(item));
         return;
       }
-      for (const k of Object.keys(obj)) {
-        const v = obj[k];
+
+      const o = obj as Record<string, unknown>;
+      for (const k of Object.keys(o)) {
+        const v = o[k];
         if (k === 'url' && typeof v === 'string') {
-          delete obj[k];
+          delete o[k];
           continue;
         }
-        if ((k === 'data' || k === 'format') && v && typeof v === 'object' && v.url) {
-          delete obj[k].url;
+        if ((k === 'data' || k === 'format') && v && typeof v === 'object' && v !== null && (v as Record<string, unknown>).url) {
+          delete (o[k] as Record<string, unknown>).url;
         }
         // Allow signal, expr, and expression as they are required for interactivity
         // stripping them broke tooltips and selections
         
-        if (k === 'image' && v && typeof v === 'object' && v.url) {
-          delete obj[k].url;
+        if (k === 'image' && v && typeof v === 'object' && v !== null && (v as Record<string, unknown>).url) {
+          delete (o[k] as Record<string, unknown>).url;
         }
         strip(v);
       }
@@ -136,50 +139,60 @@ export function sanitizeVegaSpec(spec: any) {
 /**
  * Prepares a spec for rendering by applying theme and sizing
  */
-export function prepareSpec(parsed: any): { safeSpec: VisualizationSpec; title: string | null } {
+export function prepareSpec(parsed: unknown): { safeSpec: VisualizationSpec; title: string | null } {
     let title: string | null = null;
     try {
-        if (parsed) {
-          const t = parsed.title || (parsed.config && parsed.config.title);
-          if (typeof t === 'string') title = t;
-          else if (t && typeof t === 'object' && typeof t.text === 'string') title = t.text;
+        if (parsed && typeof parsed === 'object') {
+          const p = parsed as Record<string, unknown>;
+          const config = p.config as Record<string, unknown> | undefined;
+          const t = p.title || (config && config.title);
           
-          if (parsed.title) delete parsed.title;
-          if (parsed.config?.title) delete parsed.config.title;
+          if (typeof t === 'string') title = t;
+          else if (t && typeof t === 'object' && typeof (t as Record<string, unknown>).text === 'string') {
+            title = (t as Record<string, unknown>).text as string;
+          }
+          
+          if (p.title) delete p.title;
+          if (config && config.title) delete config.title;
         }
       } catch {}
 
-      const safeSpec = sanitizeVegaSpec(parsed);
+      const safeSpec = sanitizeVegaSpec(parsed) as VisualizationSpec;
       
       // Deeply clean up the spec to remove hardcoded colors/schemes that override the theme
-      const enforceTheme = (obj: any) => {
-        if (!obj || typeof obj !== 'object') return;
+      const enforceTheme = (obj: unknown) => {
+        if (!obj || typeof obj !== 'object' || obj === null) return;
         if (Array.isArray(obj)) {
           obj.forEach(enforceTheme);
           return;
         }
 
-        for (const k of Object.keys(obj)) {
-          const v = obj[k];
+        const o = obj as Record<string, unknown>;
+        for (const k of Object.keys(o)) {
+          const v = o[k];
           
           // Remove explicit schemes like "reds", "greens", "category10"
           if (k === 'scheme' && typeof v === 'string') {
             // Keep if it's one of ours, otherwise delete so theme takes over
             if (!['ramp', 'category', 'ordinal', 'heatmap'].includes(v)) {
-              delete obj[k];
+              delete o[k];
             }
           }
 
           // Force our ramp for any continuous color scales
-          if (k === 'color' && v && typeof v === 'object' && v.type === 'quantitative') {
-            if (!v.scale) v.scale = {};
-            v.scale.range = FPL_VEGA_THEME.range.ramp;
+          if (k === 'color' && v && typeof v === 'object' && (v as Record<string, unknown>).type === 'quantitative') {
+            const vo = v as Record<string, unknown>;
+            if (!vo.scale) vo.scale = {};
+            (vo.scale as Record<string, unknown>).range = FPL_VEGA_THEME.range.ramp;
           }
 
           // Ensure bar and area marks use theme colors if no encoding overrides
-          if (k === 'mark' && (v === 'bar' || v === 'area' || v?.type === 'bar' || v?.type === 'area')) {
-            if (typeof v === 'object' && v.color) delete v.color;
-            if (typeof v === 'object' && v.fill) delete v.fill;
+          if (k === 'mark' && (v === 'bar' || v === 'area' || (v && typeof v === 'object' && ((v as Record<string, unknown>).type === 'bar' || (v as Record<string, unknown>).type === 'area')))) {
+            if (typeof v === 'object' && v !== null) {
+              const vo = v as Record<string, unknown>;
+              if (vo.color) delete vo.color;
+              if (vo.fill) delete vo.fill;
+            }
           }
 
           enforceTheme(v);
@@ -191,20 +204,21 @@ export function prepareSpec(parsed: any): { safeSpec: VisualizationSpec; title: 
       if (!safeSpec.config) safeSpec.config = {};
       
       // Merge FPL theme
-      if (!safeSpec.config) safeSpec.config = {};
-      Object.assign(safeSpec.config, FPL_VEGA_THEME);
-      safeSpec.background = 'transparent';
+      if (safeSpec.config) {
+        Object.assign(safeSpec.config, FPL_VEGA_THEME);
+      }
+      (safeSpec as Record<string, unknown>).background = 'transparent'; // background is allowed on spec
 
       // Ensure we use the theme's sizing and padding
       // We force 'container' width, but only set height if not specified to avoid responsive charts
-      safeSpec.width = 'container';
-      if (!safeSpec.height) {
-        safeSpec.height = 280;
+      (safeSpec as Record<string, unknown>).width = 'container';
+      if (!(safeSpec as Record<string, unknown>).height) {
+        (safeSpec as Record<string, unknown>).height = 280;
       }
       
       // Force theme's default padding and autosize for consistent UIUX
       safeSpec.padding = safeSpec.padding !== undefined ? safeSpec.padding : FPL_VEGA_THEME.padding;
-      safeSpec.autosize = safeSpec.autosize || FPL_VEGA_THEME.autosize;
+      safeSpec.autosize = safeSpec.autosize || (FPL_VEGA_THEME.autosize as Record<string, unknown>);
 
       return { safeSpec, title };
 }
@@ -214,10 +228,11 @@ export function prepareSpec(parsed: any): { safeSpec: VisualizationSpec; title: 
  */
 export async function createSecureLoader() {
   try {
-    const vega: any = await import('vega');
-    const loader = (vega && typeof vega.loader === 'function') ? vega.loader() : undefined;
-    if (loader && typeof loader.fetch === 'function') {
-      loader.fetch = () => Promise.reject(new Error('External loads disabled for embedded charts'));
+    const vega = await import('vega');
+    const vegaObj = vega as Record<string, unknown>;
+    const loader = (vegaObj && typeof vegaObj.loader === 'function') ? (vegaObj.loader as () => Record<string, unknown>)() : undefined;
+    if (loader && typeof (loader as Record<string, unknown>).fetch === 'function') {
+      (loader as Record<string, unknown>).fetch = () => Promise.reject(new Error('External loads disabled for embedded charts'));
     }
     return loader;
   } catch {

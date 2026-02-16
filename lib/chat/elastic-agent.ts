@@ -42,7 +42,7 @@ function toErrorMessage(value: unknown): string {
 export async function* streamChatWithAgent(
   message: string,
   conversationId?: string,
-  _options?: { includeVegaHint?: boolean }
+  options?: { includeVegaHint?: boolean }
 ): AsyncGenerator<ChatStreamChunk, void, unknown> {
   const esUrl = process.env.ELASTICSEARCH_URL?.replace(':443', '').replace(':9200', '');
   const agentId = process.env.ELASTIC_AGENT_ID;
@@ -55,7 +55,7 @@ export async function* streamChatWithAgent(
   const kibanaUrl = esUrl.replace('.es.', '.kb.');
 
   // For this app, always ask the agent to return Vega-Lite when relevant
-  const shouldAppendVegaHint = (_msg: string) => true;
+  const shouldAppendVegaHint = (msg: string) => msg.length > 0;
 
   const VEGA_HINT = [
     '',
@@ -76,7 +76,8 @@ export async function* streamChatWithAgent(
   ].join('\n');
 
   let input = message;
-  if (shouldAppendVegaHint(input) && !input.includes('<!-- VEGA_HINT_ADDED -->')) {
+  const includeVegaHint = options?.includeVegaHint ?? true;
+  if (includeVegaHint && shouldAppendVegaHint(input) && !input.includes('<!-- VEGA_HINT_ADDED -->')) {
     input += VEGA_HINT;
   }
 

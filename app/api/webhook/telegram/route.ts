@@ -14,33 +14,35 @@ export async function POST(req: NextRequest) {
     try {
         const body = await req.json();
 
-        // Return 200 immediately to stop Telegram retries, then perform both
-        // the quick ack and the full bot handling in the background via
-        // `waitUntil`. This keeps the response path fast and lets Vercel keep
-        // the invocation alive up to `maxDuration` for the background work.
-        waitUntil((async () => {
-            try {
-                const chatId = (body as any)?.message?.chat?.id
-                    || (body as any)?.callback_query?.message?.chat?.id
-                    || (body as any)?.channel_post?.chat?.id;
+        // Try to send a synchronous ACK before returning so the user always
+        // sees the placeholder. Use the same text as the bot placeholder to
+        // make the transition seamless (avoids visible "Got it" -> "Thinking").
+        try {
+            const chatId = (body as any)?.message?.chat?.id
+                || (body as any)?.callback_query?.message?.chat?.id
+                || (body as any)?.channel_post?.chat?.id;
 
-                if (chatId) {
-                    try {
-                        const msg = await bot.telegram.sendMessage(
-                            chatId,
-                            '✅ Got it — processing your request. I will update you here when ready.'
-                        );
-                        if (msg && (msg as any).message_id) {
-                            registerWebhookAck(chatId, (msg as any).message_id);
-                        }
-                    } catch (err) {
-                        console.error('Failed to send background ack to Telegram user:', err);
+            if (chatId) {
+                try {
+                    const msg = await bot.telegram.sendMessage(
+                        chatId,
+                        '🤔 Thinking...'
+                    );
+                    if (msg && (msg as any).message_id) {
+                        registerWebhookAck(chatId, (msg as any).message_id);
                     }
+                } catch (err) {
+                    console.error('Failed to send immediate ack to Telegram user:', err);
                 }
-            } catch (err) {
-                console.error('Failed to determine chatId for background ack:', err);
             }
+        } catch (err) {
+            console.error('Failed to determine chatId for immediate ack:', err);
+        }
 
+        // Return 200 immediately to stop Telegram retries, then perform the
+        // full bot handling in the background via `waitUntil` so heavy work
+        // doesn't block the response.
+        waitUntil((async () => {
             try {
                 await bot.handleUpdate(body);
             } catch (err) {

@@ -33,6 +33,7 @@
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
     "html-to-image": "^1.11.13",
+    "json5": "^2.2.3",
     "lucide-react": "^0.562.0",
     "motion": "^12.34.0",
     "nanoid": "^5.1.6",
@@ -45,7 +46,10 @@
     "streamdown": "^2.2.0",
     "tailwind-merge": "^3.4.0",
     "telegraf": "^4.16.3",
-    "use-stick-to-bottom": "^1.1.3"
+    "use-stick-to-bottom": "^1.1.3",
+    "vega": "^6.2.0",
+    "vega-embed": "^7.1.0",
+    "vega-lite": "^6.4.2"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

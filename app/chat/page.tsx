@@ -59,6 +59,179 @@ function getToolDisplayName(toolId: string): string {
   return toolMap[toolId] || `🔧 ${toolId.split('.').pop() || toolId}`;
 }
 
+// Basic sanitizer for incoming Vega(-Lite) specs: remove external URLs and inline unsafe fields
+function sanitizeVegaSpec(spec: any) {
+  if (!spec || typeof spec !== 'object') return spec;
+
+  // Deep-clone and strip any external fetch hints like url, format.url, image.url
+  try {
+    const clone = JSON.parse(JSON.stringify(spec));
+
+    const strip = (obj: any) => {
+      if (!obj || typeof obj !== 'object') return;
+      if (Array.isArray(obj)) {
+        obj.forEach(strip);
+        return;
+      }
+      for (const k of Object.keys(obj)) {
+        const v = obj[k];
+        // Remove typical external URL fields
+        if (k === 'url' && typeof v === 'string') {
+          delete obj[k];
+          continue;
+        }
+        if ((k === 'data' || k === 'format') && v && typeof v === 'object' && v.url) {
+          delete obj[k].url;
+        }
+        // Remove obvious expression/signal fields to reduce risk
+        if (k === 'signal' || k === 'expr' || k === 'expression') {
+          delete obj[k];
+          continue;
+        }
+        // Remove nested image URLs
+        if (k === 'image' && v && typeof v === 'object' && v.url) {
+          delete obj[k].url;
+        }
+
+        strip(v);
+      }
+    };
+
+    strip(clone);
+    return clone;
+  } catch {
+    return spec;
+  }
+}
+
+function ChartRenderer({ spec }: { spec: string | object }) {
+  const el = useRef<HTMLDivElement | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const [title, setTitle] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (!el.current) return;
+      setLoading(true);
+      setError(null);
+      setTitle(null);
+      try {
+        const vegaEmbed: any = (await import('vega-embed')).default;
+
+        // Parse spec robustly: accept raw JSON, fenced codeblocks, or relaxed JSON (json5)
+        let parsed: any = spec;
+        if (typeof spec === 'string') {
+          let s = spec.trim();
+
+          // Remove fenced code block markers if present
+          const fenceMatch = s.match(/^```(?:vega-lite|vega)?\n([\s\S]*)\n```$/i);
+          if (fenceMatch) s = fenceMatch[1];
+
+          // Try strict JSON parse first
+          try {
+            parsed = JSON.parse(s);
+          } catch (errJson) {
+            // Try json5 if available (allows single quotes, trailing commas)
+            try {
+              const json5: any = await import('json5');
+              parsed = json5.parse(s);
+            } catch {
+              // Last-resort: extract first {...} object and try parse
+              const objMatch = s.match(/(\{[\s\S]*\})/);
+              if (objMatch) {
+                try {
+                  parsed = JSON.parse(objMatch[1]);
+                } catch {
+                  throw errJson;
+                }
+              } else {
+                throw errJson;
+              }
+            }
+          }
+        }
+
+        // Extract title if present
+        try {
+          if (parsed) {
+            const t = parsed.title || (parsed.config && parsed.config.title);
+            if (typeof t === 'string') setTitle(t);
+            else if (t && typeof t === 'object' && typeof t.text === 'string') setTitle(t.text);
+          }
+        } catch {}
+
+        // Sanitize and enforce transparent background
+        const safeSpecRaw = sanitizeVegaSpec(parsed);
+        const safeSpec = (typeof safeSpecRaw === 'object' && safeSpecRaw) ? safeSpecRaw : {};
+
+        // Ensure transparent background for embedding and no stroke around view
+        try {
+          safeSpec.background = 'transparent';
+          if (!safeSpec.config) safeSpec.config = {};
+          if (!safeSpec.config.view) safeSpec.config.view = {};
+          safeSpec.config.view.stroke = 'transparent';
+          safeSpec.config.view.fill = 'transparent';
+        } catch {}
+
+        // Create a loader that blocks external fetches
+        const vega: any = await import('vega');
+        let loader: any = undefined;
+        try {
+          loader = (vega && typeof vega.loader === 'function') ? vega.loader() : undefined;
+          if (loader && typeof loader.fetch === 'function') {
+            loader.fetch = () => Promise.reject(new Error('External loads disabled for embedded charts'));
+          }
+        } catch {
+          loader = undefined;
+        }
+
+        if (cancelled) return;
+        await vegaEmbed(el.current, safeSpec as any, { actions: false, renderer: 'canvas', loader });
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.error('Chart render error', err);
+        if (!cancelled) {
+          setError(typeof err === 'string' ? err : err instanceof Error ? getUserFriendlyError(err.message) : String(err));
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [spec]);
+
+  return (
+    <div className="w-full my-4 relative">
+      <div className="chart-wrapper glass-card w-full rounded-xl">
+        {title && (
+          <div className="chart-header">
+            <div className="title">{title}</div>
+          </div>
+        )}
+
+        <div ref={el} className="w-full rounded-xl" />
+
+        {loading && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/30 rounded-xl">
+            <div className="flex flex-col items-center gap-2">
+              <div className="accent-spinner" />
+              <div className="text-white/80 text-xs">Rendering chart…</div>
+            </div>
+          </div>
+        )}
+
+        {error && (
+          <div className="chart-error">
+            <div className="card">{error}</div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 interface ToolCall {
   tool_id: string;
   tool_call_id: string;
@@ -237,9 +410,20 @@ export default function ChatPage() {
                   });
                 });
               }
-
               if (parsed.toolResult) {
-                // Update specific tool call with result if needed, or just refresh UI
+                const tr = parsed.toolResult as { tool_call_id?: string; results?: unknown[] };
+                // Attach results to an existing accumulated tool call if present
+                const idx = accumulatedToolCalls.findIndex((tc) => tc.tool_call_id === tr.tool_call_id);
+                if (idx !== -1) {
+                  // @ts-expect-error assign results onto the tool call
+                  (accumulatedToolCalls[idx] as any).results = tr.results;
+                } else {
+                  // If no matching call, push a synthetic entry so UI can still reference it
+                  // @ts-expect-error synthetic tool call shape
+                  accumulatedToolCalls.push({ tool_id: 'tool-result', tool_call_id: tr.tool_call_id, params: {}, results: tr.results } as any);
+                }
+
+                // Refresh UI so any visualization tags referencing this tool_call_id render
                 flushSync(() => {
                   setMessages((prev) => {
                     const newMessages = [...prev];
@@ -320,6 +504,13 @@ export default function ChatPage() {
     abortControllerRef.current?.abort();
     setIsStreaming(false);
   };
+
+  // Replace <visualization tool-result-id="ID"/> with an image placeholder src 'viz://ID'
+  function transformVisualizations(content: string) {
+    if (!content) return '';
+    const regex = /<visualization[^>]*tool-result-id="([^"]+)"[^>]*\/>/g;
+    return content.replace(regex, (_m, id) => `\n\n![](viz://${id})\n\n`);
+  }
 
   return (
     <div className="relative min-h-screen gradient-bg overflow-hidden flex flex-col">
@@ -553,9 +744,14 @@ export default function ChatPage() {
 
                       {/* Main Response content */}
                       <div className="prose prose-invert prose-sm max-w-none prose-headings:text-[#00ff87] prose-a:text-[#00ff87] prose-strong:text-[#00ff87] prose-strong:font-black">
-                        <ReactMarkdown
-                          remarkPlugins={[remarkGfm]}
-                          components={{
+                        {/* Transform <visualization> tags into viz:// placeholders and render once */}
+                        {
+                          (() => {
+                            const md = transformVisualizations(message.content || '');
+                            return (
+                              <ReactMarkdown
+                                remarkPlugins={[remarkGfm]}
+                                components={{
                             p: ({ children }: { children?: ReactNode }) => (
                               <p className="mt-4 first:mt-0 mb-4 last:mb-0 leading-relaxed text-white/90">{children}</p>
                             ),
@@ -592,6 +788,13 @@ export default function ChatPage() {
                             ),
                             code: ({ className, children }: { className?: string; children?: ReactNode }) => {
                               const isInline = !className;
+
+                              // Handle fenced vega-lite blocks: ```vega-lite\n{...}```
+                              if (!isInline && className?.includes('language-vega-lite')) {
+                                const content = Array.isArray(children) ? children.join('') : String(children || '');
+                                return <ChartRenderer spec={content} />;
+                              }
+
                               return isInline ? (
                                 <code className="px-1.5 py-0.5 bg-[#37003c] text-[#00ff87] rounded font-mono text-xs border border-white/10">
                                   {children}
@@ -604,10 +807,43 @@ export default function ChatPage() {
                                 </div>
                               );
                             },
-                          }}
-                        >
-                          {message.content}
-                        </ReactMarkdown>
+                            img: ({ src, alt }: { src?: string; alt?: string }) => {
+                              if (!src) return null;
+                              // Handle viz placeholders: viz://<tool_call_id>
+                              if (src.startsWith('viz://')) {
+                                const id = src.slice('viz://'.length);
+                                const tc = message.toolCalls?.find((t) => t.tool_call_id === id) as any | undefined;
+
+                                if (tc?.results && Array.isArray(tc.results) && tc.results.length > 0) {
+                                  const first = tc.results[0] as any;
+                                  if (first?.vega || first?.spec || first?.['vega-lite'] || first?.vega_lite) {
+                                    const spec = first.vega || first.spec || first['vega-lite'] || first.vega_lite;
+                                    return <ChartRenderer spec={spec} />;
+                                  }
+                                  if (typeof first === 'string' && first.startsWith('data:image')) {
+                                    return <img src={first} alt={alt} className="w-full rounded-xl object-contain my-4" />;
+                                  }
+                                  if (first?.data && Array.isArray(first.data.values)) {
+                                    const vegaSpec = { $schema: 'https://vega.github.io/schema/vega-lite/v5.json', data: { values: first.data.values }, mark: 'bar', encoding: {} };
+                                    return <ChartRenderer spec={vegaSpec} />;
+                                  }
+                                  // Fallback: show JSON in a compact block
+                                  return <pre className="p-3 bg-black/20 rounded-xl text-sm mt-2">{JSON.stringify(tc.results, null, 2)}</pre>;
+                                }
+
+                                return <div className="italic text-white/60">Rendering chart...</div>;
+                              }
+
+                              // Default: render normal images (including data URLs)
+                              return <img src={src} alt={alt} className="w-full rounded-xl object-contain my-4" />;
+                            },
+                                }}
+                              >
+                                {md}
+                              </ReactMarkdown>
+                            );
+                          })()
+                        }
                       </div>
                     </>
                   )}

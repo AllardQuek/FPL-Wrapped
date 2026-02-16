@@ -41,7 +41,8 @@ function toErrorMessage(value: unknown): string {
  */
 export async function* streamChatWithAgent(
   message: string,
-  conversationId?: string
+  conversationId?: string,
+  _options?: { includeVegaHint?: boolean }
 ): AsyncGenerator<ChatStreamChunk, void, unknown> {
   const esUrl = process.env.ELASTICSEARCH_URL?.replace(':443', '').replace(':9200', '');
   const agentId = process.env.ELASTIC_AGENT_ID;
@@ -53,12 +54,32 @@ export async function* streamChatWithAgent(
   // Convert Elasticsearch URL to Kibana URL (.es. -> .kb.)
   const kibanaUrl = esUrl.replace('.es.', '.kb.');
 
+  // For this app, always ask the agent to return Vega-Lite when relevant
+  const shouldAppendVegaHint = (_msg: string) => true;
+
+  const VEGA_HINT = [
+    '',
+    '<!-- VEGA_HINT_ADDED -->',
+    'When returning charts, please include BOTH:',
+    '1) An Elastic visualization tag referencing the tool result: <visualization tool-result-id="{tool_result_id}" chart-type="Bar"/>',
+    '2) A fenced vega-lite JSON block that contains the complete Vega-Lite spec using inline data (data.values), for example:',
+    '```vega-lite',
+    '{ "$schema": "https://vega.github.io/schema/vega-lite/v5.json", "data": { "values": [...] }, ... }',
+    '```',
+    'Also, if possible include a PNG fallback encoded as a data URI in the tool_result. Do not include external URLs.',
+  ].join('\n');
+
+  let input = message;
+  if (shouldAppendVegaHint(input) && !input.includes('<!-- VEGA_HINT_ADDED -->')) {
+    input += VEGA_HINT;
+  }
+
   const requestBody: {
     input: string;
     agent_id: string;
     conversation_id?: string;
   } = {
-    input: message,
+    input,
     agent_id: agentId,
   };
 

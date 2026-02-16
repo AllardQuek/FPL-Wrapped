@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic'; // Disable static optimization
 
 export async function POST(req: NextRequest) {
   try {
-    const { question, conversationId } = await req.json();
+    const { question, conversationId, includeVegaHint } = await req.json();
 
     if (!question) {
       return new Response(JSON.stringify({ error: 'Question required' }), {
@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
     const stream = new ReadableStream({
       async start(controller) {
         try {
-          for await (const chunk of streamChatWithAgent(question, conversationId)) {
+          for await (const chunk of streamChatWithAgent(question, conversationId, { includeVegaHint })) {
             // Send SSE formatted data
             const data = `data: ${JSON.stringify(chunk)}\n\n`;
             controller.enqueue(encoder.encode(data));

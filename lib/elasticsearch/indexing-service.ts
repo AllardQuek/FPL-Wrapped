@@ -1,5 +1,5 @@
 import { getESClient } from './client';
-import { transformToGameweekDecision } from './transformer';
+import { transformToGameweekDecision, GameweekDecisionDocument } from './transformer';
 import {
     getBootstrapData,
     getGameWeekPicks,
@@ -41,7 +41,7 @@ export async function indexManagerGameweek(
         ]);
 
         // Transform to ES document
-        const document = transformToGameweekDecision(
+        const document: GameweekDecisionDocument = transformToGameweekDecision(
             managerId,
             managerInfo,
             gameweek,
@@ -58,12 +58,47 @@ export async function indexManagerGameweek(
             throw new Error('Elasticsearch client not available');
         }
 
-        const docId = `${managerId}-gw${gameweek}`;
-        await client.index({
-            index: indexName,
-            id: docId,
-            document,
-        });
+                const docId = `${managerId}-gw${gameweek}`;
+
+                // Normalize league_ids to a de-duplicated array and bake into the
+                // document we send to Elasticsearch. This ensures `league_ids` is
+                // always a list in ES so `contains` / `add` work as expected.
+                const league_ids = Array.from(new Set((document.league_ids ?? []).map((id: any) => Number(id))));
+                const documentForEs: GameweekDecisionDocument = { ...document, league_ids };
+
+                // Use update with upsert and a Painless script to atomically merge
+                // league IDs while updating other fields. Skip copying `league_ids`
+                // from params.doc into ctx._source to avoid overwriting the merged array.
+                await client.update<GameweekDecisionDocument>({
+                    index: indexName,
+                    id: docId,
+                    retry_on_conflict: 3,
+                    script: {
+                        lang: 'painless',
+                        source: `
+                            if (ctx._source.league_ids == null) {
+                                ctx._source.league_ids = params.ids;
+                            } else {
+                                for (id in params.ids) {
+                                    if (!ctx._source.league_ids.contains(id)) {
+                                        ctx._source.league_ids.add(id);
+                                    }
+                                }
+                            }
+                            for (entry in params.doc.entrySet()) {
+                                def k = entry.getKey();
+                                if (k != 'league_ids' && k != 'raw_api_payload') {
+                                    ctx._source[k] = entry.getValue();
+                                }
+                            }
+                        `,
+                        params: {
+                            ids: league_ids,
+                            doc: documentForEs
+                        }
+                    },
+                    upsert: documentForEs
+                });
 
         return true;
     } catch (error) {
@@ -94,6 +129,7 @@ export async function indexManagerAllGameweeks(
             managerName = info.name;
         } catch (e) {
             // Ignore if info fails, we'll try again inside indexManagerGameweek
+            console.warn(`Could not fetch manager info for ${managerId} before indexing:`, e);
         }
 
         let success = 0;
@@ -107,6 +143,7 @@ export async function indexManagerAllGameweeks(
                 onProgress?.({
                     type: 'gameweek',
                     id: gw,
+                        name: managerName,
                     current: gw - fromGW + 1,
                     total: totalGWs,
                     message: `GW${gw}: Not started yet, skipping`
@@ -120,6 +157,7 @@ export async function indexManagerAllGameweeks(
                 onProgress?.({
                     type: 'gameweek',
                     id: gw,
+                    name: managerName,
                     current: gw - fromGW + 1,
                     total: totalGWs,
                     message: `Successfully indexed GW${gw}`
@@ -129,6 +167,7 @@ export async function indexManagerAllGameweeks(
                 onProgress?.({
                     type: 'gameweek',
                     id: gw,
+                    name: managerName,
                     current: gw - fromGW + 1,
                     total: totalGWs,
                     message: `Failed to index GW${gw}`

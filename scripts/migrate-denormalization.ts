@@ -9,6 +9,7 @@
 
 import { getESClient } from '../lib/elasticsearch/client';
 import { getGameweekDecisionsMapping } from '../lib/elasticsearch/schema';
+import type { MappingProperty } from '@elastic/elasticsearch/lib/api/types';
 import { GameweekDecisionDocument } from '../lib/elasticsearch/transformer';
 
 const indexName = process.env.ELASTICSEARCH_INDEX_NAME || 'fpl-gameweek-decisions';
@@ -31,7 +32,7 @@ async function migrate() {
 
         await client.indices.putMapping({
             index: indexName,
-            properties: mapping.properties as Record<string, any>
+            properties: mapping.properties as Record<string, MappingProperty>
         });
         console.log('✅ Mapping updated successfully\n');
 
@@ -51,11 +52,13 @@ async function migrate() {
         // 3. Process documents
         for await (const response of scrollSearch) {
             if (processedConnect < 1) {
-                console.log('DEBUG: Response keys:', Object.keys(response || {}));
-                // @ts-ignore
-                if (response?.hits) {
-                    // @ts-ignore
-                    console.log('DEBUG: Hits count:', response.hits.hits?.length);
+                const respRecord = (response as unknown) as Record<string, unknown> | undefined;
+                console.log('DEBUG: Response keys:', respRecord ? Object.keys(respRecord) : []);
+
+                const hitsProp = respRecord?.['hits'] as Record<string, unknown> | undefined;
+                const nestedHits = hitsProp?.['hits'] as unknown[] | undefined;
+                if (Array.isArray(nestedHits)) {
+                    console.log('DEBUG: Hits count:', nestedHits.length);
                 } else {
                     console.log('DEBUG: No hits property found in response');
                     console.log('DEBUG: structure sample', JSON.stringify(response, null, 2).substring(0, 200));
@@ -63,18 +66,24 @@ async function migrate() {
             }
 
             // scrollSearch yields response objects
-            // Based on debug output, the hits are in response.body.hits.hits
-            const body = (response as any).body || response;
-            const hits = (body as any).hits?.hits || [];
+            // Based on debug output, the hits are typically in response.body.hits.hits
+            const body = ((response as { body?: unknown }).body as unknown) ?? response;
+            const bodyRecord = body as Record<string, unknown> | undefined;
+            const hits = (bodyRecord?.['hits'] as { hits?: Array<{ _source?: GameweekDecisionDocument; _id?: string }> } | undefined)?.hits ?? [];
 
             for (const hit of hits) {
                 const doc = hit._source as GameweekDecisionDocument;
+                if (!hit._id) {
+                    // Skip documents without an id (shouldn't happen, defensive)
+                    failedCount++;
+                    continue;
+                }
                 const docId = hit._id;
                 processedConnect++;
 
                 try {
                     // Calculate new fields if they don't exist or need update
-                    const updates: Record<string, any> = {};
+                    const updates: Record<string, unknown> = {};
 
                     // Starters (denormalized flat fields)
                     if (doc.starters) {
@@ -96,12 +105,16 @@ async function migrate() {
                         // Keep per-transfer arrays where useful
                         updates.transfer_in_names = doc.transfers.map(t => t.player_in_name);
                         updates.transfer_out_names = doc.transfers.map(t => t.player_out_name);
-                        updates.transfer_costs = doc.transfers.map(t => t.cost);
                         updates.transfer_timestamps = doc.transfers.map(t => t.timestamp);
 
                         // Aggregates useful for ES|QL tools
                         updates.transfer_count = doc.transfers.length;
-                        updates.total_transfer_cost = (doc.transfers || []).reduce((sum, t) => sum + (t.cost || 0), 0);
+                        // Use GW-level event_transfers_cost as the canonical value; do not
+                        // rely on legacy per-transfer `cost` fields which were removed.
+                        const totalCost = (doc.entry_history && typeof doc.entry_history.event_transfers_cost === 'number')
+                            ? doc.entry_history.event_transfers_cost
+                            : 0;
+                        updates.total_transfer_cost = totalCost;
                     }
 
                     // Remove old typo fields if they exist
@@ -112,12 +125,18 @@ async function migrate() {
                         updates.transfers_out_names = null;
                     }
 
-                    // Update document
+                    // Update document and strip legacy per-transfer `cost` from nested transfers
                     if (Object.keys(updates).length > 0) {
                         await client.update({
                             index: indexName,
                             id: docId,
-                            doc: updates
+                            // apply denormalized doc updates
+                            doc: updates,
+                            // remove legacy `cost` property from each transfer entry if present
+                            script: {
+                                source: "if (ctx._source.transfers != null) { for (int i=0;i<ctx._source.transfers.length;i++) { ctx._source.transfers[i].remove('cost'); } }",
+                                lang: 'painless'
+                            }
                         });
                         updatedCount++;
                     }

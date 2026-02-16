@@ -19,7 +19,7 @@ We added the following fields to the `fpl-gameweek-decisions` index:
 | | `bench_element_ids` | `integer` | Corresponding FPL IDs |
 | **Transfers** | `transfers_in_names` | `keyword` | List of players transferred in |
 | | `transfers_out_names` | `keyword` | List of players transferred out |
-| | `transfer_costs` | `integer` | Cost (hit) associated with each transfer |
+| | `total_transfer_cost` | `integer` | GW-level points hit for transfers (use this; per-transfer cost not available) |
 
 These arrays are parallel, meaning `starter_names[0]` corresponds to `starter_points[0]`.
 

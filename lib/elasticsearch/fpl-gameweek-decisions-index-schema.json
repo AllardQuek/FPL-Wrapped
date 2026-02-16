@@ -115,9 +115,6 @@
       "transfers": {
         "type": "nested",
         "properties": {
-          "cost": {
-            "type": "integer"
-          },
           "player_in_id": {
             "type": "integer"
           },
@@ -172,9 +169,6 @@
       },
       "transfer_out_names": {
         "type": "keyword"
-      },
-      "transfer_costs": {
-        "type": "integer"
       },
       "transfer_count": {
         "type": "integer"

@@ -358,7 +358,7 @@ export default function ChatPage() {
                 FPL <span className="text-[#00ff87] glow-text not-italic">CHAT</span>
               </h2>
               <p className="text-sm text-white/50 max-w-xl mx-auto leading-relaxed font-medium">
-                Ask anything about your league's managers, performance, and trends. <br className="hidden md:block" />
+                Ask anything about your league&apos;s managers, performance, and trends. <br className="hidden md:block" />
                 Select a profile to explore or try a suggestion below.
               </p>
             </div>

@@ -26,7 +26,7 @@ From your current nested structures, extract these **top-level multi-valued fiel
 "transfers_in_element_ids": [345, 354],
 "transfers_out_names": ["Salah", "Kane"],
 "transfers_out_element_ids": [253, 427],
-"transfer_costs": [-4, 0]  // points hits
+"total_transfer_cost": -4  // canonical GW-level hit; per-transfer hits are not reliably provided
 ```
 
 ### Step 2: Update Your Indexing Pipeline
@@ -60,7 +60,7 @@ def denormalize_gameweek_decision(raw_data):
         # NEW: Flatten transfers
         "transfers_in_names": [t["element_in"]["name"] for t in raw_data["transfers"]],
         "transfers_out_names": [t["element_out"]["name"] for t in raw_data["transfers"]],
-        "transfer_costs": [t["cost"] for t in raw_data["transfers"]],
+        "total_transfer_cost": raw_data.get("entry_history", {}).get("event_transfers_cost", 0),
     }
     
     return denormalized
@@ -86,7 +86,7 @@ Add the new fields to your mapping:
       
       "transfers_in_names": { "type": "keyword" },
       "transfers_out_names": { "type": "keyword" },
-      "transfer_costs": { "type": "integer" }
+      "total_transfer_cost": { "type": "integer" }
     }
   }
 }

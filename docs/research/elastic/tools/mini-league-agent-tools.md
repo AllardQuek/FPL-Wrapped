@@ -108,12 +108,12 @@ Sort by gw_points DESC by default unless user specifies otherwise.
 
 ---
 
-## Tools 2–9 — ES|QL Tools (aggregation queries)
+## Tools 2–11 — ES|QL Tools (aggregation queries)
 
 For queries that **require** `STATS`, `COUNT`, `SUM`, `AVG`, `STD_DEV`, etc.  
 Index Search can't aggregate — these ES|QL tools fill that gap.
 
-> **All parameters are REQUIRED.** ES|QL cannot handle null parameter values (causes `verification_exception` and `Cannot inline parameter of unsupported type`). The LLM agent determines values from conversation context.
+> **All parameters are REQUIRED.** ES|QL cannot handle null parameter values (causes `verification_exception` and `Cannot inline parameter of unsupported type`). The LLM agent determines values from conversation context. When a tool is scoped to a single league (requires `?league_id`), the season is typically implied by that league — in those cases a separate `?SEASON` parameter is not necessary and the tool omits it (season is inferred from `league_id`).
 
 ### Syntax reminders
 
@@ -139,7 +139,24 @@ FROM fpl-gameweek-decisions
 
 ---
 
-### Tool 3: `fpl.captaincy_results`
+### Tool 3: `fpl.league_size`
+
+Helper ES|QL tool — returns the number of distinct managers in a league for a given gameweek. Use this before `fpl.differential_detection` when `?league_size` is not known.
+
+**Params:** `?GW` (integer, required), `?league_id` (integer, required)
+
+```esql
+FROM fpl-gameweek-decisions
+| WHERE gameweek == ?GW AND ?league_id IN (league_ids)
+| STATS league_size = COUNT_DISTINCT(manager_id)
+```
+
+Agent guidance: If `?league_size` is not supplied to `fpl.differential_detection`, call `fpl.league_size` first and pass its `league_size` result into `fpl.differential_detection`.
+
+
+---
+
+### Tool 4: `fpl.captaincy_results`
 
 Captain picks with actual points scored. Shows which captain choice paid off post-GW.
 
@@ -157,7 +174,7 @@ FROM fpl-gameweek-decisions
 
 ---
 
-### Tool 4: `fpl.chip_usage`
+### Tool 5: `fpl.chip_usage`
 
 Counts chip usage across the league for a GW.
 
@@ -172,7 +189,7 @@ FROM fpl-gameweek-decisions
 
 ---
 
-### Tool 5: `fpl.bench_points_ranking`
+### Tool 6: `fpl.bench_points_ranking`
 
 Points left on bench per manager. Higher = more wasted points.
 
@@ -187,7 +204,7 @@ FROM fpl-gameweek-decisions
 
 ---
 
-### Tool 6: `fpl.bench_boost_roi`
+### Tool 7: `fpl.bench_boost_roi`
 
 Bench Boost chip ROI — how many bench points each BB user got. Returns empty if nobody played bench_boost this GW.
 
@@ -202,7 +219,7 @@ FROM fpl-gameweek-decisions
 
 ---
 
-### Tool 7: `fpl.hot_cold_streaks`
+### Tool 8: `fpl.hot_cold_streaks`
 
 Rolling N-week total points per manager. Identifies hot streaks and cold slumps.
 
@@ -218,15 +235,15 @@ FROM fpl-gameweek-decisions
 
 ---
 
-### Tool 8: `fpl.consistency_score`
+### Tool 9: `fpl.consistency_score`
 
-Season-long consistency — standard deviation of weekly points. Lower volatility = more consistent.
+League-season consistency — standard deviation of weekly points (season inferred from the league). Lower volatility = more consistent.
 
-**Params:** `?SEASON` (keyword, required), `?league_id` (integer, required)
+**Params:** `?league_id` (integer, required)
 
 ```esql
 FROM fpl-gameweek-decisions
-| WHERE season == ?SEASON AND ?league_id IN (league_ids)
+| WHERE ?league_id IN (league_ids)
 | STATS volatility = STD_DEV(gw_points),
         avg_pts = AVG(gw_points),
         gws = COUNT(*)
@@ -236,15 +253,15 @@ FROM fpl-gameweek-decisions
 
 ---
 
-### Tool 9: `fpl.season_summary`
+### Tool 10: `fpl.season_summary`
 
-Season-long aggregate stats for each manager in a league.
+Season-long aggregate stats for each manager in a league (season inferred from the league).
 
-**Params:** `?SEASON` (keyword, required), `?league_id` (integer, required)
+**Params:** `?league_id` (integer, required)
 
 ```esql
 FROM fpl-gameweek-decisions
-| WHERE season == ?SEASON AND ?league_id IN (league_ids)
+| WHERE ?league_id IN (league_ids)
 | STATS total_pts = SUM(gw_points),
         avg_pts = AVG(gw_points),
         best_gw = MAX(gw_points),
@@ -257,15 +274,15 @@ FROM fpl-gameweek-decisions
 
 ---
 
-### Tool 10: `fpl.manager_profiles`
+### Tool 11: `fpl.manager_profiles`
 
-Rich per-manager profile card for the league. Captures team-building style (team value), captaincy variety, chip strategy, and total performance in one query.
+Rich per-manager profile card for the league. Captures team-building style (team value), captaincy variety, chip strategy, and total performance in one query. Season is inferred from the `league_id` provided.
 
-**Params:** `?SEASON` (keyword, required), `?league_id` (integer, required)
+**Params:** `?league_id` (integer, required)
 
 ```esql
 FROM fpl-gameweek-decisions
-| WHERE season == ?SEASON AND ?league_id IN (league_ids)
+| WHERE ?league_id IN (league_ids)
 | STATS total_gameweeks = COUNT(*),
         total_gw_points = SUM(gw_points),
         avg_team_value = AVG(team_value),
@@ -307,15 +324,19 @@ FROM fpl-gameweek-decisions
 | SORT transfers_in DESC
 ```
 
-**`fpl.differential_detection`** — players owned by ≤ N managers
+**`fpl.differential_detection`** — players owned by a super-majority (>50%) of managers in the league
+
+This tool identifies template/core players by returning starters that are owned by more than half of the managers in the target league for the specified gameweek.
+
+**Params:** `?GW` (integer, required), `?league_id` (integer, required), `?league_size` (integer, required)
 
 ```esql
 FROM fpl-gameweek-decisions
 | WHERE gameweek == ?GW AND ?league_id IN (league_ids)
 | MV_EXPAND starter_names
 | STATS owners = COUNT_DISTINCT(manager_id) BY starter_names
-| WHERE owners <= ?N
-| SORT owners ASC
+| WHERE owners > (?league_size * 0.5)
+| SORT owners DESC
 ```
 
 **`fpl.template_core_players`** — most-owned starters

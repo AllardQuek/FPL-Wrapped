@@ -4,7 +4,8 @@ import type {
   Transfer,
   GameWeekPicks,
   LiveGameWeek,
-  ManagerInfo
+  ManagerInfo,
+  GameWeekHistory
 } from '@/lib/types';
 
 /**
@@ -22,7 +23,6 @@ export interface GameweekDecisionDocument {
     player_in_name: string;
     player_out_id: number;
     player_out_name: string;
-    cost: number;
     timestamp: string;
   }>;
   captain: {
@@ -61,8 +61,8 @@ export interface GameweekDecisionDocument {
   bench_element_ids: number[];
   transfer_in_names: string[];
   transfer_out_names: string[];
-  transfer_costs: number[];
   transfer_timestamps: string[];
+  entry_history?: GameWeekHistory;
   transfer_count: number;
   total_transfer_cost: number;
 
@@ -166,7 +166,6 @@ export function transformToGameweekDecision(
       player_in_name: playerIn?.web_name || 'Unknown',
       player_out_id: t.element_out,
       player_out_name: playerOut?.web_name || 'Unknown',
-      cost: picks.entry_history.event_transfers_cost, // Hit points taken
       timestamp: t.time,
     };
   });
@@ -210,10 +209,10 @@ export function transformToGameweekDecision(
 
     transfer_in_names: transformedTransfers.map(t => t.player_in_name),
     transfer_out_names: transformedTransfers.map(t => t.player_out_name),
-    transfer_costs: transformedTransfers.map(t => t.cost),
     transfer_timestamps: transformedTransfers.map(t => t.timestamp),
     transfer_count: transformedTransfers.length,
-    total_transfer_cost: transformedTransfers.reduce((sum, t) => sum + (t.cost || 0), 0),
+    // Use the GW-level event_transfers_cost (points hit) as the canonical total transfer cost
+    total_transfer_cost: picks.entry_history?.event_transfers_cost || 0,
 
     chip_used: picks.active_chip,
     gw_points: picks.entry_history.points,

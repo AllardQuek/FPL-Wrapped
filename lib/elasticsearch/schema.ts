@@ -33,7 +33,6 @@ export function getGameweekDecisionsMapping(): Record<string, unknown> {
           player_in_name: { type: 'keyword' },
           player_out_id: { type: 'integer' },
           player_out_name: { type: 'keyword' },
-          cost: { type: 'integer' }, // Hit points: -4, -8, or 0 for free
           timestamp: { type: 'date' },
         }
       },
@@ -98,8 +97,6 @@ export function getGameweekDecisionsMapping(): Record<string, unknown> {
 
       transfer_in_names: { type: 'keyword' },
       transfer_out_names: { type: 'keyword' },
-      transfer_costs: { type: 'integer' },
-      transfer_costs_array: { type: 'integer' },
       transfer_timestamps: { type: 'date' },
       transfer_count: { type: 'integer' },
       total_transfer_cost: { type: 'integer' },
@@ -151,7 +148,15 @@ export async function createIndexIfNotExists(indexName: string): Promise<boolean
     }
 
     // Create index with appropriate settings
-    const indexConfig: any = {
+    const indexConfig: {
+      index: string;
+      mappings: Record<string, unknown>;
+      settings?: {
+        number_of_shards?: number;
+        number_of_replicas?: number;
+        refresh_interval?: string;
+      };
+    } = {
       index: indexName,
       mappings: getGameweekDecisionsMapping(),
     };

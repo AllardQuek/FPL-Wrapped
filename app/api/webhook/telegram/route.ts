@@ -11,9 +11,12 @@ export async function POST(req: NextRequest) {
     try {
         const body = await req.json();
 
-        // Process the update via Telegraf
-        // handleUpdate returns a promise that resolves when the update is processed
-        await bot.handleUpdate(body);
+        // Process the update in the background and respond immediately.
+        // This prevents Telegram from retrying while we wait for AI/indexing.
+        // We catch errors internally to prevent unhandled promise rejections.
+        bot.handleUpdate(body).catch((err) => {
+            console.error('Background bot error:', err);
+        });
 
         return NextResponse.json({ ok: true });
     } catch (error: any) {

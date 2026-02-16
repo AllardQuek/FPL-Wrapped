@@ -15,6 +15,29 @@ export const bot = token ? new Telegraf(token) : null;
 if (bot) {
     const conversationIdsByChatId = new Map<number, string>();
     const TELEGRAM_MESSAGE_LIMIT = 4096;
+    const processedUpdates = new Set<number>();
+    const MAX_PROCESSED_UPDATES_CACHE = 1000;
+
+    // Middleware to deduplicate updates (Telegram retries on timeout)
+    bot.use(async (ctx, next) => {
+        const updateId = ctx.update.update_id;
+        if (processedUpdates.has(updateId)) {
+            console.log(`[Telegram] Skipping duplicate update ${updateId}`);
+            return;
+        }
+
+        processedUpdates.add(updateId);
+
+        // Simple cache eviction
+        if (processedUpdates.size > MAX_PROCESSED_UPDATES_CACHE) {
+            const firstItem = processedUpdates.values().next().value;
+            if (firstItem !== undefined) {
+                processedUpdates.delete(firstItem);
+            }
+        }
+
+        return next();
+    });
 
     type ChatContext = {
         chat: { id: number };

@@ -13,6 +13,7 @@ Quick reference to all project documentation, organized by purpose and task.
 - **[Algorithm Improvements](engine/persona-algorithm-improvements.md)** - Evolution of the engine (Phase 1-3, including Centroid Scoring).
 - **[Problem Analysis & Debugging](engine/persona-problem-analysis.md)** - Post-mortems on clustering issues (e.g., "The Emery Fix").
 - **[Distribution Strategy](engine/persona-distribution-strategy.md)** - How we ensure a balanced and diverse user experience.
+- **[Transfer Efficiency Grading](engine/transfer-efficiency-grading.md)** - Grading system for transfer effectiveness.
 
 ## 🎨 UX & Design Systems
 *Visual language, navigation, and user flow.*
@@ -21,6 +22,7 @@ Quick reference to all project documentation, organized by purpose and task.
 - **[Navigation Enhancement](ux/navigation-enhancement.md)** - Strategy for the "Wrapped" story flow and user engagement.
 - **[Progress Bar Options](ux/progress-bar-placement-options.md)** - UI/UX explorations for story progress tracking.
 - **[Dynamic Season Summary](ux/dynamic-season-summary.md)** - Logic for generating the personalized season narrative.
+- **[Chat Interface Rationale](ux/chat-interface-rationale.md)** - Design thinking behind the conversational query interface.
 
 ## 🛠 Implementation & Architecture
 *Technical details and framework choices.*
@@ -28,7 +30,9 @@ Quick reference to all project documentation, organized by purpose and task.
 - **[Navigation Implementation](architecture/navigation-implementation.md)** - Code-level details of the navigation system.
 - **[Next.js vs Vite](architecture/nextjs-vite.md)** - Why we chose Next.js and the resulting architectural benefits.
 - **[Archetypes](architecture/archetypes.md)** - Early conceptual data structures and design thinking.
- - **[API Wrapper Patterns](architecture/api-wrappers.md)** - Rationale for thin HTTP wrappers, caching, and testability.
+- **[API Wrapper Patterns](architecture/api-wrappers.md)** - Rationale for thin HTTP wrappers, caching, and testability.
+- **[Telegram Bot Architecture](architecture/telegram-bot.md)** - Handling long-running tasks and webhook retries.
+- **[Elasticsearch Denormalization](architecture/elasticsearch-denormalization.md)** - Flattening nested fields for ES|QL compatibility.
 
 ## ✍️ Content & Copy
 *The "Voice" of the application.*
@@ -43,6 +47,16 @@ Quick reference to all project documentation, organized by purpose and task.
 - **[Transfer Timing Psychology](research/transfer-timing-psychology.md)** - Deep dive into "Early vs. Panic" transfer behavior.
 - **[Resources & Assets](research/resources.md)** - External links, image assets, and reference materials.
 
+### 🔍 Elasticsearch & AI Integration
+- **[Requirements & Use Cases](research/elastic/requirements/my-use-cases.md)** - Business goals for the search-driven analytics.
+- **[Mini-League Implementation Plan](research/elastic/requirements/plan.md)** - Phase-by-phase roadmap for indexing and reports.
+- **[Chat Feature Plan](research/elastic/requirements/plan-chat.md)** - Strategy for natural language to ES|QL queries.
+- **[High-Level AI Approaches](research/elastic/high-level-approaches.md)** - Extensive research on AI integration patterns.
+- **[Indexing Strategy](research/elastic/indexing-data.md)** - Technical approach to bulk indexing and incremental updates.
+- **[Denormalization Example](research/elastic/denormalization-example.md)** - Practical example of mapping transforms.
+- **[ES|QL Query Tools](research/elastic/tools/mini-league-agent-tools.md)** - Definitions for the Agentic AI tools.
+- **[ES|QL Performance Review](research/elastic/tools/mini-league-esql-review.md)** - Evaluation of ES|QL against standard queries.
+
 ---
 
 ## 🛠 Task-Based Guide
@@ -54,6 +68,7 @@ Quick reference to all project documentation, organized by purpose and task.
 | **Change the Scoring Logic** | [Algorithm V3](engine/persona-algorithm-v3-criteria-based.md) & `lib/analysis/persona/scoring.ts` |
 | **Update the UI/UX Flow** | [Navigation Enhancement](ux/navigation-enhancement.md) & [Design Decisions](architecture/design-decisions.md) |
 | **Understand Data Signals** | [Behavioral Signals](engine/behavioral-signals.md) & [Transfer Timing Psychology](research/transfer-timing-psychology.md) |
+| **Implement AI Tools** | [ES\|QL Query Tools](research/elastic/tools/mini-league-agent-tools.md) |
 
 ---
 
@@ -62,27 +77,9 @@ Quick reference to all project documentation, organized by purpose and task.
 **Persona Logic**: [lib/analysis/persona/index.ts](../lib/analysis/persona/index.ts)  
 **Scoring Engine**: [lib/analysis/persona/scoring.ts](../lib/analysis/persona/scoring.ts)  
 **Persona Images**: [lib/constants/persona-images.ts](../lib/constants/persona-images.ts)  
-**Persona UI**: [components/cards/PersonaCard.tsx](../components/cards/PersonaCard.tsx)
+**Persona UI**: [components/cards/PersonaCard.tsx](../components/cards/PersonaCard.tsx)  
+**Telegram Bot**: [lib/chat/telegram-bot.ts](../lib/chat/telegram-bot.ts)
 
 ---
 
-## 🚀 Extended Features (Planned)
-*Future mini-league analysis and chat features.*
-
-### Mini-League Reports
-**[Mini-League Reports Plan](research/extended-features/plan.md)** - Scheduled reports with 34 pre-built analytics
-- Phase 1: Elasticsearch indexing infrastructure
-- Phase 2: Query library (captain analysis, bench regrets, transfer effectiveness, etc.)
-- Phase 3: Multi-platform delivery (Telegram, Discord, Email, WhatsApp)
-- **Use case**: Automated scheduled reports pushed to league groups
-
-### Chat with Data
-**[Chat Feature Plan](research/extended-features/plan-chat.md)** - Conversational query interface
-- Web UI at `/chat` 
-- Telegram bot `/ask` command
-- LLM-powered natural language to Elasticsearch queries
-- **Use case**: Ad-hoc questions like "Who captained Salah in GW25?"
-
----
-
-**Last Updated**: February 15, 2026
+**Last Updated**: February 16, 2026

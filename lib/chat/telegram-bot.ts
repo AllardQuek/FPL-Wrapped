@@ -310,7 +310,7 @@ if (bot) {
                     console.warn(`[Telegram] stream inactive for ${STREAM_INACTIVITY_TIMEOUT_MS}ms, aborting`);
                     try {
                         ac.abort();
-                    } catch (e) {
+                    } catch {
                         // ignore
                     }
                 }
@@ -334,7 +334,7 @@ if (bot) {
                             hasReasoning: !!chunk.reasoning,
                             hasError: !!chunk.error
                         });
-                    } catch (_) { }
+                    } catch { }
 
                     if (chunk.reasoning) {
                         const r = chunk.reasoning.trim();
@@ -351,7 +351,7 @@ if (bot) {
 
                     if (chunk.toolResult) {
                         currentStatus = 'Processing results...';
-                        try { console.debug('[Telegram] toolResult chunk', chunk.toolResult); } catch (_) { }
+                        try { console.debug('[Telegram] toolResult chunk', chunk.toolResult); } catch { }
                     }
 
                     if (chunk.content) {

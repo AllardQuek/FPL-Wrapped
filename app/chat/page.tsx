@@ -439,6 +439,7 @@ export default function ChatPage() {
   // Dynamic question suggestions state
   const [suggestionIndex, setSuggestionIndex] = useState(0);
   const suggestionPrefixes = useMemo(() => [
+    "Generate my FPL Wrapped'",
     "Summarise GW26",
     "Who had the biggest bench regrets",
     "Analyze the captaincy picks",

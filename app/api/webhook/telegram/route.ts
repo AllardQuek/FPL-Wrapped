@@ -23,17 +23,17 @@ export async function POST(req: NextRequest) {
                 || (body as any)?.channel_post?.chat?.id;
 
             if (chatId) {
-                try {
-                    const msg = await bot.telegram.sendMessage(
-                        chatId,
-                        '🤔 Thinking...'
-                    );
-                    if (msg && (msg as any).message_id) {
-                        registerWebhookAck(chatId, (msg as any).message_id);
-                    }
-                } catch (err) {
-                    console.error('Failed to send immediate ack to Telegram user:', err);
-                }
+                // Fire-and-forget the immediate ack so we don't block the
+                // webhook response waiting on Telegram API latency.
+                bot.telegram.sendMessage(chatId, '🤔 Thinking...')
+                    .then((msg) => {
+                        if (msg && (msg as any).message_id) {
+                            registerWebhookAck(chatId, (msg as any).message_id);
+                        }
+                    })
+                    .catch((err) => {
+                        console.error('Failed to send immediate ack to Telegram user:', err);
+                    });
             }
         } catch (err) {
             console.error('Failed to determine chatId for immediate ack:', err);

@@ -461,6 +461,7 @@ if (bot) {
 
     // Handle help command
     bot.help((ctx) => {
+        console.log('[Telegram] help handler invoked for chat', ctx.chat?.id);
         const onboardUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'fpl-wrapped-live.vercel.app'}/onboard`;
         ctx.reply(
             "🔍 **FPL Wrapped Help**\n\n" +
@@ -472,7 +473,7 @@ if (bot) {
             "• `/set_persona <key>` - e.g. PEP, ARTETA, MOURINHO\n" +
             "• `/set_tone <id>` - balanced, roast, optimist, tactical\n" +
             "• `/settings` - Show current personality settings\n\n" +
-            "**Missing Data?**" +
+            "**Missing Data?** " +
             "We might not have indexed everyone yet. If you can't get results, index manually here:\n" +
             `${onboardUrl}`
         );
@@ -588,6 +589,24 @@ if (bot) {
 
         await handleChat(ctx, ctx.message.text);
     });
+
+    // Ensure Telegram client command list is populated so users see the correct commands
+    (async () => {
+        try {
+            await bot.telegram.setMyCommands([
+                { command: 'chat', description: 'Ask me anything' },
+                { command: 'index_manager', description: 'Index a team' },
+                { command: 'index_league', description: 'Index a league' },
+                { command: 'set_persona', description: 'Set manager persona' },
+                { command: 'set_tone', description: 'Set the tone' },
+                { command: 'settings', description: 'Show current settings' },
+                { command: 'help', description: 'Show help' }
+            ]);
+            console.log('[Telegram] setMyCommands applied');
+        } catch (err) {
+            console.error('[Telegram] setMyCommands failed', err);
+        }
+    })();
 }
 
 export default bot;

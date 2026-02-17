@@ -166,7 +166,7 @@ export function ChatHeader({
               transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
               className="flex-1"
             >
-              <div className="group w-full flex flex-col items-center justify-center gap-6 px-6 py-10 md:px-10 md:py-16 rounded-3xl bg-white/[0.02] border border-white/5 hover:border-[#00ff87]/30 hover:bg-[#00ff87]/5 transition-all duration-500 relative overflow-hidden h-full min-h-[200px] md:min-h-[300px] shadow-2xl shadow-black/50">
+              <div className="group w-full flex flex-col items-center justify-center gap-6 px-6 py-10 md:px-10 md:py-10 rounded-3xl bg-white/[0.02] border border-white/5 hover:border-[#00ff87]/30 hover:bg-[#00ff87]/5 transition-all duration-500 relative overflow-hidden h-full min-h-[200px] md:min-h-[280px] shadow-2xl shadow-black/50">
                 <div className="absolute inset-0 bg-gradient-to-r from-[#00ff87]/0 via-[#00ff87]/2 to-[#00ff87]/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
                 
                 <div className="relative h-16 md:h-24 w-full flex items-center justify-center z-10">

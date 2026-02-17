@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { getCurrentFPLSeason } from '@/lib/season';
 import { ArrowRight, Search, Trophy, User, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
+import { Particles } from '@/components/ui/Particles';
 
 export default function OnboardPage() {
     const [type, setType] = useState<'manager' | 'league'>('manager');
@@ -12,14 +13,9 @@ export default function OnboardPage() {
     const [error, setError] = useState('');
     const [logs, setLogs] = useState<string[]>([]);
     const [progress, setProgress] = useState({ current: 0, total: 0 });
-    const [mounted, setMounted] = useState(false);
     const router = useRouter();
     const logsEndRef = useRef<HTMLDivElement>(null);
     const currentSeason = getCurrentFPLSeason();
-
-    useEffect(() => {
-        setMounted(true);
-    }, []);
 
     useEffect(() => {
         logsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -92,6 +88,7 @@ export default function OnboardPage() {
 
     return (
         <main className="min-h-screen gradient-bg flex flex-col items-center justify-center px-4 relative py-10">
+            <Particles />
             <div className="relative z-10 max-w-xl w-full">
                 {/* Header */}
                 <div className="text-center mb-8 animate-slide-in">

@@ -36,3 +36,32 @@ export function InfoTooltip({ content, side = "top", maxWidth = "max-w-[200px]",
         </TooltipPrimitive.Provider>
     );
 }
+
+interface TooltipProps {
+    children: React.ReactNode;
+    content: React.ReactNode;
+    side?: "top" | "right" | "bottom" | "left";
+    sideOffset?: number;
+}
+
+export function Tooltip({ children, content, side = "top", sideOffset = 5 }: TooltipProps) {
+    return (
+        <TooltipPrimitive.Provider delayDuration={300}>
+            <TooltipPrimitive.Root>
+                <TooltipPrimitive.Trigger asChild>
+                    {children}
+                </TooltipPrimitive.Trigger>
+                <TooltipPrimitive.Portal>
+                    <TooltipPrimitive.Content
+                        side={side}
+                        sideOffset={sideOffset}
+                        className="z-50 overflow-hidden rounded-md border border-white/10 bg-[#0d0015]/95 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.2em] text-[#00ff87] shadow-xl animate-in fade-in-0 zoom-in-95 backdrop-blur-md"
+                    >
+                        {content}
+                        <TooltipPrimitive.Arrow className="fill-white/10" />
+                    </TooltipPrimitive.Content>
+                </TooltipPrimitive.Portal>
+            </TooltipPrimitive.Root>
+        </TooltipPrimitive.Provider>
+    );
+}

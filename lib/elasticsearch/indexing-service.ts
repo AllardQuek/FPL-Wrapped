@@ -63,7 +63,7 @@ export async function indexManagerGameweek(
                 // Normalize league_ids to a de-duplicated array and bake into the
                 // document we send to Elasticsearch. This ensures `league_ids` is
                 // always a list in ES so `contains` / `add` work as expected.
-                const league_ids = Array.from(new Set((document.league_ids ?? []).map((id: any) => Number(id))));
+                const league_ids = Array.from(new Set((document.league_ids ?? []).map(id => Number(id))));
                 const documentForEs: GameweekDecisionDocument = { ...document, league_ids };
 
                 // Use update with upsert and a Painless script to atomically merge

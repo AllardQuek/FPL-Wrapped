@@ -16,6 +16,7 @@ import { SummaryCard } from '@/components/cards/SummaryCard';
 import { FooterCard } from '@/components/cards/FooterCard';
 import { ShareButton } from '@/components/ui/ShareButton';
 import { NavigationControls } from '@/components/ui/NavigationControls';
+import { Particles } from '@/components/ui/Particles';
 import { SECTION_IDS } from '@/lib/constants/wrapped-sections';
 
 export default function WrappedPage() {
@@ -27,7 +28,6 @@ export default function WrappedPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [loadingMessage, setLoadingMessage] = useState('Fetching your data...');
-  const [mounted, setMounted] = useState(false);
   const [currentSection, setCurrentSection] = useState(0);
   
   const sectionRefs = useRef<(HTMLElement | null)[]>([]);
@@ -105,10 +105,6 @@ export default function WrappedPage() {
     };
   }, [summary]); // Re-run when summary loads
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
   const fetchData = useCallback(async () => {
     if (!teamId) return;
     
@@ -158,19 +154,7 @@ export default function WrappedPage() {
   if (loading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-8 relative overflow-hidden">
-        <div className="particles">
-          {mounted && [...Array(20)].map((_, i) => (
-            <div
-              key={i}
-              className="particle"
-              style={{
-                left: `${Math.random() * 100}%`,
-                animationDelay: `${Math.random() * 20}s`,
-                animationDuration: `${15 + Math.random() * 10}s`,
-              }}
-            />
-          ))}
-        </div>
+        <Particles />
         <div className="text-center relative z-10">
           <div className="spinner mx-auto mb-8" style={{ width: '60px', height: '60px', borderWidth: '4px' }} />
           <h2 className="text-2xl font-bold text-white mb-2">Loading Your Wrapped</h2>
@@ -184,19 +168,7 @@ export default function WrappedPage() {
   if (error) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-8 relative overflow-hidden">
-        <div className="particles">
-          {mounted && [...Array(10)].map((_, i) => (
-            <div
-              key={i}
-              className="particle opacity-10"
-              style={{
-                left: `${Math.random() * 100}%`,
-                animationDelay: `${Math.random() * 20}s`,
-                animationDuration: `${15 + Math.random() * 10}s`,
-              }}
-            />
-          ))}
-        </div>
+        <Particles />
         <div className="text-center max-w-md relative z-10">
           <div className="text-6xl mb-6">😕</div>
           <h2 className="text-2xl font-bold text-white mb-4 uppercase tracking-tight italic">Oops!</h2>
@@ -256,19 +228,7 @@ export default function WrappedPage() {
       {/* Main Content Wrapper for Capture */}
       <div id="wrapped-content">
         {/* Shared Background Particles */}
-        <div className="particles">
-          {mounted && [...Array(30)].map((_, i) => (
-            <div
-              key={i}
-              className="particle"
-              style={{
-                left: `${Math.random() * 100}%`,
-                animationDelay: `${Math.random() * 20}s`,
-                animationDuration: `${15 + Math.random() * 10}s`,
-              }}
-            />
-          ))}
-        </div>
+        <Particles />
 
         {/* Cards */}
         <section id="welcome" ref={(el) => { sectionRefs.current[0] = el; }}>

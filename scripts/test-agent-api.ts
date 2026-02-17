@@ -9,16 +9,27 @@ import { streamChatWithAgent } from '../lib/chat/elastic-agent';
 dotenv.config({ path: '.env.local' });
 
 async function testAgentAPI() {
-  const esUrl = process.env.ELASTICSEARCH_URL?.replace(':443', '').replace(':9200', '');
+  const esUrl = process.env.ELASTICSEARCH_URL;
   const apiKey = process.env.ELASTICSEARCH_API_KEY;
   const agentId = process.env.ELASTIC_AGENT_ID;
+  const kibanaUrlOverride = process.env.KIBANA_URL;
 
   if (!esUrl || !apiKey || !agentId) {
     console.error('❌ Missing ELASTICSEARCH_URL, ELASTICSEARCH_API_KEY, or ELASTIC_AGENT_ID');
     process.exit(1);
   }
 
-  const kibanaUrl = esUrl.replace('.es.', '.kb.');
+  // Determine Kibana URL
+  let kibanaUrl: string;
+  if (kibanaUrlOverride) {
+    kibanaUrl = kibanaUrlOverride.replace(/\/$/, '');
+  } else {
+    kibanaUrl = esUrl.replace(':443', '').replace(':9200', '').replace('.es.', '.kb.');
+    if (kibanaUrl.includes('localhost')) {
+      kibanaUrl = 'http://localhost:5601';
+    }
+  }
+
   const headers = {
     'Authorization': `ApiKey ${apiKey}`,
     'Content-Type': 'application/json',
@@ -68,7 +79,7 @@ async function testAgentAPI() {
     let contentReceived = false;
     let finalConversationId = '';
 
-    for await (const chunk of streamChatWithAgent(testMessage)) {
+    for await (const chunk of streamChatWithAgent(testMessage, undefined, { includeVegaHint: false })) {
       if (chunk.content) {
         process.stdout.write(chunk.content);
         contentReceived = true;

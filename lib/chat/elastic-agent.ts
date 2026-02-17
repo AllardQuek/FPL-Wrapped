@@ -44,17 +44,29 @@ function toErrorMessage(value: unknown): string {
 export async function* streamChatWithAgent(
   message: string,
   conversationId?: string,
-  options?: { includeVegaHint?: boolean }
+  options?: { includeVegaHint?: boolean; signal?: AbortSignal }
 ): AsyncGenerator<ChatStreamChunk, void, unknown> {
   const esUrl = process.env.ELASTICSEARCH_URL?.replace(':443', '').replace(':9200', '');
   const agentId = process.env.ELASTIC_AGENT_ID;
+  const kibanaUrlOverride = process.env.KIBANA_URL;
 
   if (!esUrl || !agentId) {
     throw new Error('Missing ELASTICSEARCH_URL or ELASTIC_AGENT_ID in environment');
   }
 
-  // Convert Elasticsearch URL to Kibana URL (.es. -> .kb.)
-  const kibanaUrl = esUrl.replace('.es.', '.kb.');
+  // Determine Kibana URL
+  let kibanaUrl: string;
+  if (kibanaUrlOverride) {
+    kibanaUrl = kibanaUrlOverride.replace(/\/$/, ''); // Remove trailing slash
+  } else {
+    // Convert Elasticsearch URL to Kibana URL (.es. -> .kb.)
+    kibanaUrl = esUrl.replace('.es.', '.kb.');
+
+    // Fallback for localhost
+    if (kibanaUrl.includes('localhost')) {
+      kibanaUrl = 'http://localhost:5601';
+    }
+  }
 
   // For this app, always ask the agent to return Vega-Lite when relevant
   const shouldAppendVegaHint = (msg: string) => msg.length > 0;
@@ -113,11 +125,18 @@ export async function* streamChatWithAgent(
       'kbn-xsrf': 'true',
     },
     body: JSON.stringify(requestBody),
+    signal: options?.signal,
   });
 
   if (!response.ok) {
-    const error = await response.text();
-    throw new Error(`Failed to chat with agent: ${response.status} ${error}`);
+    const errorText = await response.text();
+    console.error('Elastic Agent API error details:', {
+      status: response.status,
+      statusText: response.statusText,
+      url: `${kibanaUrl}/api/agent_builder/converse/async`,
+      response: errorText
+    });
+    throw new Error(`Failed to chat with agent: ${response.status} ${errorText}`);
   }
 
   if (!response.body) {
@@ -133,6 +152,11 @@ export async function* streamChatWithAgent(
 
   try {
     while (true) {
+      // Check for abort before each read
+      if (options?.signal?.aborted) {
+        throw new Error('Chat aborted by user');
+      }
+
       const { done, value } = await reader.read();
 
       if (done) {

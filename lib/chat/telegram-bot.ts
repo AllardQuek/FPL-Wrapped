@@ -1,5 +1,8 @@
-import { Telegraf } from 'telegraf';
+import { Telegraf, Markup } from 'telegraf';
 import { streamChatWithAgent } from './elastic-agent';
+import { buildFinalPrompt, hasPersona, getAvailablePersonas } from './prompt';
+import { AVAILABLE_TONES, TONES, TONE_CONFIG, ToneId } from './constants';
+import { PERSONA_MAP } from '../analysis/persona/constants';
 
 const token = process.env.TELEGRAM_BOT_TOKEN;
 
@@ -31,6 +34,8 @@ export function consumeWebhookAck(chatId: number): number | undefined {
 
 if (bot) {
     const conversationIdsByChatId = new Map<number, string>();
+    // Per-chat settings: persona key, tone id.
+    const chatSettingsByChatId = new Map<number, { persona?: string; tone?: string }>();
     const TELEGRAM_CHUNK_LIMIT = 3900;
     const processedUpdates = new Set<number>();
     const MAX_PROCESSED_UPDATES_CACHE = 1000;
@@ -257,6 +262,13 @@ if (bot) {
     async function handleChat(ctx: ChatContext, question: string) {
         const chatId = ctx.chat.id;
         const conversationId = conversationIdsByChatId.get(chatId);
+        // Apply per-chat settings (persona, tone).
+        const settings = chatSettingsByChatId.get(chatId) || {};
+        const promptToSend = buildFinalPrompt(question, { 
+            personaKey: settings.persona, 
+            toneId: settings.tone,
+            includeViz: false 
+        });
 
         // Send an initial "typing" or placeholder message. If the webhook
         // already sent a quick ack, consume it so we edit that message
@@ -274,7 +286,7 @@ if (bot) {
             let lastUpdate = Date.now();
             let latestConversationId = conversationIdForRequest;
 
-            for await (const chunk of streamChatWithAgent(question, conversationIdForRequest)) {
+            for await (const chunk of streamChatWithAgent(promptToSend, conversationIdForRequest, { includeVegaHint: false })) {
                 if (chunk.conversationId) {
                     latestConversationId = chunk.conversationId;
                 }
@@ -435,9 +447,14 @@ if (bot) {
             "If I don't have your data yet, you can index yourself directly:\n" +
             "• `/index_manager <your_id>`\n" +
             "• `/index_league <league_id>`\n\n" +
-            "💬 **Chat:**\n" +
+            "� **Chat:**\n" +
             "Just send me a message directly or use `/chat <question>`\n\n" +
-            "ℹ️ **Missing Data?**\n" +
+            "⚙️ **Settings:**\n" +
+            "Customize my personality and tone:\n" +
+            "• `/set_persona PEP` - Set manager persona (PEP, ARTETA, etc.)\n" +
+            "• `/set_tone roast` - Set tone (balanced, roast, optimist, tactical)\n" +
+            "• `/settings` - View current chat settings\n\n" +
+            "ℹ️ **Missing Data?**" +
             `If commands fail, visit ${onboardUrl} to manually index your data.`
         );
     });
@@ -447,15 +464,98 @@ if (bot) {
         const onboardUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'fpl-wrapped-live.vercel.app'}/onboard`;
         ctx.reply(
             "🔍 **FPL Wrapped Help**\n\n" +
-            "**Commands:**\n" +
+            "**Core Commands:**\n" +
             "• `/chat <question>` - Ask me anything\n" +
             "• `/index_manager <id>` - Index a specific team\n" +
-            "• `/index_league <id>` - Index an entire league\n" +
-            "• `/help` - Show this message\n\n" +
-            "**Missing Data?**\n" +
+            "• `/index_league <id>` - Index an entire league\n\n" +
+            "**Customization:**\n" +
+            "• `/set_persona <key>` - e.g. PEP, ARTETA, MOURINHO\n" +
+            "• `/set_tone <id>` - balanced, roast, optimist, tactical\n" +
+            "• `/settings` - Show current personality settings\n\n" +
+            "**Missing Data?**" +
             "We might not have indexed everyone yet. If you can't get results, index manually here:\n" +
             `${onboardUrl}`
         );
+    });
+
+    // Settings commands: set persona, set tone, charts toggle, show settings
+    bot.command('set_persona', async (ctx) => {
+        const chatId = ctx.chat.id;
+        const arg = ctx.message.text.split(' ')[1]?.toUpperCase();
+        
+        if (!arg) {
+            const personas = getAvailablePersonas();
+            const buttons = personas.map(p => Markup.button.callback(PERSONA_MAP[p]?.name || p, `set_persona:${p}`));
+            // Chunk buttons into rows of 2
+            const rows = [];
+            for (let i = 0; i < buttons.length; i += 2) {
+                rows.push(buttons.slice(i, i + 2));
+            }
+            return ctx.reply('🎭 Select a Manager Persona:', Markup.inlineKeyboard(rows));
+        }
+
+        if (!hasPersona(arg)) {
+            return ctx.reply(`❌ Unknown persona: ${arg}\nAvailable: ${getAvailablePersonas().join(', ')}`);
+        }
+        
+        const existing = chatSettingsByChatId.get(chatId) || {};
+        chatSettingsByChatId.set(chatId, { ...existing, persona: arg });
+        await ctx.reply(`✅ Persona set to ${PERSONA_MAP[arg]?.name || arg}`);
+    });
+
+    bot.command('set_tone', async (ctx) => {
+        const chatId = ctx.chat.id;
+        const arg = ctx.message.text.split(' ')[1]?.toLowerCase();
+
+        if (!arg) {
+            const buttons = TONES.map(t => Markup.button.callback(`${t.icon} ${t.label}`, `set_tone:${t.id}`));
+            // Chunk into rows of 2
+            const rows = [];
+            for (let i = 0; i < buttons.length; i += 2) {
+                rows.push(buttons.slice(i, i + 2));
+            }
+            return ctx.reply('⚡ Select a Response Tone:', Markup.inlineKeyboard(rows));
+        }
+
+        if (!AVAILABLE_TONES.includes(arg as ToneId)) {
+            return ctx.reply(`❌ Unknown tone: ${arg}\nAvailable: ${AVAILABLE_TONES.join(', ')}`);
+        }
+
+        const existing = chatSettingsByChatId.get(chatId) || {};
+        chatSettingsByChatId.set(chatId, { ...existing, tone: arg as ToneId });
+        const config = TONE_CONFIG[arg as ToneId];
+        await ctx.reply(`✅ Tone set to ${config.icon} ${config.label}`);
+    });
+
+    // Handle button callbacks
+    bot.on('callback_query', async (ctx) => {
+        const query = ctx.callbackQuery;
+        const data = query && 'data' in query ? query.data : undefined;
+        const chatId = ctx.chat?.id;
+        if (!chatId || !data) return;
+
+        if (data.startsWith('set_persona:')) {
+            const p = data.split(':')[1];
+            const existing = chatSettingsByChatId.get(chatId) || {};
+            chatSettingsByChatId.set(chatId, { ...existing, persona: p });
+            await ctx.answerCbQuery();
+            await ctx.editMessageText(`✅ Persona set to ${PERSONA_MAP[p]?.name || p}`);
+        } else if (data.startsWith('set_tone:')) {
+            const t = data.split(':')[1] as ToneId;
+            const existing = chatSettingsByChatId.get(chatId) || {};
+            chatSettingsByChatId.set(chatId, { ...existing, tone: t });
+            const config = TONE_CONFIG[t];
+            await ctx.answerCbQuery();
+            await ctx.editMessageText(`✅ Tone set to ${config.icon} ${config.label}`);
+        }
+    });
+
+    bot.command('settings', async (ctx) => {
+        const chatId = ctx.chat.id;
+        const s = chatSettingsByChatId.get(chatId) || {};
+        const personaName = s.persona ? (PERSONA_MAP[s.persona]?.name || s.persona) : 'None';
+        const toneConfig = s.tone ? TONE_CONFIG[s.tone as ToneId] : TONE_CONFIG.balanced;
+        await ctx.reply(`⚙️ **Chat Settings**\n\n🎭 **Persona:** ${personaName}\n⚡ **Tone:** ${toneConfig.icon} ${toneConfig.label}\n\nUse /set_persona or /set_tone to change these.`);
     });
 
     // Handle /chat command

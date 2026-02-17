@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic'; // Disable static optimization
 
 export async function POST(req: NextRequest) {
   try {
-    const { question, conversationId, includeVegaHint } = await req.json();
+    const { question, conversationId } = await req.json();
 
     if (!question) {
       return new Response(JSON.stringify({ error: 'Question required' }), {
@@ -20,7 +20,9 @@ export async function POST(req: NextRequest) {
     const stream = new ReadableStream({
       async start(controller) {
         try {
-          for await (const chunk of streamChatWithAgent(question, conversationId, { includeVegaHint })) {
+          for await (const chunk of streamChatWithAgent(question, conversationId, { 
+            signal: req.signal 
+          })) {
             // Send SSE formatted data
             const data = `data: ${JSON.stringify(chunk)}\n\n`;
             controller.enqueue(encoder.encode(data));
@@ -30,12 +32,30 @@ export async function POST(req: NextRequest) {
           controller.enqueue(encoder.encode('data: [DONE]\n\n'));
           controller.close();
         } catch (error: any) {
+          // Don't send error if it was a user abort
+          if (req.signal.aborted || error.name === 'AbortError' || error.message?.includes('aborted')) {
+            console.log('Chat request aborted by client');
+            try {
+              controller.close();
+            } catch {
+              // Ignore already closed errors
+            }
+            return;
+          }
+
           console.error('Chat stream error:', error);
           const errorData = `data: ${JSON.stringify({ error: error.message, done: true })}\n\n`;
-          controller.enqueue(encoder.encode(errorData));
-          controller.close();
+          try {
+            controller.enqueue(encoder.encode(errorData));
+            controller.close();
+          } catch {
+            // Ignore if stream is already closed
+          }
         }
       },
+      cancel() {
+        console.log('Chat stream cancelled by consumer');
+      }
     });
 
     return new Response(stream, {

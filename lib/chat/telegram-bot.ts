@@ -1,8 +1,9 @@
 import { Telegraf, Markup } from 'telegraf';
 import { streamChatWithAgent } from './elastic-agent';
-import { buildFinalPrompt, hasPersona, getAvailablePersonas } from './prompt';
+import { buildFinalPrompt } from './prompt';
 import { AVAILABLE_TONES, TONES, TONE_CONFIG, ToneId } from './constants';
 import { PERSONA_MAP } from '../analysis/persona/constants';
+import { saveChartSpec } from './chart-storage';
 
 const featuredPersonaKeys = ['PEP', 'ARTETA', 'AMORIM', 'MOURINHO'] as const;
 type FeaturedPersona = (typeof featuredPersonaKeys)[number];
@@ -146,6 +147,11 @@ if (bot) {
         let tokenIndex = 0;
         const nextToken = () => `@@TG_TOKEN_${tokenIndex++}@@`;
 
+        // Handle Vega-Lite blocks separately to hide them from the main text
+        text = text.replace(/```(?:vega-lite|vega)\n([\s\S]*?)(?:```|$)/gi, () => {
+            return ''; // Hide it
+        });
+
         text = text.replace(/```([a-zA-Z0-9_-]+)?\n([\s\S]*?)```/g, (_match, _lang, code) => {
             const token = nextToken();
             tokenMap.set(token, `<pre><code>${escapeHtml(String(code).trim())}</code></pre>`);
@@ -228,11 +234,12 @@ if (bot) {
         return chunks.length > 0 ? chunks : ['…'];
     }
 
-    async function safeEditMessageHtml(ctx: ChatContext, chatId: number, messageId: number, html: string) {
+    async function safeEditMessageHtml(ctx: ChatContext, chatId: number, messageId: number, html: string, extra: Record<string, unknown> = {}) {
         try {
             await ctx.telegram.editMessageText(chatId, messageId, undefined, html, {
                 parse_mode: 'HTML',
                 disable_web_page_preview: true,
+                ...extra
             });
             return;
         } catch (error: unknown) {
@@ -241,21 +248,22 @@ if (bot) {
                 return;
             }
             console.error('[Telegram] HTML edit failed, falling back to plain text:', err?.description || err?.message);
-            await ctx.telegram.editMessageText(chatId, messageId, undefined, stripHtmlTags(html)).catch(() => { });
+            await ctx.telegram.editMessageText(chatId, messageId, undefined, stripHtmlTags(html), extra).catch(() => { });
         }
     }
 
-    async function safeReplyHtml(ctx: ChatContext, html: string) {
+    async function safeReplyHtml(ctx: ChatContext, html: string, extra: Record<string, unknown> = {}) {
         try {
             await ctx.reply(html, {
                 parse_mode: 'HTML',
                 disable_web_page_preview: true,
+                ...extra
             });
             return;
         } catch (error: unknown) {
             const err = error as { description?: string; message?: string };
             console.error('[Telegram] HTML reply failed, falling back to plain text:', err?.description || err?.message);
-            await ctx.reply(stripHtmlTags(html)).catch(() => { });
+            await ctx.reply(stripHtmlTags(html), extra).catch(() => { });
         }
     }
 
@@ -270,7 +278,7 @@ if (bot) {
         const promptToSend = buildFinalPrompt(question, { 
             personaKey: settings.persona, 
             toneId: settings.tone,
-            includeViz: false 
+            includeViz: true 
         });
 
         // Send an initial "typing" or placeholder message. If the webhook
@@ -289,7 +297,7 @@ if (bot) {
             let lastUpdate = Date.now();
             let latestConversationId = conversationIdForRequest;
 
-            for await (const chunk of streamChatWithAgent(promptToSend, conversationIdForRequest, { includeVegaHint: false })) {
+            for await (const chunk of streamChatWithAgent(promptToSend, conversationIdForRequest, { includeVegaHint: true })) {
                 if (chunk.conversationId) {
                     latestConversationId = chunk.conversationId;
                 }
@@ -343,6 +351,26 @@ if (bot) {
                 conversationIdsByChatId.set(chatId, latestConversationId);
             }
 
+            // Check for charts in the final content
+            const vegaMatch = fullContent.match(/```(?:vega-lite|vega)\n([\s\S]*?)```/i);
+            const rawAppUrl = process.env.NEXT_PUBLIC_APP_URL || 'fpl-wrapped-live.vercel.app';
+            const appUrl = rawAppUrl.startsWith('http') ? rawAppUrl : `https://${rawAppUrl}`;
+            const extra: Record<string, unknown> = {};
+
+            if (vegaMatch) {
+                try {
+                    const spec = vegaMatch[1];
+                    const chartId = await saveChartSpec(spec, String(chatId));
+                    const chartUrl = `${appUrl}/chat/chart/${chartId}`;
+                    
+                    extra.reply_markup = Markup.inlineKeyboard([
+                        [Markup.button.webApp('📊 View Interactive Chart', chartUrl)]
+                    ]).reply_markup;
+                } catch (err) {
+                    console.error('[Telegram] Failed to save/link chart:', err);
+                }
+            }
+
             // Final update with chunked HTML-rendered message
             const finalHtml = renderTelegramHtml(fullContent);
             const finalChunks = splitTelegramMessage(finalHtml);
@@ -351,11 +379,14 @@ if (bot) {
                 ctx,
                 chatId,
                 placeholder.message_id,
-                finalChunks[0]
+                finalChunks[0],
+                extra
             );
 
             for (let i = 1; i < finalChunks.length; i++) {
-                await safeReplyHtml(ctx, finalChunks[i]);
+                // For subsequent chunks, we only attach the button to the last one
+                const chunkExtra = (i === finalChunks.length - 1) ? extra : {};
+                await safeReplyHtml(ctx, finalChunks[i], chunkExtra);
             }
         } catch (error: unknown) {
             console.error('Telegram bot error:', error);
@@ -442,7 +473,6 @@ if (bot) {
 
     // Handle start command
     bot.start(async (ctx) => {
-        const chatId = ctx.chat.id;
         const onboardUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'fpl-wrapped-live.vercel.app'}/onboard`;
         const html = renderTelegramHtml(
             "👋 Welcome to FPL Wrapped Chat!\n\n" +
@@ -468,7 +498,6 @@ if (bot) {
     // Handle help command
     bot.help(async (ctx) => {
         console.log('[Telegram] help handler invoked for chat', ctx.chat?.id);
-        const chatId = ctx.chat.id;
         const onboardUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'fpl-wrapped-live.vercel.app'}/onboard`;
         const html = renderTelegramHtml(
             "🔍 **FPL Wrapped Help**\n\n" +

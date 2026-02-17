@@ -115,9 +115,24 @@ export function getGameweekDecisionsMapping(): Record<string, unknown> {
 }
 
 /**
+ * Mapping for temporary chart storage (for Telegram Mini Apps)
+ */
+export function getChartStorageMapping(): Record<string, unknown> {
+  return {
+    properties: {
+      chart_id: { type: 'keyword' },
+      spec: { type: 'text', index: false }, // Store full JSON but don't index it for search
+      chat_id: { type: 'keyword' },
+      expires_at: { type: 'date' },
+      '@timestamp': { type: 'date' },
+    }
+  };
+}
+
+/**
  * Create the gameweek decisions index if it doesn't exist
  */
-export async function createIndexIfNotExists(indexName: string): Promise<boolean> {
+export async function createIndexIfNotExists(indexName: string, mappingType: 'decisions' | 'charts' = 'decisions'): Promise<boolean> {
   const client = getESClient();
   if (!client) {
     console.warn('Elasticsearch not available, skipping index creation');
@@ -147,6 +162,8 @@ export async function createIndexIfNotExists(indexName: string): Promise<boolean
       isServerless = true;
     }
 
+    const mapping = mappingType === 'charts' ? getChartStorageMapping() : getGameweekDecisionsMapping();
+
     // Create index with appropriate settings
     const indexConfig: {
       index: string;
@@ -158,7 +175,7 @@ export async function createIndexIfNotExists(indexName: string): Promise<boolean
       };
     } = {
       index: indexName,
-      mappings: getGameweekDecisionsMapping(),
+      mappings: mapping,
     };
 
     // Only add settings if NOT serverless

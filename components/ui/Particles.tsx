@@ -2,12 +2,17 @@
 
 import { useState, useEffect } from 'react';
 
-export function Particles() {
+interface ParticlesProps {
+  className?: string;
+  quantity?: number;
+}
+
+export function Particles({ className = '', quantity = 20 }: ParticlesProps) {
   const [particles, setParticles] = useState<Array<{ left: number; delay: number; duration: number }>>([]);
 
   useEffect(() => {
     const generateParticles = () => {
-      setParticles(Array.from({ length: 20 }, () => ({
+      setParticles(Array.from({ length: quantity }, () => ({
         left: Math.random() * 100,
         delay: Math.random() * 20,
         duration: 15 + Math.random() * 10,
@@ -18,10 +23,10 @@ export function Particles() {
     // and ensure the update happens in the next frame after mounting
     const rafId = requestAnimationFrame(generateParticles);
     return () => cancelAnimationFrame(rafId);
-  }, []);
+  }, [quantity]);
 
   return (
-    <div className="particles">
+    <div className={`particles ${className}`}>
       {particles.map((particle, i) => (
         <div
           key={i}

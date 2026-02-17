@@ -220,19 +220,59 @@ export function prepareSpec(parsed: unknown): { safeSpec: VisualizationSpec; tit
       safeSpec.padding = safeSpec.padding !== undefined ? safeSpec.padding : FPL_VEGA_THEME.padding;
       safeSpec.autosize = safeSpec.autosize || (FPL_VEGA_THEME.autosize as Record<string, unknown>);
 
-      // Mobile Optimization: Ensure tooltips are enabled at the spec level for single-tap on mobile
-      if (!(safeSpec as any).encoding) (safeSpec as any).encoding = {};
-      if (!(safeSpec as any).encoding.tooltip) {
-        (safeSpec as any).encoding.tooltip = { field: '*', type: 'nominal' }; // fallback to show all fields
-      }
-
-      // Mobile Optimization: Try to force labels on bars if not present
-      if (safeSpec.mark && typeof safeSpec.mark !== 'string') {
-        const m = safeSpec.mark as Record<string, unknown>;
-        if (m.type === 'bar' && !m.label) {
-          m.label = { show: true, position: 'top', color: 'white', fontSize: 9 };
+      /**
+       * Mobile/UX Optimization: Recursively apply readability defaults
+       * - Ensures tooltips are present even if not defined (enables mobile tap-to-see)
+       * - Forces text labels on bars for at-a-glance reading
+       */
+      const applyUXOptimizations = (obj: unknown) => {
+        if (!obj || typeof obj !== 'object' || obj === null) return;
+        
+        if (Array.isArray(obj)) {
+          obj.forEach(applyUXOptimizations);
+          return;
         }
-      }
+
+        const o = obj as Record<string, unknown>;
+
+        // Handle unit specs (objects with mark/encoding)
+        if (o.mark) {
+          // 1. Ensure tooltips are enabled for this mark
+          if (typeof o.mark === 'string') {
+            o.mark = { type: o.mark, tooltip: true };
+          } else if (typeof o.mark === 'object') {
+            (o.mark as Record<string, unknown>).tooltip = true;
+          }
+
+          // 2. Force text labels on bars for mobile readability
+          const markType = typeof o.mark === 'string' 
+            ? o.mark 
+            : (o.mark as Record<string, unknown>).type;
+
+          if (markType === 'bar') {
+            const m = typeof o.mark === 'string' ? {} : (o.mark as Record<string, unknown>);
+            if (!m.label) {
+              m.label = { show: true, position: 'top', color: 'white', fontSize: 9 };
+              if (typeof o.mark === 'string') o.mark = { type: 'bar', ...m };
+            }
+          }
+
+          // 3. Ensure encoding has a tooltip fallback if missing
+          if (o.encoding && typeof o.encoding === 'object') {
+            const enc = o.encoding as Record<string, unknown>;
+            if (!enc.tooltip) {
+              enc.tooltip = { field: '*', type: 'nominal' };
+            }
+          }
+        }
+
+        // Recursively check children (for layers, facets, concats)
+        for (const key of ['layer', 'hconcat', 'vconcat', 'concat', 'spec']) {
+          if (o[key]) applyUXOptimizations(o[key]);
+        }
+      };
+
+      applyUXOptimizations(safeSpec);
 
       return { safeSpec, title };
 }

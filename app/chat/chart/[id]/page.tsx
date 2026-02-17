@@ -1,5 +1,5 @@
 import { getChartSpec } from '@/lib/chat/chart-storage';
-import { ChartView } from './ChartView';
+import { ChartView } from '@/app/chat/chart/[id]/ChartView';
 import { notFound } from 'next/navigation';
 
 interface PageProps {

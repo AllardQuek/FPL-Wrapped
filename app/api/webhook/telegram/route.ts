@@ -4,7 +4,7 @@ import { bot, registerWebhookAck } from '@/lib/chat/telegram-bot';
 
 export const runtime = 'nodejs';
 // Allow longer background processing on Vercel (seconds). Adjust to your plan limits.
-export const maxDuration = 60;
+export const maxDuration = 180;
 
 export async function POST(req: NextRequest) {
     if (!bot) {

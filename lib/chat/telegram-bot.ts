@@ -233,22 +233,88 @@ if (bot) {
         return chunks.length > 0 ? chunks : ['…'];
     }
 
-    async function safeEditMessageHtml(ctx: ChatContext, chatId: number, messageId: number, html: string, extra: Record<string, unknown> = {}) {
-        try {
-            await ctx.telegram.editMessageText(chatId, messageId, undefined, html, {
-                parse_mode: 'HTML',
-                disable_web_page_preview: true,
-                ...extra
-            });
-            return;
-        } catch (error: unknown) {
-            const err = error as { response?: { error_code?: number }; message?: string; description?: string };
-            if (err?.response?.error_code === 429 || err?.message?.includes('too many requests')) {
-                return;
+    const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+    async function safeEditMessageHtml(
+        ctx: ChatContext,
+        chatId: number,
+        messageId: number,
+        html: string,
+        extra: Record<string, unknown> = {}
+    ): Promise<boolean> {
+        const htmlExtra = {
+            parse_mode: 'HTML' as const,
+            disable_web_page_preview: true,
+            ...extra
+        };
+
+        let lastError: unknown;
+
+        for (let attempt = 0; attempt < 3; attempt++) {
+            try {
+                await ctx.telegram.editMessageText(chatId, messageId, undefined, html, htmlExtra);
+                return true;
+            } catch (error: unknown) {
+                lastError = error;
+                const err = error as {
+                    response?: { error_code?: number; parameters?: { retry_after?: number } };
+                    message?: string;
+                    description?: string;
+                };
+                const message = (err?.description || err?.message || '').toLowerCase();
+
+                if (message.includes('message is not modified')) {
+                    return true;
+                }
+
+                const isRateLimited = err?.response?.error_code === 429 || message.includes('too many requests');
+                if (isRateLimited && attempt < 2) {
+                    const retryAfterSeconds = err?.response?.parameters?.retry_after;
+                    const delayMs = Math.max(1200, (retryAfterSeconds ?? 1) * 1000);
+                    await wait(delayMs);
+                    continue;
+                }
+
+                break;
             }
-            console.error('[Telegram] HTML edit failed, falling back to plain text:', err?.description || err?.message);
-            await ctx.telegram.editMessageText(chatId, messageId, undefined, stripHtmlTags(html), extra).catch(() => { });
         }
+
+        const lastErr = lastError as { description?: string; message?: string } | undefined;
+        console.error('[Telegram] HTML edit failed, falling back to plain text:', lastErr?.description || lastErr?.message);
+
+        for (let attempt = 0; attempt < 2; attempt++) {
+            try {
+                await ctx.telegram.editMessageText(chatId, messageId, undefined, stripHtmlTags(html), {
+                    disable_web_page_preview: true,
+                    ...extra
+                });
+                return true;
+            } catch (fallbackError: unknown) {
+                const err = fallbackError as {
+                    response?: { error_code?: number; parameters?: { retry_after?: number } };
+                    message?: string;
+                    description?: string;
+                };
+                const message = (err?.description || err?.message || '').toLowerCase();
+
+                if (message.includes('message is not modified')) {
+                    return true;
+                }
+
+                const isRateLimited = err?.response?.error_code === 429 || message.includes('too many requests');
+                if (isRateLimited && attempt < 1) {
+                    const retryAfterSeconds = err?.response?.parameters?.retry_after;
+                    const delayMs = Math.max(1200, (retryAfterSeconds ?? 1) * 1000);
+                    await wait(delayMs);
+                    continue;
+                }
+
+                console.error('[Telegram] Plain-text edit fallback failed:', err?.description || err?.message);
+                break;
+            }
+        }
+
+        return false;
     }
 
     async function safeReplyHtml(ctx: ChatContext, html: string, extra: Record<string, unknown> = {}) {
@@ -407,12 +473,15 @@ if (bot) {
 
                 // Conversation may have expired server-side; retry once without conversation_id.
                 conversationIdsByChatId.delete(chatId);
-                await ctx.telegram.editMessageText(
+                const sessionResetOk = await safeEditMessageHtml(
+                    ctx,
                     chatId,
                     placeholder.message_id,
-                    undefined,
-                    '🔄 Session expired, starting a new chat...'
+                    renderTelegramHtml('🔄 Session expired, starting a new chat...')
                 );
+                if (!sessionResetOk) {
+                    await safeReplyHtml(ctx, renderTelegramHtml('🔄 Session expired, starting a new chat...'));
+                }
                 await streamResponse(undefined);
             }
 
@@ -440,13 +509,17 @@ if (bot) {
             const finalHtml = renderTelegramHtml(fullContent);
             const finalChunks = splitTelegramMessage(finalHtml);
 
-            await safeEditMessageHtml(
+            const finalEditOk = await safeEditMessageHtml(
                 ctx,
                 chatId,
                 placeholder.message_id,
                 finalChunks[0],
                 extra
             );
+
+            if (!finalEditOk) {
+                await safeReplyHtml(ctx, finalChunks[0], extra);
+            }
 
             for (let i = 1; i < finalChunks.length; i++) {
                 // For subsequent chunks, we only attach the button to the last one
@@ -471,14 +544,20 @@ if (bot) {
                 const separator = '────────────────────';
                 const finalHtml = `${rendered}\n\n${separator}\n${userFriendlyMsg}`;
                 const previewChunk = splitTelegramMessage(finalHtml)[0];
-                await safeEditMessageHtml(ctx, chatId, placeholder.message_id, previewChunk);
+                const partialEditOk = await safeEditMessageHtml(ctx, chatId, placeholder.message_id, previewChunk);
+                if (!partialEditOk) {
+                    await safeReplyHtml(ctx, previewChunk);
+                }
             } else {
-                await ctx.telegram.editMessageText(
+                const errorEditOk = await safeEditMessageHtml(
+                    ctx,
                     chatId,
                     placeholder.message_id,
-                    undefined,
-                    userFriendlyMsg
-                ).catch(() => {});
+                    renderTelegramHtml(userFriendlyMsg)
+                );
+                if (!errorEditOk) {
+                    await ctx.reply(userFriendlyMsg).catch(() => {});
+                }
             }
         } finally {
             chatProcessing.delete(chatId);
@@ -579,6 +658,11 @@ if (bot) {
             "• `/set_persona PEP` - Set manager persona (PEP, ARTETA, etc.)\n" +
             "• `/set_tone roast` - Set tone (balanced, roast, optimist, delulu)\n" +
             "• `/settings` - View current chat settings\n\n" +
+            "🛠️ **Troubleshooting:**\n" +
+            "If I hang or don't respond, try:\n" +
+            "• `/reset` — reset the conversation for your chat\n" +
+            "• Send a follow-up message (sometimes the request didn't reach me)\n" +
+            "• Restart the bot (ask the bot owner)\n\n" +
             "ℹ️ **Missing Data?**\n" +
                 `If commands fail, visit ${onboardUrl} to manually index your data.` +
             "\n\n" +
@@ -602,6 +686,11 @@ if (bot) {
             "• `/set_persona [manager]` - e.g. PEP, ARTETA, MOURINHO\n" +
             "• `/set_tone [tone]` - balanced, roast, optimist, delulu\n" +
             "• `/settings` - Show current personality settings\n\n" +
+            "🛠️ **Troubleshooting:**\n" +
+            "If I hang or don't respond, try:\n" +
+            "• `/reset` — reset the conversation for your chat\n" +
+            "• Send a follow-up message\n" +
+            "• Ask the bot owner to restart the bot\n\n" +
             "**Missing Data?** \n" +
             "We might not have indexed everyone yet. If you can't get results, index manually here:\n" +
             `${onboardUrl}` +

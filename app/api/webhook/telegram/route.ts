@@ -36,17 +36,19 @@ export async function POST(req: NextRequest) {
                 );
 
                 if (isChatMessage) {
-                    // Fire-and-forget the immediate ack so we don't block the
-                    // webhook response waiting on Telegram API latency.
-                    bot.telegram.sendMessage(chatId, '🤔 Thinking...')
-                        .then((msg) => {
+                        // Send and register an immediate ack BEFORE handling the
+                        // update to avoid a race where both the webhook and the bot
+                        // send a "Thinking..." message. Awaiting here keeps the
+                        // behavior deterministic; the webhook handler still returns
+                        // quickly because sending is typically fast.
+                        try {
+                            const msg = await bot.telegram.sendMessage(chatId, '🤔 Thinking...');
                             if (msg && (msg as any).message_id) {
                                 registerWebhookAck(chatId, (msg as any).message_id);
                             }
-                        })
-                        .catch((err) => {
+                        } catch (err) {
                             console.error('Failed to send immediate ack to Telegram user:', err);
-                        });
+                        }
                 }
             }
         } catch (err) {

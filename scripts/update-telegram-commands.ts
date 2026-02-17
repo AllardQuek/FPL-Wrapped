@@ -21,6 +21,7 @@ const commands = [
     { command: 'set_persona', description: 'Set manager persona' },
     { command: 'set_tone', description: 'Set the tone' },
     { command: 'settings', description: 'Show current settings' },
+    { command: 'reset', description: 'Reset your chat session' },
     { command: 'help', description: 'Show help' },
     { command: 'start', description: 'Start the bot' }
 ];

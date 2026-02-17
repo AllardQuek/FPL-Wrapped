@@ -43,9 +43,12 @@ export function consumeWebhookAck(chatId: number): number | undefined {
 
 if (bot) {
     const conversationIdsByChatId = new Map<number, string>();
+    // Prevent concurrent processing for the same chat to avoid conversation races
+    const chatProcessing = new Set<number>();
     // Per-chat settings: persona key, tone id.
     const chatSettingsByChatId = new Map<number, { persona?: string; tone?: string }>();
     const TELEGRAM_CHUNK_LIMIT = 3900;
+    const STREAM_INACTIVITY_TIMEOUT_MS = 30_000; // abort stream if no chunks for 30s
     const processedUpdates = new Set<number>();
     const MAX_PROCESSED_UPDATES_CACHE = 1000;
 
@@ -268,6 +271,11 @@ if (bot) {
      */
     async function handleChat(ctx: ChatContext, question: string) {
         const chatId = ctx.chat.id;
+        if (chatProcessing.has(chatId)) {
+            await ctx.reply('⏳ Please wait — I am still processing your previous request.');
+            return;
+        }
+        chatProcessing.add(chatId);
         const conversationId = conversationIdsByChatId.get(chatId);
         // Apply per-chat settings (persona, tone).
         const settings = chatSettingsByChatId.get(chatId) || {};
@@ -294,61 +302,95 @@ if (bot) {
             let latestConversationId = conversationIdForRequest;
             let currentStatus = 'Thinking...';
 
-            for await (const chunk of streamChatWithAgent(promptToSend, conversationIdForRequest, { includeVegaHint: true })) {
-                if (chunk.conversationId) {
-                    latestConversationId = chunk.conversationId;
-                }
+            const ac = new AbortController();
+            let lastChunkAt = Date.now();
 
-                if (chunk.reasoning) {
-                    // Extract a helpful snippet or just use the whole line if it's short
-                    const r = chunk.reasoning.trim();
-                    if (r.length > 5) {
-                        const snippet = r.length > 50 ? `${r.substring(0, 47)}...` : r;
-                        currentStatus = `Analyzing: ${snippet.toLowerCase()}`;
+            const inactivityChecker = setInterval(() => {
+                if (Date.now() - lastChunkAt > STREAM_INACTIVITY_TIMEOUT_MS) {
+                    console.warn(`[Telegram] stream inactive for ${STREAM_INACTIVITY_TIMEOUT_MS}ms, aborting`);
+                    try {
+                        ac.abort();
+                    } catch (e) {
+                        // ignore
+                    }
+                }
+            }, 1000).unref?.();
+
+            try {
+                for await (const chunk of streamChatWithAgent(promptToSend, conversationIdForRequest, { includeVegaHint: true, signal: ac.signal })) {
+                    lastChunkAt = Date.now();
+
+                    if (chunk.conversationId) {
+                        latestConversationId = chunk.conversationId;
+                    }
+
+                    // Lightweight chunk metadata logging to aid debugging
+                    try {
+                        console.debug('[Telegram] stream chunk', {
+                            conversationId: chunk.conversationId,
+                            hasContent: !!chunk.content,
+                            hasToolCall: !!chunk.toolCall,
+                            hasToolResult: !!chunk.toolResult,
+                            hasReasoning: !!chunk.reasoning,
+                            hasError: !!chunk.error
+                        });
+                    } catch (_) { }
+
+                    if (chunk.reasoning) {
+                        const r = chunk.reasoning.trim();
+                        if (r.length > 5) {
+                            const snippet = r.length > 50 ? `${r.substring(0, 47)}...` : r;
+                            currentStatus = `Analyzing: ${snippet.toLowerCase()}`;
+                        }
+                    }
+
+                    if (chunk.toolCall) {
+                        const toolName = chunk.toolCall.tool_id.replace(/_/g, ' ');
+                        currentStatus = `Using tool: ${toolName}`;
+                    }
+
+                    if (chunk.toolResult) {
+                        currentStatus = 'Processing results...';
+                        try { console.debug('[Telegram] toolResult chunk', chunk.toolResult); } catch (_) { }
+                    }
+
+                    if (chunk.content) {
+                        fullContent += chunk.content;
+                    }
+
+                    // Telegram edit limit is ~1 per second.
+                    // We buffer chunks to avoid hitting rate limits.
+                    if (Date.now() - lastUpdate > 1200) {
+                        const rendered = renderTelegramHtml(fullContent);
+                        const separator = '────────────────────';
+                        const statusHtml = `\n\n${separator}\n<i>⚡️ ${currentStatus}</i>`;
+                        const previewHtml = rendered ? `${rendered}${statusHtml}` : `<i>⚡️ ${currentStatus}</i>`;
+                        const previewChunk = splitTelegramMessage(previewHtml)[0];
+                        await safeEditMessageHtml(ctx, chatId, placeholder.message_id, previewChunk);
+                        lastUpdate = Date.now();
+                    }
+
+                    if (chunk.error) {
+                        throw new Error(chunk.error);
                     }
                 }
 
-                if (chunk.toolCall) {
-                    const toolName = chunk.toolCall.tool_id.replace(/_/g, ' ');
-                    currentStatus = `Using tool: ${toolName}`;
+                return { fullContent, latestConversationId };
+            } catch (err) {
+                // If abort signal caused termination, provide a clearer error
+                if ((err as Error)?.name === 'AbortError' || ac.signal.aborted) {
+                    throw new Error('Stream inactivity timeout (no data received)');
                 }
-
-                if (chunk.toolResult) {
-                    currentStatus = 'Processing results...';
-                }
-
-                if (chunk.content) {
-                    fullContent += chunk.content;
-                }
-
-                // Telegram edit limit is ~1 per second.
-                // We buffer chunks to avoid hitting rate limits.
-                if (Date.now() - lastUpdate > 1200) {
-                    const rendered = renderTelegramHtml(fullContent);
-                    
-                    // Segregate status with a subtle line and specific emoji
-                    const separator = '────────────────────';
-                    const statusHtml = `\n\n${separator}\n<i>⚡️ ${currentStatus}</i>`;
-                    
-                    const previewHtml = rendered 
-                        ? `${rendered}${statusHtml}` 
-                        : `<i>⚡️ ${currentStatus}</i>`;
-                    
-                    const previewChunk = splitTelegramMessage(previewHtml)[0];
-                    await safeEditMessageHtml(ctx, chatId, placeholder.message_id, previewChunk);
-                    lastUpdate = Date.now();
-                }
-
-                if (chunk.error) {
-                    throw new Error(chunk.error);
-                }
+                throw err;
+            } finally {
+                clearInterval(inactivityChecker as unknown as number);
             }
-
-            return { fullContent, latestConversationId };
         };
 
         try {
             let result;
+
+            console.debug(`[Telegram] starting stream for chat ${chatId} with conversationId=${conversationId}`);
 
             try {
                 result = await streamResponse(conversationId);
@@ -371,6 +413,7 @@ if (bot) {
             const { fullContent, latestConversationId } = result;
 
             if (latestConversationId) {
+                console.debug(`[Telegram] storing conversationId for chat ${chatId}: ${latestConversationId}`);
                 conversationIdsByChatId.set(chatId, latestConversationId);
             }
 
@@ -414,10 +457,20 @@ if (bot) {
         } catch (error: unknown) {
             console.error('Telegram bot error:', error);
             const errStr = toErrorMessage(error);
-            
-            const userFriendlyMsg = isServiceDownError(errStr)
+
+            // If the stream aborted due to inactivity, clear stored conversation id
+            if (errStr.toLowerCase().includes('inactivity timeout') || errStr.toLowerCase().includes('no data received')) {
+                console.warn(`[Telegram] clearing conversationId for chat ${chatId} due to stream inactivity`);
+                conversationIdsByChatId.delete(chatId);
+            }
+
+            let userFriendlyMsg = isServiceDownError(errStr)
                 ? SERVICE_DOWN_MESSAGE
                 : `❌ Sorry, I encountered an error: ${errStr}`;
+
+            if (errStr.toLowerCase().includes('inactivity timeout') || errStr.toLowerCase().includes('no data received')) {
+                userFriendlyMsg = '❌ Request timed out while waiting for a response. I reset the session — please send your message again.';
+            }
 
             await ctx.telegram.editMessageText(
                 chatId,
@@ -425,6 +478,8 @@ if (bot) {
                 undefined,
                 userFriendlyMsg
             ).catch(() => {});
+        } finally {
+            chatProcessing.delete(chatId);
         }
     }
 
@@ -645,6 +700,13 @@ if (bot) {
         await safeReplyHtml(ctx, html);
     });
 
+    // Allow users to reset the current conversation for their chat
+    bot.command('reset', async (ctx) => {
+        const chatId = ctx.chat.id;
+        conversationIdsByChatId.delete(chatId);
+        await ctx.reply('✅ Conversation reset. I will start fresh on your next message.');
+    });
+
     // Removed explicit `/chat` command — users can just send messages.
 
     // Handle /index_manager command
@@ -679,6 +741,7 @@ if (bot) {
                 { command: 'set_persona', description: 'Set manager persona' },
                 { command: 'set_tone', description: 'Set the tone' },
                 { command: 'settings', description: 'Show current settings' },
+                { command: 'reset', description: 'Reset your chat session' },
                 { command: 'help', description: 'Show help' }
             ]);
             console.log('[Telegram] setMyCommands applied');

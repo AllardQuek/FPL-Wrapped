@@ -23,13 +23,17 @@ export async function GET(
     // Generate the season summary
     const summary = generateSeasonSummary(data);
 
-    // Respect `for_chat` query param: if truthy, remove `allPlayers` from the response
+    // Respect `for_chat` query param: if truthy, remove large fields not needed for chat
     const forChatParam = request.nextUrl?.searchParams.get('for_chat');
     const forChat = forChatParam === '1' || forChatParam === 'true';
 
-    if (forChat && summary && typeof summary === 'object' && 'allPlayers' in (summary as any)) {
+    if (forChat && summary && typeof summary === 'object') {
       const pared = { ...(summary as any) };
+      // Remove heavy or verbose sections not required for chat consumers
       delete pared.allPlayers;
+      delete pared.transferAnalyses;
+      delete pared.captaincyAnalyses;
+      delete pared.benchAnalyses;
       return NextResponse.json(pared);
     }
 

@@ -4,6 +4,9 @@ import { buildFinalPrompt, hasPersona, getAvailablePersonas } from './prompt';
 import { AVAILABLE_TONES, TONES, TONE_CONFIG, ToneId } from './constants';
 import { PERSONA_MAP } from '../analysis/persona/constants';
 
+const featuredPersonaKeys = ['PEP', 'ARTETA', 'AMORIM', 'MOURINHO'] as const;
+type FeaturedPersona = (typeof featuredPersonaKeys)[number];
+
 const token = process.env.TELEGRAM_BOT_TOKEN;
 
 if (!token) {
@@ -439,8 +442,9 @@ if (bot) {
 
     // Handle start command
     bot.start(async (ctx) => {
+        const chatId = ctx.chat.id;
         const onboardUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'fpl-wrapped-live.vercel.app'}/onboard`;
-        await safeReplyHtml(ctx, renderTelegramHtml(
+        const html = renderTelegramHtml(
             "👋 Welcome to FPL Wrapped Chat!\n\n" +
             "I'm your AI assistant for all things Fantasy Premier League.\n\n" +
             "⚡ **Quick Start:**\n" +
@@ -456,14 +460,17 @@ if (bot) {
             "• `/settings` - View current chat settings\n\n" +
             "ℹ️ **Missing Data?**\n" +
             `If commands fail, visit ${onboardUrl} to manually index your data.`
-        ));
+        );
+
+        await safeReplyHtml(ctx, html);
     });
 
     // Handle help command
     bot.help(async (ctx) => {
         console.log('[Telegram] help handler invoked for chat', ctx.chat?.id);
+        const chatId = ctx.chat.id;
         const onboardUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'fpl-wrapped-live.vercel.app'}/onboard`;
-        await safeReplyHtml(ctx, renderTelegramHtml(
+        const html = renderTelegramHtml(
             "🔍 **FPL Wrapped Help**\n\n" +
             "**Core Commands:**\n" +
             "• `/chat <question>` - Ask me anything\n" +
@@ -476,17 +483,21 @@ if (bot) {
             "**Missing Data?** \n" +
             "We might not have indexed everyone yet. If you can't get results, index manually here:\n" +
             `${onboardUrl}`
-        ));
+        );
+
+        await safeReplyHtml(ctx, html);
     });
 
     // Settings commands: set persona, set tone, charts toggle, show settings
     bot.command('set_persona', async (ctx) => {
         const chatId = ctx.chat.id;
         const arg = ctx.message.text.split(' ')[1]?.toUpperCase();
-        
+
+        // static command — reply directly (webhook should not have sent an ack)
+
+        // Only expose the featured personas (same as web UI)
         if (!arg) {
-            const personas = getAvailablePersonas();
-            const buttons = personas.map(p => Markup.button.callback(PERSONA_MAP[p]?.name || p, `set_persona:${p}`));
+            const buttons = Array.from(featuredPersonaKeys).map(p => Markup.button.callback(PERSONA_MAP[p]?.name || p, `set_persona:${p}`));
             // Chunk buttons into rows of 2
             const rows = [];
             for (let i = 0; i < buttons.length; i += 2) {
@@ -495,10 +506,10 @@ if (bot) {
             return ctx.reply('🎭 Select a Manager Persona:', Markup.inlineKeyboard(rows));
         }
 
-        if (!hasPersona(arg)) {
-            return ctx.reply(`❌ Unknown persona: ${arg}\nAvailable: ${getAvailablePersonas().join(', ')}`);
+        if (!Array.from(featuredPersonaKeys).includes(arg as FeaturedPersona)) {
+            return ctx.reply(`❌ Unknown persona: ${arg}\nAvailable: ${Array.from(featuredPersonaKeys).join(', ')}`);
         }
-        
+
         const existing = chatSettingsByChatId.get(chatId) || {};
         chatSettingsByChatId.set(chatId, { ...existing, persona: arg });
         await ctx.reply(`✅ Persona set to ${PERSONA_MAP[arg]?.name || arg}`);
@@ -507,6 +518,8 @@ if (bot) {
     bot.command('set_tone', async (ctx) => {
         const chatId = ctx.chat.id;
         const arg = ctx.message.text.split(' ')[1]?.toLowerCase();
+
+        // static command — reply directly (webhook should not have sent an ack)
 
         if (!arg) {
             const buttons = TONES.map(t => Markup.button.callback(`${t.icon} ${t.label}`, `set_tone:${t.id}`));
@@ -537,12 +550,17 @@ if (bot) {
 
         if (data.startsWith('set_persona:')) {
             const p = data.split(':')[1];
+            await ctx.answerCbQuery();
+            if (!Array.from(featuredPersonaKeys).includes(p as FeaturedPersona)) {
+                await ctx.editMessageText(`❌ Unknown persona: ${p}`);
+                return;
+            }
             const existing = chatSettingsByChatId.get(chatId) || {};
             chatSettingsByChatId.set(chatId, { ...existing, persona: p });
-            await ctx.answerCbQuery();
             await ctx.editMessageText(`✅ Persona set to ${PERSONA_MAP[p]?.name || p}`);
         } else if (data.startsWith('set_tone:')) {
             const t = data.split(':')[1] as ToneId;
+            await ctx.answerCbQuery();
             const existing = chatSettingsByChatId.get(chatId) || {};
             chatSettingsByChatId.set(chatId, { ...existing, tone: t });
             const config = TONE_CONFIG[t];
@@ -556,7 +574,8 @@ if (bot) {
         const s = chatSettingsByChatId.get(chatId) || {};
         const personaName = s.persona ? (PERSONA_MAP[s.persona]?.name || s.persona) : 'None';
         const toneConfig = s.tone ? TONE_CONFIG[s.tone as ToneId] : TONE_CONFIG.balanced;
-        await safeReplyHtml(ctx, renderTelegramHtml(`⚙️ **Chat Settings**\n\n🎭 **Persona:** ${personaName}\n⚡ **Tone:** ${toneConfig.icon} ${toneConfig.label}\n\nUse /set_persona or /set_tone to change these.`));
+        const html = renderTelegramHtml(`⚙️ **Chat Settings**\n\n🎭 **Persona:** ${personaName}\n⚡ **Tone:** ${toneConfig.icon} ${toneConfig.label}\n\nUse /set_persona or /set_tone to change these.`);
+        await safeReplyHtml(ctx, html);
     });
 
     // Handle /chat command

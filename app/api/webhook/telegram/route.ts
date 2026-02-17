@@ -23,17 +23,31 @@ export async function POST(req: NextRequest) {
                 || (body as any)?.channel_post?.chat?.id;
 
             if (chatId) {
-                // Fire-and-forget the immediate ack so we don't block the
-                // webhook response waiting on Telegram API latency.
-                bot.telegram.sendMessage(chatId, '🤔 Thinking...')
-                    .then((msg) => {
-                        if (msg && (msg as any).message_id) {
-                            registerWebhookAck(chatId, (msg as any).message_id);
-                        }
-                    })
-                    .catch((err) => {
-                        console.error('Failed to send immediate ack to Telegram user:', err);
-                    });
+                // Only send/register a quick ack for incoming messages that
+                // will trigger a streaming AI/chat response. Avoid sending
+                // a "Thinking..." placeholder for static slash commands or
+                // UI callbacks.
+                const incomingText = (body as any)?.message?.text;
+                const isChatMessage = typeof incomingText === 'string' && (
+                    // Plain messages (not starting with '/')
+                    !incomingText.trim().startsWith('/') ||
+                    // Explicit /chat command should also produce an ack
+                    incomingText.trim().toLowerCase().startsWith('/chat')
+                );
+
+                if (isChatMessage) {
+                    // Fire-and-forget the immediate ack so we don't block the
+                    // webhook response waiting on Telegram API latency.
+                    bot.telegram.sendMessage(chatId, '🤔 Thinking...')
+                        .then((msg) => {
+                            if (msg && (msg as any).message_id) {
+                                registerWebhookAck(chatId, (msg as any).message_id);
+                            }
+                        })
+                        .catch((err) => {
+                            console.error('Failed to send immediate ack to Telegram user:', err);
+                        });
+                }
             }
         } catch (err) {
             console.error('Failed to determine chatId for immediate ack:', err);

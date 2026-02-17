@@ -77,7 +77,7 @@ export function ChatHeader({
                   side="right"
                   content={
                     <div className="text-[12px]">
-                      Select a persona to inject a manager identity into the assistant's voice — this changes tone, style and perspective for personalised insights.
+                      Select a persona to inject a manager identity into the assistant&apos;s voice — this changes tone, style and perspective for personalised insights.
                     </div>
                   }
                 />

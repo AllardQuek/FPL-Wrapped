@@ -148,9 +148,11 @@ if (bot) {
         const nextToken = () => `@@TG_TOKEN_${tokenIndex++}@@`;
 
         // Handle Vega-Lite blocks separately to hide them from the main text
-        text = text.replace(/```(?:vega-lite|vega)\n([\s\S]*?)(?:```|$)/gi, () => {
-            return ''; // Hide it
-        });
+        // We use a broader match to include potential surrounding whitespace
+        text = text.replace(/\n?```(?:vega-lite|vega)\n([\s\S]*?)(?:```|$)\n?/gi, '');
+
+        // Hide legacy visualization tags and surrounding whitespace
+        text = text.replace(/\n?<visualization\s+[^>]*\/>\n?/gi, '');
 
         text = text.replace(/```([a-zA-Z0-9_-]+)?\n([\s\S]*?)```/g, (_match, _lang, code) => {
             const token = nextToken();

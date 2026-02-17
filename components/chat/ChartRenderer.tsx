@@ -94,8 +94,8 @@ export const ChartRenderer = memo(function ChartRenderer({ spec }: { spec: strin
   }, [spec]);
 
   return (
-    <div className="w-full my-6 relative group overflow-visible">
-      <div className="glass-card w-full rounded-2xl border border-white/10 shadow-2xl overflow-hidden transition-all hover:border-[#00ff87]/30">
+    <div className="w-full my-6 relative group">
+      <div className="glass-card w-full rounded-2xl border border-white/10 shadow-2xl bg-[#0d0015]/30 overflow-visible transition-all hover:border-[#00ff87]/30">
         {title && (
           <div className="px-5 py-4 border-b border-white/5 bg-gradient-to-r from-white/10 to-transparent flex items-center justify-between">
             <div className="text-[11px] font-black uppercase tracking-[0.25em] text-[#00ff87] drop-shadow-[0_0_8px_rgba(0,255,135,0.4)]">{title}</div>
@@ -106,10 +106,27 @@ export const ChartRenderer = memo(function ChartRenderer({ spec }: { spec: strin
           </div>
         )}
 
-        <div className="p-1 sm:p-2 bg-black/20 flex items-center justify-center relative min-h-[300px]">
+        <div className="p-1 sm:p-2 bg-black/20 flex items-center justify-center relative min-h-[300px] overflow-visible">
+          <style jsx global>{`
+            #vg-tooltip-element {
+              background: #1a0025 !important;
+              border: 1px solid rgba(0, 255, 135, 0.3) !important;
+              color: white !important;
+              box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5) !important;
+              border-radius: 8px !important;
+              font-family: inherit !important;
+              font-size: 11px !important;
+              padding: 8px 12px !important;
+              backdrop-filter: blur(8px) !important;
+              z-index: 1000 !important;
+            }
+            #vg-tooltip-element .key { color: #00ff87 !important; font-weight: 700 !important; margin-right: 8px !important; }
+            #vg-tooltip-element .value { color: #00d4ff !important; }
+            .vega-embed { width: 100% !important; display: flex !important; justify-content: center !important; }
+          `}</style>
           <div 
             ref={el} 
-            className={`w-full flex justify-center items-center interactive-chart overflow-hidden transition-opacity duration-500 [&>.vega-embed]:!max-w-full [&>.vega-embed]:!w-full [&_svg]:mx-auto ${isReady ? 'opacity-100' : 'opacity-0'}`} 
+            className={`w-full flex justify-center items-center interactive-chart transition-opacity duration-500 [&>.vega-embed]:!max-w-full [&>.vega-embed]:!w-full [&_svg]:mx-auto ${isReady ? 'opacity-100' : 'opacity-0'}`} 
           />
           
           <AnimatePresence mode="wait">

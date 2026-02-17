@@ -1,12 +1,11 @@
 'use client';
 
-import { useState, useRef, useEffect, useMemo, memo, type ReactNode } from 'react';
-import { flushSync } from 'react-dom';
+import { useState, useRef, useEffect, useMemo, memo, type ReactNode, createContext, useContext } from 'react';
 import ReactMarkdown from 'react-markdown';
 import type { Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import Image from 'next/image';
-import { Info, ChevronRight, Copy } from 'lucide-react';
+import { ChevronRight, Check, Copy } from 'lucide-react';
 import { motion, AnimatePresence, animate } from 'framer-motion';
 import { PERSONA_MAP } from '@/lib/analysis/persona/constants';
 import { getPersonaImagePath } from '@/lib/constants/persona-images';
@@ -266,6 +265,8 @@ interface Message {
   toolCalls?: ToolCall[];
 }
 
+const MessageContext = createContext<{ message: Message } | null>(null);
+
 /**
  * Shared markdown components that don't depend on message state
  */
@@ -300,108 +301,122 @@ const BASE_MARKDOWN_COMPONENTS: Components = {
 };
 
 /**
+ * Shared markdown components for stable identity
+ */
+const MarkdownTable = ({ children }: { children?: ReactNode }) => {
+  const ctx = useContext(MessageContext);
+  if (!ctx) return <CollapsibleTable hasChart={false}>{children}</CollapsibleTable>;
+  
+  const hasChart = ctx.message.content?.includes('viz://') || ctx.message.content?.includes('```vega-lite');
+  return <CollapsibleTable hasChart={hasChart}>{children}</CollapsibleTable>;
+};
+
+const MarkdownCode = ({ className, children }: { className?: string; children?: ReactNode }) => {
+  const isInline = !className;
+  if (!isInline && className?.includes('language-vega-lite')) {
+    const content = Array.isArray(children) ? children.join('') : String(children || '');
+    return <ChartRenderer spec={content} />;
+  }
+  return isInline ? (
+    <code className="px-1.5 py-0.5 bg-[#37003c] text-[#00ff87] rounded font-mono text-xs border border-white/10">
+      {children}
+    </code>
+  ) : (
+    <div className="relative group">
+      <pre className="p-4 bg-black/40 rounded-xl border border-white/5 overflow-x-auto font-mono text-xs my-4">
+        <code className={className}>{children}</code>
+      </pre>
+    </div>
+  );
+};
+
+const MarkdownImage = ({ src, alt }: { src?: string | unknown; alt?: string }) => {
+  const ctx = useContext(MessageContext);
+  
+  // Validate src
+  if (!src || typeof src !== 'string' || src.trim() === '' || src === 'null' || src === 'undefined') {
+    return null;
+  }
+
+  if (src.startsWith('viz://')) {
+    if (!ctx) return <div className="italic text-white/60 p-4 border border-white/5 rounded-xl my-4">Generating visualization...</div>;
+    
+    const id = src.slice('viz://'.length);
+    const tc = ctx.message.toolCalls?.find((t) => t.tool_call_id === id);
+    
+    if (tc?.results && Array.isArray(tc.results) && tc.results.length > 0) {
+      const first = tc.results[0] as Record<string, unknown>;
+      const possibleSpec = (first?.vega || first?.spec || first?.['vega-lite'] || first?.vega_lite) as string | object | undefined;
+      
+      if (possibleSpec) {
+        return <ChartRenderer spec={possibleSpec} />;
+      }
+      
+      if (typeof first === 'string' && (first as string).startsWith('data:image')) {
+        return (
+          <Image 
+            src={first as string} 
+            alt={alt || 'Visual representation'} 
+            width={800} 
+            height={600} 
+            sizes="100vw" 
+            className="w-full h-auto rounded-xl object-contain my-4 px-1" 
+            unoptimized 
+          />
+        );
+      }
+      
+      const dataObj = first?.data as { values: unknown[] } | undefined;
+      if (dataObj && Array.isArray(dataObj.values)) {
+        const vegaSpec = { 
+          $schema: 'https://vega.github.io/schema/vega-lite/v5.json', 
+          data: { values: dataObj.values }, 
+          mark: 'bar', 
+          encoding: {} 
+        };
+        return <ChartRenderer spec={vegaSpec} />;
+      }
+      return <pre className="p-3 bg-black/20 rounded-xl text-sm mt-2">{JSON.stringify(tc.results, null, 2)}</pre>;
+    }
+    return <div className="italic text-white/60 p-4 border border-white/5 rounded-xl my-4">Generating visualization...</div>;
+  }
+  
+  return (
+    <Image 
+      src={src} 
+      alt={alt || 'Image'} 
+      width={800} 
+      height={600} 
+      sizes="100vw" 
+      className="w-full h-auto rounded-xl object-contain my-4 px-1" 
+    />
+  );
+};
+
+const MARKDOWN_COMPONENTS: Components = {
+  ...BASE_MARKDOWN_COMPONENTS,
+  table: MarkdownTable,
+  code: MarkdownCode,
+  img: MarkdownImage,
+};
+
+/**
  * MessageContent handles memoized markdown rendering to prevent flickering 
  * on unrelated state changes (like input typing)
  */
 const MessageContent = memo(function MessageContent({ message }: { message: Message }) {
   const md = useMemo(() => transformVisualizations(message.content || ''), [message.content]);
 
-  const components: Components = useMemo(() => ({
-          ...BASE_MARKDOWN_COMPONENTS,
-          table: ({ children }) => {
-            const hasChart = message.content?.includes('viz://') || message.content?.includes('```vega-lite');
-            return <CollapsibleTable hasChart={hasChart}>{children}</CollapsibleTable>;
-          },
-          code: ({ className, children }) => {
-            const isInline = !className;
-            if (!isInline && className?.includes('language-vega-lite')) {
-              const content = Array.isArray(children) ? children.join('') : String(children || '');
-              return <ChartRenderer spec={content} />;
-            }
-            return isInline ? (
-              <code className="px-1.5 py-0.5 bg-[#37003c] text-[#00ff87] rounded font-mono text-xs border border-white/10">
-                {children}
-              </code>
-            ) : (
-              <div className="relative group">
-                <pre className="p-4 bg-black/40 rounded-xl border border-white/5 overflow-x-auto font-mono text-xs my-4">
-                  <code className={className}>{children}</code>
-                </pre>
-              </div>
-            );
-          },
-          img: (props) => {
-            const { src, alt } = props;
-            
-            // Validate src: must be a non-empty string to work with Next.js Image.
-            if (!src || typeof src !== 'string' || src.trim() === '' || src === 'null' || src === 'undefined') {
-              return null;
-            }
-
-            if (src.startsWith('viz://')) {
-              const id = src.slice('viz://'.length);
-              const tc = message.toolCalls?.find((t) => t.tool_call_id === id);
-              if (tc?.results && Array.isArray(tc.results) && tc.results.length > 0) {
-                // Tool results can be complex objects
-                const first = tc.results[0] as Record<string, unknown>;
-                
-                // If the tool result is a visualization spec, render it using ChartRenderer.
-                const possibleSpec = (first?.vega || first?.spec || first?.['vega-lite'] || first?.vega_lite) as string | object | undefined;
-                if (possibleSpec) {
-                  return <ChartRenderer spec={possibleSpec} />;
-                }
-                
-                // If the tool result is a data URI, render it as an optimized Image.
-                if (typeof first === 'string' && (first as string).startsWith('data:image')) {
-                  return (
-                    <Image 
-                      src={first as string} 
-                      alt={alt || 'Visual representation'} 
-                      width={800} 
-                      height={600} 
-                      sizes="100vw" 
-                      className="w-full h-auto rounded-xl object-contain my-4 px-1" 
-                      unoptimized 
-                    />
-                  );
-                }
-                
-                const dataObj = first?.data as { values: unknown[] } | undefined;
-                if (dataObj && Array.isArray(dataObj.values)) {
-                  const vegaSpec = { 
-                    $schema: 'https://vega.github.io/schema/vega-lite/v5.json', 
-                    data: { values: dataObj.values }, 
-                    mark: 'bar', 
-                    encoding: {} 
-                  };
-                  return <ChartRenderer spec={vegaSpec} />;
-                }
-                return <pre className="p-3 bg-black/20 rounded-xl text-sm mt-2">{JSON.stringify(tc.results, null, 2)}</pre>;
-              }
-              return <div className="italic text-white/60 p-4 border border-white/5 rounded-xl my-4">Generating visualization...</div>;
-            }
-            
-            return (
-              <Image 
-                src={src} 
-                alt={alt || 'Image'} 
-                width={800} 
-                height={600} 
-                sizes="100vw" 
-                className="w-full h-auto rounded-xl object-contain my-4 px-1" 
-              />
-            );
-          },
-        }), [message.content, message.toolCalls]);
-
   return (
     <div className="prose prose-invert prose-sm max-w-none prose-headings:text-[#00ff87] prose-a:text-[#00ff87] prose-strong:text-[#00ff87] prose-strong:font-black">
-      <ReactMarkdown
-        remarkPlugins={[remarkGfm]}
-        components={components}
-      >
-        {md}
-      </ReactMarkdown>
+      <MessageContext.Provider value={{ message }}>
+        <ReactMarkdown
+          remarkPlugins={[remarkGfm]}
+          components={MARKDOWN_COMPONENTS}
+        >
+          {md}
+        </ReactMarkdown>
+      </MessageContext.Provider>
     </div>
   );
 });
@@ -413,8 +428,20 @@ function transformVisualizations(content: string) {
   return content.replace(regex, (_m, id) => `\n\n![](viz://${id})\n\n`);
 }
 
+const TONES = [
+  { id: 'balanced', label: 'Balanced', icon: '⚖️', prompt: '' },
+  { id: 'roast', label: 'Savage Roast', icon: '🔥', prompt: 'Reply with a sharp, sarcastic, and funny roasting tone. Be critical of bad decisions or bad luck.' },
+  { id: 'optimist', label: 'Eternal Optimist', icon: '📈', prompt: 'Be incredibly positive and encouraging, finding every possible silver lining in the data.' },
+  { id: 'tactical', label: 'Tactical Genius', icon: '🧠', prompt: 'Analyze like a world-class elite manager using sophisticated tactical vocabulary.' },
+] as const;
+
 export default function ChatPage() {
   const [question, setQuestion] = useState('');
+  const [selectedPersonaKey, setSelectedPersonaKey] = useState<string | null>(null);
+  const [selectedTone, setSelectedTone] = useState<typeof TONES[number]['id']>('balanced');
+  const [includeViz, setIncludeViz] = useState(true);
+  const [leagueId, setLeagueId] = useState('');
+  const [isUsingSuggestion, setIsUsingSuggestion] = useState(false);
   const [messages, setMessages] = useState<Array<Message>>([]);
   const [isStreaming, setIsStreaming] = useState(false);
   const [conversationId, setConversationId] = useState<string | undefined>();
@@ -423,8 +450,21 @@ export default function ChatPage() {
   const abortControllerRef = useRef<AbortController | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const currentSeason = getCurrentFPLSeason();
   const mounted = typeof window !== 'undefined';
+
+  // Persist league ID
+  useEffect(() => {
+    const saved = localStorage.getItem('fpl_wrapped_league_id');
+    if (saved) setLeagueId(saved);
+  }, []);
+
+  useEffect(() => {
+    if (leagueId) {
+      localStorage.setItem('fpl_wrapped_league_id', leagueId);
+    }
+  }, [leagueId]);
 
   // Lazy initialize particles on client side only
   const [particles] = useState<Array<{ left: number; delay: number; duration: number }>>(() => {
@@ -456,11 +496,20 @@ export default function ChatPage() {
   }, [messages.length, suggestionPrefixes.length]);
 
   // Featured personas for the empty state
-  const featuredPersonaKeys = ['PEP', 'AMORIM', 'ARTETA', 'EMERY'] as const;
+  const featuredPersonaKeys = ['PEP', 'ARTETA', 'AMORIM', 'MOURINHO'] as const;
   const featuredPersonas = featuredPersonaKeys.map(key => ({
+    key,
     ...PERSONA_MAP[key],
     image: getPersonaImagePath(key),
   }));
+
+  const handlePersonaSelect = (key: string) => {
+    if (selectedPersonaKey === key) {
+      setSelectedPersonaKey(null);
+      return;
+    }
+    setSelectedPersonaKey(key);
+  };
 
   // Auto-scroll to bottom when new messages arrive or container height changes
   useEffect(() => {
@@ -553,6 +602,23 @@ export default function ChatPage() {
     if (!question.trim() || isStreaming) return;
 
     const userQuestion = question.trim();
+    
+    // Inject identity, tone and visualization instructions into the underlying prompt
+    const tonePrompt = TONES.find(t => t.id === selectedTone)?.prompt || '';
+    const persona = selectedPersonaKey ? PERSONA_MAP[selectedPersonaKey as keyof typeof PERSONA_MAP] : null;
+    
+    let identityPrompt = '';
+    if (persona) {
+      identityPrompt = `\n\n[IDENTITY: You are ${persona.name}, ${persona.title}. 
+      Your tactical mindset: ${persona.desc}. 
+      Key traits: ${persona.traits.join(', ')}. 
+      Your philosophy: "${persona.quote}".
+      Directly address the user as their manager contact. Speak and analyze data through this specific lens. Occasionally use your signature phrases.]`;
+    }
+
+    const vizPrompt = includeViz ? ' Always provide data visualizations or charts when technical data is available.' : ' Do not use charts, keep it text based.';
+    const finalPrompt = `${userQuestion}${identityPrompt}\n\n[STYLE: ${tonePrompt}${vizPrompt}]`;
+
     setQuestion('');
     setIsStreaming(true);
 
@@ -573,7 +639,10 @@ export default function ChatPage() {
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question: userQuestion, conversationId }),
+        body: JSON.stringify({ 
+          question: finalPrompt, 
+          conversationId 
+        }),
         signal: abortControllerRef.current.signal,
       });
 
@@ -625,53 +694,46 @@ export default function ChatPage() {
               if (parsed.content) {
                 accumulatedContent += parsed.content;
 
-                // Update UI immediately without throttling for debugging
-                flushSync(() => {
-                  setMessages((prev) => {
-                    const newMessages = [...prev];
-                    newMessages[assistantMessageIndex] = {
-                      id: assistantMsgId,
-                      role: 'assistant',
-                      content: accumulatedContent,
-                      reasoning: accumulatedReasoning.length > 0 ? accumulatedReasoning : undefined,
-                      toolCalls: accumulatedToolCalls.length > 0 ? accumulatedToolCalls : undefined,
-                    };
-                    return newMessages;
-                  });
+                setMessages((prev) => {
+                  const newMessages = [...prev];
+                  newMessages[assistantMessageIndex] = {
+                    id: assistantMsgId,
+                    role: 'assistant',
+                    content: accumulatedContent,
+                    reasoning: accumulatedReasoning.length > 0 ? accumulatedReasoning : undefined,
+                    toolCalls: accumulatedToolCalls.length > 0 ? accumulatedToolCalls : undefined,
+                  };
+                  return newMessages;
                 });
               }
 
               if (parsed.reasoning) {
                 accumulatedReasoning.push(parsed.reasoning);
-                flushSync(() => {
-                  setMessages((prev) => {
-                    const newMessages = [...prev];
-                    newMessages[assistantMessageIndex] = {
-                      id: assistantMsgId,
-                      role: 'assistant',
-                      content: accumulatedContent,
-                      reasoning: [...accumulatedReasoning],
-                      toolCalls: accumulatedToolCalls.length > 0 ? accumulatedToolCalls : undefined,
-                    };
-                    return newMessages;
-                  });
+                setMessages((prev) => {
+                  const newMessages = [...prev];
+                  newMessages[assistantMessageIndex] = {
+                    id: assistantMsgId,
+                    role: 'assistant',
+                    content: accumulatedContent,
+                    reasoning: [...accumulatedReasoning],
+                    toolCalls: accumulatedToolCalls.length > 0 ? accumulatedToolCalls : undefined,
+                  };
+                  return newMessages;
                 });
               }
 
               if (parsed.toolCall) {
                 accumulatedToolCalls.push(parsed.toolCall);
-                flushSync(() => {
-                  setMessages((prev) => {
-                    const newMessages = [...prev];
-                    newMessages[assistantMessageIndex] = {
-                      id: assistantMsgId,
-                      role: 'assistant',
-                      content: accumulatedContent,
-                      reasoning: accumulatedReasoning.length > 0 ? accumulatedReasoning : undefined,
-                      toolCalls: [...accumulatedToolCalls],
-                    };
-                    return newMessages;
-                  });
+                setMessages((prev) => {
+                  const newMessages = [...prev];
+                  newMessages[assistantMessageIndex] = {
+                    id: assistantMsgId,
+                    role: 'assistant',
+                    content: accumulatedContent,
+                    reasoning: accumulatedReasoning.length > 0 ? accumulatedReasoning : undefined,
+                    toolCalls: [...accumulatedToolCalls],
+                  };
+                  return newMessages;
                 });
               }
               if (parsed.toolResult) {
@@ -691,36 +753,32 @@ export default function ChatPage() {
                 }
 
                 // Refresh UI so any visualization tags referencing this tool_call_id render
-                flushSync(() => {
-                  setMessages((prev) => {
-                    const newMessages = [...prev];
-                    newMessages[assistantMessageIndex] = {
-                      id: assistantMsgId,
-                      role: 'assistant',
-                      content: accumulatedContent,
-                      reasoning: accumulatedReasoning.length > 0 ? accumulatedReasoning : undefined,
-                      toolCalls: [...accumulatedToolCalls],
-                    };
-                    return newMessages;
-                  });
+                setMessages((prev) => {
+                  const newMessages = [...prev];
+                  newMessages[assistantMessageIndex] = {
+                    id: assistantMsgId,
+                    role: 'assistant',
+                    content: accumulatedContent,
+                    reasoning: accumulatedReasoning.length > 0 ? accumulatedReasoning : undefined,
+                    toolCalls: [...accumulatedToolCalls],
+                  };
+                  return newMessages;
                 });
               }
 
               if (parsed.error) {
                 hasError = true;
                 isCompleted = true;
-                flushSync(() => {
-                  setMessages((prev) => {
-                    const newMessages = [...prev];
-                    const existing = newMessages[assistantMessageIndex];
-                    newMessages[assistantMessageIndex] = {
-                      ...existing,
-                      id: assistantMsgId,
-                      role: 'assistant',
-                      content: `❌ ${getUserFriendlyError(parsed.error)}`,
-                    };
-                    return newMessages;
-                  });
+                setMessages((prev) => {
+                  const newMessages = [...prev];
+                  const existing = newMessages[assistantMessageIndex];
+                  newMessages[assistantMessageIndex] = {
+                    ...existing,
+                    id: assistantMsgId,
+                    role: 'assistant',
+                    content: `❌ ${getUserFriendlyError(parsed.error)}`,
+                  };
+                  return newMessages;
                 });
                 break;
               }
@@ -772,6 +830,18 @@ export default function ChatPage() {
     setIsStreaming(false);
   };
 
+  const handleUseSuggestion = (text: string) => {
+    setQuestion(text);
+    navigator.clipboard.writeText(text);
+    setIsUsingSuggestion(true);
+    setTimeout(() => setIsUsingSuggestion(false), 1500);
+    
+    // Focus the input
+    if (inputRef.current) {
+      inputRef.current.focus();
+    }
+  };
+
   return (
     <div className="relative min-h-screen gradient-bg overflow-hidden flex flex-col">
       {/* Background particles */}
@@ -803,20 +873,22 @@ export default function ChatPage() {
             </div>
           </div>
           {/* Persistent Discovery Header */}
-          {messages.length === 0 && (
-            <div className="max-w-4xl mx-auto w-full space-y-12 mb-12 animate-fade-in px-4">
-              {/* Introduction & Guidance */}
-              <div className="text-center space-y-6 pt-4">
+          <div className="max-w-4xl mx-auto w-full space-y-12 mb-12 animate-fade-in px-4 text-center">
+            {/* Introduction & Guidance */}
+            <div className="space-y-6 pt-4">
               <div className="space-y-3">
                 <h2 className="text-4xl font-black text-white uppercase tracking-tight leading-none italic">
                   FPL <span className="text-[#00ff87] glow-text not-italic">CHAT</span>
                 </h2>
                 <p className="text-sm text-white/50 max-w-lg mx-auto font-medium">
-                  Analyze league trends, manager styles, and performance.
+                  no more boring stats.<br></br> shape your story with personalised insights.
                 </p>
+                <div className="text-[10px] font-black tracking-[0.3em] text-[#00ff87]/40 uppercase pt-2">
+                  Made with ⚽
+                </div>
               </div>
 
-              <div className="inline-flex items-start md:items-center gap-3 px-4 py-2.5 max-w-lg mx-auto text-left">
+              <div className="inline-flex items-start md:items-center gap-3 px-4 py-2.5 max-w-lg mx-auto text-left border border-white/5 rounded-2xl bg-white/[0.02]">
                 <span className="shrink-0 text-[10px] font-black uppercase text-[#00ff87]/60 border border-[#00ff87]/10 px-1.5 py-0.5 rounded leading-none mt-0.5 md:mt-0">Beta</span>
                 <p className="text-[11px] text-white/30 leading-normal font-medium">
                   We can index data on a best-effort basis but may not always succeed. If you&apos;re missing results, try pre-loading via 
@@ -828,57 +900,10 @@ export default function ChatPage() {
             {/* Discovery Engine Controls */}
             <div className="space-y-12 pt-4">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-5xl mx-auto">
-                {/* Left: Quick Explore */}
+                {/* Left: Select Manager (Identity) */}
                 <div className="space-y-4">
-                  <div className="flex items-center gap-3 px-4">
-                    <span className="text-[10px] font-black uppercase tracking-[0.3em] text-white/20 whitespace-nowrap">Try a question</span>
-                    <div className="h-px flex-1 bg-gradient-to-r from-white/10 to-transparent" />
-                  </div>
-                  
-                  <motion.div
-                    whileHover={{ scale: 1.01, translateY: -4, rotateX: 2, rotateY: -1 }}
-                    transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-                    style={{ perspective: '1000px', transformStyle: 'preserve-3d' }}
-                  >
-                    <button
-                      onClick={() => setQuestion(`${suggestionPrefixes[suggestionIndex]} in league [ID]`)}
-                      className="group w-full flex flex-col items-center justify-center gap-4 px-8 py-10 rounded-3xl bg-white/[0.02] border border-white/5 hover:border-[#00ff87]/30 hover:bg-[#00ff87]/5 transition-all duration-500 relative overflow-hidden h-[180px] shadow-2xl shadow-black/50"
-                    >
-                      <div className="absolute inset-0 bg-gradient-to-r from-[#00ff87]/0 via-[#00ff87]/5 to-[#00ff87]/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
-                      
-                      <div className="relative h-8 flex items-center justify-center w-full z-10" style={{ transform: 'translateZ(30px)' }}>
-                        <AnimatePresence mode="wait">
-                          <motion.span
-                            key={suggestionIndex}
-                            initial={{ y: 10, opacity: 0 }}
-                            animate={{ y: 0, opacity: 1 }}
-                            exit={{ y: -10, opacity: 0 }}
-                            transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-                            className="absolute whitespace-nowrap text-white/90 font-medium text-sm md:text-base text-center italic tracking-tight px-4"
-                          >
-                            &ldquo;{suggestionPrefixes[suggestionIndex]}&rdquo;
-                          </motion.span>
-                        </AnimatePresence>
-                      </div>
-
-                      <div 
-                        className="flex items-center gap-3 z-10 mt-2"
-                        style={{ transform: 'translateZ(20px)' }}
-                      >
-                        <div className="flex items-center gap-2 text-white/30 font-medium text-[11px] md:text-sm">
-                          <span>in league</span>
-                          <span className="text-[#00ff87]/50 font-mono border-b border-[#00ff87]/20 pb-0.5">[ID]</span>
-                        </div>
-                        <Copy className="w-3.5 h-3.5 md:w-4 md:h-4 text-[#00ff87]/30 group-hover:text-[#00ff87]/80 transition-all duration-300" />
-                      </div>
-                    </button>
-                  </motion.div>
-                </div>
-
-                {/* Right: Scout Personas */}
-                <div className="space-y-4">
-                  <div className="flex items-center gap-3 px-4">
-                    <span className="text-[10px] font-black uppercase tracking-[0.3em] text-white/20 whitespace-nowrap">Scout Personas</span>
+                  <div className="flex items-center gap-3 px-4 text-left">
+                    <span className="text-[10px] font-black uppercase tracking-[0.3em] text-white/20 whitespace-nowrap">1. Select Manager</span>
                     <div className="h-px flex-1 bg-gradient-to-r from-white/10 to-transparent" />
                   </div>
 
@@ -891,21 +916,25 @@ export default function ChatPage() {
                         style={{ perspective: '1000px', transformStyle: 'preserve-3d' }}
                       >
                         <button
-                          onClick={() => setQuestion(`Which managers in league [ID] follow a strategic style similar to ${p.name.split(' ').pop()}?`)}
-                          className="group w-full h-full flex items-center gap-3 px-4 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-[#00ff87]/30 hover:bg-[#00ff87]/5 transition-all duration-300 relative overflow-hidden shadow-xl shadow-black/40"
+                          onClick={() => handlePersonaSelect(p.key)}
+                          className={`group w-full h-full flex items-center gap-3 px-4 rounded-2xl bg-white/[0.02] border transition-all duration-300 relative overflow-hidden shadow-xl shadow-black/40 ${
+                            selectedPersonaKey === p.key ? 'border-[#00ff87] bg-[#00ff87]/5' : 'border-white/5 hover:border-[#00ff87]/30 hover:bg-[#00ff87]/5'
+                          }`}
                         >
-                          <div className="relative w-10 h-10 rounded-full overflow-hidden border border-white/10 group-hover:border-[#00ff87]/40 transition-all shrink-0" style={{ transform: 'translateZ(20px)' }}>
+                          <div className={`relative w-10 h-10 rounded-full overflow-hidden border transition-all shrink-0 ${
+                            selectedPersonaKey === p.key ? 'border-[#00ff87]' : 'border-white/10 group-hover:border-[#00ff87]/40'
+                          }`} style={{ transform: 'translateZ(20px)' }}>
                             <Image
                               src={p.image}
                               alt={p.name}
                               fill
-                              className="object-cover grayscale group-hover:grayscale-0 transition-all duration-500"
+                              className={`object-cover transition-all duration-500 ${selectedPersonaKey === p.key ? 'grayscale-0' : 'grayscale group-hover:grayscale-0'}`}
                               sizes="40px"
                             />
                           </div>
                           <div className="text-left min-w-0" style={{ transform: 'translateZ(10px)' }}>
                             <p className="text-[7px] font-black tracking-widest text-[#00ff87]/40 uppercase leading-none mb-1 truncate">{p.title}</p>
-                            <h4 className="text-[10px] font-bold text-white/80 uppercase group-hover:text-[#00ff87] transition-colors truncate">
+                            <h4 className={`text-[10px] font-bold uppercase transition-colors truncate ${selectedPersonaKey === p.key ? 'text-[#00ff87]' : 'text-white/80 group-hover:text-[#00ff87]'}`}>
                               {p.name.split(' ').pop()}
                             </h4>
                           </div>
@@ -914,10 +943,98 @@ export default function ChatPage() {
                     ))}
                   </div>
                 </div>
+
+                {/* Right: Quick Explore (Question) */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3 px-4 text-left">
+                    <span className="text-[10px] font-black uppercase tracking-[0.3em] text-white/20 whitespace-nowrap">2. Try a question</span>
+                    <div className="h-px flex-1 bg-gradient-to-r from-white/10 to-transparent" />
+                  </div>
+                  
+                  <motion.div
+                    whileHover={{ scale: 1.01, translateY: -4, rotateX: 2, rotateY: -1 }}
+                    transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+                    style={{ perspective: '1000px', transformStyle: 'preserve-3d' }}
+                  >
+                    <div className="group w-full flex flex-col items-center justify-center gap-4 px-8 py-10 rounded-3xl bg-white/[0.02] border border-white/5 hover:border-[#00ff87]/30 hover:bg-[#00ff87]/5 transition-all duration-500 relative overflow-hidden h-[180px] shadow-2xl shadow-black/50">
+                      <div className="absolute inset-0 bg-gradient-to-r from-[#00ff87]/0 via-[#00ff87]/5 to-[#00ff87]/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
+                      
+                      <button 
+                        onClick={() => handleUseSuggestion(`${suggestionPrefixes[suggestionIndex]} in league ${leagueId || '[ID]'}`)}
+                        className="relative h-8 flex items-center justify-center w-full z-10 outline-none" 
+                        style={{ transform: 'translateZ(30px)' }}
+                      >
+                        <AnimatePresence mode="wait">
+                          <motion.span
+                            key={suggestionIndex}
+                            initial={{ y: 10, opacity: 0 }}
+                            animate={{ y: 0, opacity: 1 }}
+                            exit={{ y: -10, opacity: 0 }}
+                            transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+                            className="absolute whitespace-nowrap text-white/90 font-medium text-sm md:text-base text-center italic tracking-tight px-4"
+                          >
+                            &ldquo;{suggestionPrefixes[suggestionIndex]}&rdquo;
+                          </motion.span>
+                        </AnimatePresence>
+                      </button>
+
+                      <div 
+                        className="flex items-center gap-3 z-20 mt-2 pointer-events-auto"
+                        style={{ transform: 'translateZ(20px)' }}
+                      >
+                        <div className="flex items-center gap-2 text-white/30 font-medium text-[11px] md:text-sm text-left">
+                          <span className="whitespace-nowrap">in league</span>
+                          <div className="relative group/input">
+                            <input
+                              type="text"
+                              value={leagueId}
+                              onChange={(e) => setLeagueId(e.target.value)}
+                              onClick={(e) => e.stopPropagation()}
+                              placeholder="ID"
+                              className="bg-white/5 border border-white/10 rounded-lg px-2 py-0.5 focus:ring-0 focus:border-[#00ff87]/50 focus:bg-[#00ff87]/5 text-[#00ff87] placeholder-[#00ff87]/20 font-black font-mono w-24 transition-all text-center uppercase text-xs md:text-sm"
+                            />
+                            {!leagueId && (
+                              <div className="absolute -top-1 -right-1 w-2 h-2 bg-[#00ff87] rounded-full animate-pulse shadow-[0_0_8px_rgba(0,255,135,0.6)]" />
+                            )}
+                          </div>
+                        </div>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleUseSuggestion(`${suggestionPrefixes[suggestionIndex]} in league ${leagueId || '[ID]'}`);
+                          }}
+                          className="flex items-center justify-center p-1.5 hover:bg-white/10 rounded-lg transition-colors cursor-pointer group/use"
+                          title="Use this question"
+                        >
+                          <AnimatePresence mode="wait">
+                            {isUsingSuggestion ? (
+                              <motion.div
+                                key="check"
+                                initial={{ scale: 0.5, opacity: 0 }}
+                                animate={{ scale: 1, opacity: 1 }}
+                                exit={{ scale: 0.5, opacity: 0 }}
+                              >
+                                <Check className="w-3.5 h-3.5 md:w-4 md:h-4 text-[#00ff87]" />
+                              </motion.div>
+                            ) : (
+                              <motion.div
+                                key="copy"
+                                initial={{ scale: 0.5, opacity: 0 }}
+                                animate={{ scale: 1, opacity: 1 }}
+                                exit={{ scale: 0.5, opacity: 0 }}
+                              >
+                                <Copy className="w-3.5 h-3.5 md:w-4 md:h-4 text-[#00ff87]/50 group-hover/use:text-[#00ff87]/90 transition-all duration-300" />
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </button>
+                      </div>
+                    </div>
+                  </motion.div>
+                </div>
               </div>
             </div>
           </div>
-          )}
 
           <div className="max-w-4xl mx-auto w-full space-y-8 px-4">
             {messages.map((message, messageIndex) => {
@@ -930,13 +1047,23 @@ export default function ChatPage() {
                   className={`flex gap-3 ${message.role === 'user' ? 'flex-row-reverse' : 'flex-row'} ${isLatestUserMessage || (isLatestAssistantMessage && !message.content) ? 'animate-slide-in' : ''}`}
                 >
                 {/* Avatar Placeholder */}
-                <div className={`w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center border ${message.role === 'user'
+                <div className={`w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center border overflow-hidden ${message.role === 'user'
                   ? 'bg-purple-600 border-purple-400 text-white'
                   : 'bg-white/10 border-white/20 text-[#00ff87]'
                   }`}>
-                  <span className="text-[10px] font-black">
-                    {message.role === 'user' ? 'ME' : 'AI'}
-                  </span>
+                  {message.role === 'user' ? (
+                    <span className="text-[10px] font-black">ME</span>
+                  ) : selectedPersonaKey ? (
+                    <Image 
+                      src={getPersonaImagePath(selectedPersonaKey as any)} 
+                      alt={selectedPersonaKey}
+                      width={32}
+                      height={32}
+                      className="object-cover"
+                    />
+                  ) : (
+                    <span className="text-[10px] font-black">AI</span>
+                  )}
                 </div>
 
                 <div
@@ -945,6 +1072,12 @@ export default function ChatPage() {
                     : 'glass-card border-white/10 text-white rounded-tl-none'
                     }`}
                 >
+                  {message.role === 'assistant' && selectedPersonaKey && (
+                    <div className="text-[8px] font-black uppercase tracking-[0.2em] text-[#00ff87] mb-2 flex items-center gap-2">
+                      <span className="w-1 h-1 rounded-full bg-[#00ff87]"></span>
+                      {PERSONA_MAP[selectedPersonaKey as keyof typeof PERSONA_MAP].name}
+                    </div>
+                  )}
                   {message.role === 'user' ? (
                     <div className="whitespace-pre-wrap font-medium leading-relaxed">{message.content}</div>
                   ) : (
@@ -1016,7 +1149,12 @@ export default function ChatPage() {
                             <span className={`w-3.5 h-3.5 flex items-center justify-center rounded-sm bg-[#a855f7]/10 border border-[#a855f7]/20 transition-transform ${showReasoning[messageIndex] ? 'rotate-180 text-[#a855f7]' : 'text-white/80'}`} aria-hidden>
                               <ChevronRight className="w-3 h-3" />
                             </span>
-                            <span>Manager Logic {message.reasoning && message.reasoning.length > 0 ? `(${message.reasoning.length})` : ''}</span>
+                            <span>
+                              {selectedPersonaKey 
+                                ? `${PERSONA_MAP[selectedPersonaKey as keyof typeof PERSONA_MAP].name.split(' ').pop()}'s Logic` 
+                                : 'Manager Logic'
+                              } {message.reasoning && message.reasoning.length > 0 ? `(${message.reasoning.length})` : ''}
+                            </span>
                             {isStreaming && messageIndex === messages.length - 1 && (
                               <span className="ml-auto flex items-center gap-2">
                                 <span className="text-[8px] font-black tracking-widest opacity-40">PROCESSING LOGS</span>
@@ -1084,27 +1222,41 @@ export default function ChatPage() {
         </div>
       </div>
 
-          {/* Input */}
+          {/* Input Area */}
           <div className="mt-auto pb-8 pt-4">
-            <div className="flex justify-end mb-2 px-2">
-              <div className="group relative">
-                <div className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest text-white/20 hover:text-[#00ff87] cursor-help transition-colors">
-                  <Info size={10} />
-                  Missing Data?
-                </div>
-                <div className="absolute right-0 bottom-full mb-3 w-56 p-3 bg-[#0d0015]/95 border border-white/10 rounded-xl text-[10px] text-white/50 font-medium normal-case tracking-normal opacity-0 group-hover:opacity-100 transition-all pointer-events-none backdrop-blur-xl z-[100] shadow-2xl origin-bottom-right scale-95 group-hover:scale-100">
-                  <div className="text-white font-black uppercase tracking-widest text-[8px] mb-1.5 flex items-center gap-1.5">
-                    <span className="w-1 h-1 rounded-full bg-[#00ff87]"></span>
-                    Data Coverage
-                  </div>
-                  <p className="leading-relaxed">
-                    Missing results? We may not have indexed your manager or league ID yet.
-                  </p>
-                  <a href="/onboard" className="mt-2 inline-block text-[#00ff87] hover:underline pointer-events-auto font-black">
-                    Manual Onboarding &rarr;
-                  </a>
-                  {/* Arrow */}
-                  <div className="absolute -bottom-1 right-3 w-2 h-2 bg-[#0d0015] border-b border-r border-white/10 rotate-45"></div>
+            <div className="space-y-4 mb-4">
+              {/* Tones (Moods) */}
+              <div className="flex items-center gap-4 px-2">
+                <div className="flex flex-wrap gap-2">
+                  <div className="text-[8px] font-black uppercase tracking-[0.2em] text-white/20 whitespace-nowrap self-center mr-1">Mood</div>
+                  {TONES.map((tone) => (
+                    <button
+                      key={tone.id}
+                      onClick={() => setSelectedTone(tone.id)}
+                      className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all border ${
+                        selectedTone === tone.id
+                          ? 'bg-[#00ff87] border-[#00ff87] text-[#0d0015] shadow-[0_0_15px_rgba(0,255,135,0.3)]'
+                          : 'bg-white/5 border-white/10 text-white/40 hover:text-white/70 hover:bg-white/10'
+                      }`}
+                    >
+                      <span className="mr-1.5">{tone.icon}</span>
+                      {tone.label}
+                    </button>
+                  ))}
+                  
+                  <div className="w-px h-6 bg-white/10 mx-1 hidden sm:block" />
+                  
+                  <button
+                    onClick={() => setIncludeViz(!includeViz)}
+                    className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border transition-all ${
+                      includeViz 
+                        ? 'bg-[#00d4ff]/10 border-[#00d4ff]/30 text-[#00d4ff]' 
+                        : 'bg-white/5 border-white/10 text-white/30 truncate'
+                    }`}
+                  >
+                    <div className={`w-1.5 h-1.5 rounded-full ${includeViz ? 'bg-[#00d4ff] animate-pulse shadow-[0_0_8px_rgba(0,212,255,0.8)]' : 'bg-white/20'}`} />
+                    <span className="text-[10px] font-black uppercase tracking-wider">Visuals</span>
+                  </button>
                 </div>
               </div>
             </div>
@@ -1112,6 +1264,7 @@ export default function ChatPage() {
               <div className="absolute -inset-0.5 bg-gradient-to-r from-[#00ff87] to-[#e90052] rounded-2xl blur opacity-20 group-focus-within:opacity-40 transition duration-500"></div>
               <div className="relative flex gap-2 glass-card p-2 rounded-2xl border-white/20">
                 <input
+                  ref={inputRef}
                   type="text"
                   value={question}
                   onChange={(e) => setQuestion(e.target.value)}

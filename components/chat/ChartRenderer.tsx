@@ -62,7 +62,7 @@ export const ChartRenderer = memo(function ChartRenderer({ spec }: { spec: strin
 
         await vegaEmbed(el.current, safeSpec as VisualizationSpec, { 
           actions: false, 
-          renderer: 'svg', 
+          renderer: 'canvas', 
           loader,
           tooltip: true,
           theme: 'dark'
@@ -119,14 +119,26 @@ export const ChartRenderer = memo(function ChartRenderer({ spec }: { spec: strin
               padding: 8px 12px !important;
               backdrop-filter: blur(8px) !important;
               z-index: 1000 !important;
+              pointer-events: none !important;
             }
             #vg-tooltip-element .key { color: #00ff87 !important; font-weight: 700 !important; margin-right: 8px !important; }
             #vg-tooltip-element .value { color: #00d4ff !important; }
-            .vega-embed { width: 100% !important; display: flex !important; justify-content: center !important; }
+            .vega-embed { 
+              width: 100% !important; 
+              display: flex !important; 
+              justify-content: center !important; 
+              user-select: none !important;
+              -webkit-user-select: none !important;
+              -webkit-touch-callout: none !important;
+            }
+            .vega-embed canvas {
+              max-width: 100% !important;
+              height: auto !important;
+            }
           `}</style>
           <div 
             ref={el} 
-            className={`w-full flex justify-center items-center interactive-chart transition-opacity duration-500 [&>.vega-embed]:!max-w-full [&>.vega-embed]:!w-full [&_svg]:mx-auto ${isReady ? 'opacity-100' : 'opacity-0'}`} 
+            className={`w-full flex justify-center items-center interactive-chart transition-opacity duration-500 [&>.vega-embed]:!max-w-full [&>.vega-embed]:!w-full ${isReady ? 'opacity-100' : 'opacity-0'}`} 
           />
           
           <AnimatePresence mode="wait">

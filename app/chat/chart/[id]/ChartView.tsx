@@ -16,23 +16,33 @@ export function ChartView({ spec }: { spec: string | object }) {
 
     try {
       // Small delay to ensure we don't capture any active hover states
-      await new Promise(r => setTimeout(r, 100));
+      await new Promise(r => setTimeout(r, 200));
       
       const dataUrl = await toPng(chartRef.current, { 
         backgroundColor: '#0d0015',
         quality: 1.0,
         pixelRatio: 2, // Capture at 2x for retina-quality downloads
+        cacheBust: true,
       });
 
+      // For data URLs on mobile, creating a temporary link in the body is usually the most reliable way
+      // But for Telegram iOS, sometimes we need to open it in a new window or use a blob
       const link = document.createElement('a');
       link.download = `fpl-wrapped-chart-${Date.now()}.png`;
       link.href = dataUrl;
+      link.target = '_blank'; // Helpful for some mobile browsers
       document.body.appendChild(link);
       link.click();
-      document.body.removeChild(link);
+      
+      // Cleanup with a slight delay
+      setTimeout(() => {
+        document.body.removeChild(link);
+      }, 100);
+
     } catch (err) {
       console.error('Failed to download image', err);
-      alert('Failed to generate image. Try taking a screenshot instead!');
+      // Fallback: alert with instructions
+      alert('Unable to save automatically. Please try taking a screenshot of the chart!');
     } finally {
       setIsDownloading(false);
     }
@@ -43,7 +53,7 @@ export function ChartView({ spec }: { spec: string | object }) {
       <Particles className="fixed inset-0 -z-10" quantity={30} />
       
       <div className="flex items-center justify-between">
-        <h1 className="text-[#00ff87] font-bold text-xl drop-shadow-[0_0_10px_rgba(0,255,135,0.3)] tracking-tight">Interactive Chart</h1>
+        <h1 className="text-[#00ff87] font-bold text-xl drop-shadow-[0_0_10px_rgba(0,255,135,0.3)] tracking-tight">FPL Chat</h1>
         <button 
           onClick={handleDownload}
           disabled={isDownloading}

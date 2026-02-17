@@ -298,24 +298,51 @@ if (bot) {
             let fullContent = '';
             let lastUpdate = Date.now();
             let latestConversationId = conversationIdForRequest;
+            let currentStatus = 'Thinking...';
 
             for await (const chunk of streamChatWithAgent(promptToSend, conversationIdForRequest, { includeVegaHint: true })) {
                 if (chunk.conversationId) {
                     latestConversationId = chunk.conversationId;
                 }
 
+                if (chunk.reasoning) {
+                    // Extract a helpful snippet or just use the whole line if it's short
+                    const r = chunk.reasoning.trim();
+                    if (r.length > 5) {
+                        const snippet = r.length > 50 ? `${r.substring(0, 47)}...` : r;
+                        currentStatus = `Analyzing: ${snippet.toLowerCase()}`;
+                    }
+                }
+
+                if (chunk.toolCall) {
+                    const toolName = chunk.toolCall.tool_id.replace(/_/g, ' ');
+                    currentStatus = `Using tool: ${toolName}`;
+                }
+
+                if (chunk.toolResult) {
+                    currentStatus = 'Processing results...';
+                }
+
                 if (chunk.content) {
                     fullContent += chunk.content;
+                }
 
-                    // Telegram edit limit is ~1 per second.
-                    // We buffer chunks to avoid hitting rate limits.
-                    if (Date.now() - lastUpdate > 1000) {
-                        const rendered = renderTelegramHtml(fullContent);
-                        const previewHtml = `${rendered}\n\n<i>…thinking</i>`;
-                        const previewChunk = splitTelegramMessage(previewHtml)[0];
-                        await safeEditMessageHtml(ctx, chatId, placeholder.message_id, previewChunk);
-                        lastUpdate = Date.now();
-                    }
+                // Telegram edit limit is ~1 per second.
+                // We buffer chunks to avoid hitting rate limits.
+                if (Date.now() - lastUpdate > 1200) {
+                    const rendered = renderTelegramHtml(fullContent);
+                    
+                    // Segregate status with a subtle line and specific emoji
+                    const separator = '────────────────────';
+                    const statusHtml = `\n\n${separator}\n<i>⚡️ ${currentStatus}</i>`;
+                    
+                    const previewHtml = rendered 
+                        ? `${rendered}${statusHtml}` 
+                        : `<i>⚡️ ${currentStatus}</i>`;
+                    
+                    const previewChunk = splitTelegramMessage(previewHtml)[0];
+                    await safeEditMessageHtml(ctx, chatId, placeholder.message_id, previewChunk);
+                    lastUpdate = Date.now();
                 }
 
                 if (chunk.error) {
@@ -366,7 +393,7 @@ if (bot) {
                     const chartUrl = `${appUrl}/chat/chart/${chartId}`;
                     
                     extra.reply_markup = Markup.inlineKeyboard([
-                        [Markup.button.webApp('📊 View Interactive Chart', chartUrl)]
+                        [Markup.button.webApp('📊 View Chart', chartUrl)]
                     ]).reply_markup;
                 } catch (err) {
                     console.error('[Telegram] Failed to save/link chart:', err);

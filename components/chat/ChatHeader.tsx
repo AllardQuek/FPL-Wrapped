@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Check, Copy } from 'lucide-react';
 import { TONES, ToneId } from '@/lib/chat/constants';
+import { InfoTooltip } from '@/components/ui/Tooltip';
 
 interface FeaturedPersona {
   key: string;
@@ -70,7 +71,17 @@ export function ChatHeader({
           {/* Left: Identity Lab */}
           <div className="space-y-4">
             <div className="flex items-center gap-3 px-4 text-left">
-              <span className="text-[10px] font-black uppercase tracking-[0.3em] text-[#00ff87] whitespace-nowrap">Identity Lab</span>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-black uppercase tracking-[0.3em] text-[#00ff87] whitespace-nowrap">Identity Lab</span>
+                <InfoTooltip
+                  side="right"
+                  content={
+                    <div className="text-[12px]">
+                      Select a persona to inject a manager identity into the assistant's voice — this changes tone, style and perspective for personalised insights.
+                    </div>
+                  }
+                />
+              </div>
               <div className="h-px flex-1 bg-gradient-to-r from-[#00ff87]/20 to-transparent" />
             </div>
 
@@ -122,7 +133,7 @@ export function ChatHeader({
                   >
                     <span className="text-xl mb-1.5">{tone.icon}</span>
                     <span className={`text-[8px] font-black uppercase tracking-widest text-center transition-colors ${selectedTone === tone.id ? 'text-[#00d4ff]' : 'text-white/40'}`}>
-                      {tone.label.split(' ').pop()}
+                      {tone.shortLabel}
                     </span>
                     {selectedTone === tone.id && (
                       <div className="absolute top-1 right-1 w-1.5 h-1.5 bg-[#00d4ff] rounded-full shadow-[0_0_8px_rgba(0,212,255,0.8)]" />
@@ -136,7 +147,20 @@ export function ChatHeader({
           {/* Right: Discovery Box */}
           <div className="space-y-4">
             <div className="flex items-center gap-3 px-4 text-left">
-              <span className="text-[10px] font-black uppercase tracking-[0.3em] text-white/20 whitespace-nowrap">Discovery Hub</span>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-black uppercase tracking-[0.3em] text-white/20 whitespace-nowrap">Discovery Hub</span>
+                <InfoTooltip
+                  side="right"
+                  content={
+                    <div className="text-[12px]">
+                      Quick question suggestions that use your league context. Set the <strong>in league</strong> ID to target questions to a specific league.
+                      <div className="mt-1 text-[11px] text-white/60">
+                        Find the league ID in your league page URL.
+                      </div>
+                    </div>
+                  }
+                />
+              </div>
               <div className="h-px flex-1 bg-gradient-to-r from-white/10 to-transparent" />
             </div>
             
@@ -174,7 +198,7 @@ export function ChatHeader({
                         value={leagueId}
                         onChange={(e) => onLeagueIdChange(e.target.value)}
                         onClick={(e) => e.stopPropagation()}
-                        placeholder="ID"
+                        placeholder="Enter ID"
                         className="bg-white/5 border border-white/10 rounded-lg px-2 py-1 focus:ring-0 focus:border-[#00ff87]/50 text-[#00ff87] placeholder-[#00ff87]/20 font-black font-mono w-24 transition-all text-center uppercase text-xs"
                       />
                     </div>

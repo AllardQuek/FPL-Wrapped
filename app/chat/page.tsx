@@ -1,5 +1,4 @@
 'use client';
-
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { PERSONA_MAP } from '@/lib/analysis/persona/constants';
 import { getPersonaImagePath } from '@/lib/constants/persona-images';
@@ -12,6 +11,8 @@ import { MessageItem } from '@/components/chat/MessageItem';
 import { ChatInput } from '@/components/chat/ChatInput';
 import { Particles } from '@/components/ui/Particles';
 import { useAutoScroll } from '@/lib/chat/hooks/useAutoScroll';
+
+
 
 export default function ChatPage() {
   const [question, setQuestion] = useState('');

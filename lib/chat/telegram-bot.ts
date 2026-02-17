@@ -515,10 +515,12 @@ if (bot) {
             "⚙️ **Settings:**\n" +
             "Customize my personality and tone:\n" +
             "• `/set_persona PEP` - Set manager persona (PEP, ARTETA, etc.)\n" +
-            "• `/set_tone roast` - Set tone (balanced, roast, optimist, tactical)\n" +
+            "• `/set_tone roast` - Set tone (balanced, roast, optimist, delulu)\n" +
             "• `/settings` - View current chat settings\n\n" +
             "ℹ️ **Missing Data?**\n" +
-            `If commands fail, visit ${onboardUrl} to manually index your data.`
+                `If commands fail, visit ${onboardUrl} to manually index your data.` +
+            "\n\n" +
+                `Or try the web chat: https://fpl-wrapped-live.vercel.app/chat`
         );
 
         await safeReplyHtml(ctx, html);
@@ -536,11 +538,13 @@ if (bot) {
             "• `/index_league <id>` - Index an entire league\n\n" +
             "**Customization:**\n" +
             "• `/set_persona <key>` - e.g. PEP, ARTETA, MOURINHO\n" +
-            "• `/set_tone <id>` - balanced, roast, optimist, tactical\n" +
+            "• `/set_tone <id>` - balanced, roast, optimist, delulu\n" +
             "• `/settings` - Show current personality settings\n\n" +
             "**Missing Data?** \n" +
             "We might not have indexed everyone yet. If you can't get results, index manually here:\n" +
-            `${onboardUrl}`
+            `${onboardUrl}` +
+            "\n\n" +
+            "Or try the web chat: https://fpl-wrapped-live.vercel.app/chat"
         );
 
         await safeReplyHtml(ctx, html);

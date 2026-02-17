@@ -277,6 +277,11 @@ if (bot) {
         }
         chatProcessing.add(chatId);
         const conversationId = conversationIdsByChatId.get(chatId);
+        
+        let fullContent = '';
+        let latestConversationId = conversationId;
+        let currentStatus = 'Thinking...';
+        
         // Apply per-chat settings (persona, tone).
         const settings = chatSettingsByChatId.get(chatId) || {};
         const promptToSend = buildFinalPrompt(question, { 
@@ -297,11 +302,7 @@ if (bot) {
         }
 
         const streamResponse = async (conversationIdForRequest?: string) => {
-            let fullContent = '';
             let lastUpdate = Date.now();
-            let latestConversationId = conversationIdForRequest;
-            let currentStatus = 'Thinking...';
-
             const ac = new AbortController();
             let lastChunkAt = Date.now();
 
@@ -314,14 +315,21 @@ if (bot) {
                         // ignore
                     }
                 }
-            }, 1000).unref?.();
+            }, 1000);
+            
+            if (typeof inactivityChecker !== 'number' && 'unref' in inactivityChecker) {
+                (inactivityChecker as any).unref();
+            }
 
             try {
                 for await (const chunk of streamChatWithAgent(promptToSend, conversationIdForRequest, { includeVegaHint: true, signal: ac.signal })) {
                     lastChunkAt = Date.now();
 
-                    if (chunk.conversationId) {
+                    if (chunk.conversationId && chunk.conversationId !== latestConversationId) {
                         latestConversationId = chunk.conversationId;
+                        // Cache it immediately so we don't lose it if the stream fails later
+                        conversationIdsByChatId.set(chatId, latestConversationId);
+                        console.debug(`[Telegram] updated conversationId mid-stream: ${latestConversationId}`);
                     }
 
                     // Lightweight chunk metadata logging to aid debugging
@@ -383,7 +391,7 @@ if (bot) {
                 }
                 throw err;
             } finally {
-                clearInterval(inactivityChecker as unknown as number);
+                clearInterval(inactivityChecker as any);
             }
         };
 
@@ -408,13 +416,6 @@ if (bot) {
                     '🔄 Session expired, starting a new chat...'
                 );
                 result = await streamResponse(undefined);
-            }
-
-            const { fullContent, latestConversationId } = result;
-
-            if (latestConversationId) {
-                console.debug(`[Telegram] storing conversationId for chat ${chatId}: ${latestConversationId}`);
-                conversationIdsByChatId.set(chatId, latestConversationId);
             }
 
             // Check for charts in the final content
@@ -458,26 +459,29 @@ if (bot) {
             console.error('Telegram bot error:', error);
             const errStr = toErrorMessage(error);
 
-            // If the stream aborted due to inactivity, clear stored conversation id
-            if (errStr.toLowerCase().includes('inactivity timeout') || errStr.toLowerCase().includes('no data received')) {
-                console.warn(`[Telegram] clearing conversationId for chat ${chatId} due to stream inactivity`);
-                conversationIdsByChatId.delete(chatId);
-            }
-
             let userFriendlyMsg = isServiceDownError(errStr)
                 ? SERVICE_DOWN_MESSAGE
                 : `❌ Sorry, I encountered an error: ${errStr}`;
 
             if (errStr.toLowerCase().includes('inactivity timeout') || errStr.toLowerCase().includes('no data received')) {
-                userFriendlyMsg = '❌ Request timed out while waiting for a response. I reset the session — please send your message again.';
+                userFriendlyMsg = '❌ Request timed out while waiting for a response. I kept the session active — you can try sending your message again.';
             }
 
-            await ctx.telegram.editMessageText(
-                chatId,
-                placeholder.message_id,
-                undefined,
-                userFriendlyMsg
-            ).catch(() => {});
+            // If we have partial content, show it along with the error
+            if (fullContent.trim()) {
+                const rendered = renderTelegramHtml(fullContent);
+                const separator = '────────────────────';
+                const finalHtml = `${rendered}\n\n${separator}\n${userFriendlyMsg}`;
+                const previewChunk = splitTelegramMessage(finalHtml)[0];
+                await safeEditMessageHtml(ctx, chatId, placeholder.message_id, previewChunk);
+            } else {
+                await ctx.telegram.editMessageText(
+                    chatId,
+                    placeholder.message_id,
+                    undefined,
+                    userFriendlyMsg
+                ).catch(() => {});
+            }
         } finally {
             chatProcessing.delete(chatId);
         }

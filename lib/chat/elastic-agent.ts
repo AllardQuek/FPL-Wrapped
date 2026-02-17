@@ -77,6 +77,11 @@ export async function* streamChatWithAgent(
     '- Interactivity: Always include "tooltip": true or "tooltip": {"content": "data"} in your encodings.',
     '- Colors: Avoid hardcoding specific hex colors; the system theme will apply the FPL branding automatically.',
     '- Simplicity: Focus on clear, high-impact visualizations (bars, lines, areas) that work well in a chat interface.',
+    '- **Visual Accuracy (Charts)**:',
+    '- ALWAYS include clear text labels in Vega-Lite charts (e.g., `label: { show: true }` or a text layer).',
+    '- Most users are on mobile; assume they CANNOT hover. Use labels or explicit legends to make data readable at a glance without interaction.',
+    '- Keep colors high-contrast (FPL theme used).',
+    '- Prefer simple bar or line charts over complex interactive scatterplots.',
   ].join('\n');
 
   let input = message;

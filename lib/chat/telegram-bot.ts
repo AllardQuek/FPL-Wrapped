@@ -511,7 +511,7 @@ if (bot) {
             "• `/index_manager <your_id>`\n" +
             "• `/index_league <league_id>`\n\n" +
             "🔎 **Chat:**\n" +
-            "Just send me a message directly or use `/chat <question>`\n\n" +
+            "Just send me a message directly — no command needed.\n\n" +
             "⚙️ **Settings:**\n" +
             "Customize my personality and tone:\n" +
             "• `/set_persona PEP` - Set manager persona (PEP, ARTETA, etc.)\n" +
@@ -531,7 +531,7 @@ if (bot) {
         const html = renderTelegramHtml(
             "🔍 **FPL Wrapped Help**\n\n" +
             "**Core Commands:**\n" +
-            "• `/chat <question>` - Ask me anything\n" +
+            "• Send a message to ask me anything\n" +
             "• `/index_manager <id>` - Index a specific team\n" +
             "• `/index_league <id>` - Index an entire league\n\n" +
             "**Customization:**\n" +
@@ -636,14 +636,7 @@ if (bot) {
         await safeReplyHtml(ctx, html);
     });
 
-    // Handle /chat command
-    bot.command('chat', async (ctx) => {
-        const text = ctx.message.text.replace('/chat', '').trim();
-        if (!text) {
-            return ctx.reply('Please provide a question! Example: `/chat Who had the biggest bench regrets in league 1305804?`');
-        }
-        await handleChat(ctx, text);
-    });
+    // Removed explicit `/chat` command — users can just send messages.
 
     // Handle /index_manager command
     bot.command('index_manager', async (ctx) => {
@@ -671,7 +664,7 @@ if (bot) {
     (async () => {
         try {
             await bot.telegram.setMyCommands([
-                { command: 'chat', description: 'Ask me anything' },
+                { command: 'start', description: 'Start the bot' },
                 { command: 'index_manager', description: 'Index a team' },
                 { command: 'index_league', description: 'Index a league' },
                 { command: 'set_persona', description: 'Set manager persona' },

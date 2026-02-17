@@ -48,8 +48,8 @@ export function ChatHeader({
             FPL <span className="text-[#00ff87] glow-text not-italic">CHAT</span>
           </h2>
           <p className="text-sm text-white/50 max-w-lg mx-auto font-medium leading-relaxed">
-            Go beyond the stats. <br />
-            <span className="text-white/80">Shape your story with personalised insights.</span>
+            No boring stats. <br />
+            <span className="text-white/80">Just personalised insights for you and your league.</span>
           </p>
           <div className="text-[10px] font-black tracking-[0.3em] text-[#00ff87]/40 uppercase pt-2">
             Made with ⚽

@@ -9,6 +9,7 @@ The chat product is an FPL-specific conversational assistant powered by **Elasti
 It is available through:
 - Web chat UI: `/chat`
 - Telegram bot: webhook-driven bot flow
+- Telegram Mini App: in-chat mini-apps with chart rendering (see Telegram section)
 
 ---
 
@@ -77,11 +78,22 @@ Supported chart flow:
 - Vega specs are sanitized (URL stripping + secure loader)
 - Theme enforcement keeps visuals aligned with app style and avoids unsafe external data loads
 
+Additional rendering targets:
+- Charts are rendered inline in the web UI from `<visualization tool-result-id="..." />` tags and fenced `vega-lite` blocks.
+- Chart rendering is also supported in Telegram Mini Apps (Vega-Lite specs produced by the agent are mapped into mini-app views), enabling inline visuals inside Telegram conversations.
+
 Main code/docs:
 - `lib/chat/charts.ts`
 - `app/chat/page.tsx`
 - `docs/chat/vega-chart-formatting.md`
 - `docs/chat/vega-chart-format-approaches.md`
+
+### Personalisation — Manager personas & tones
+
+- Manager personas: the web UI exposes a set of curated manager personas (e.g. `PEP`, `ARTETA`, `AMORIM`, `MOURINHO`) surfaced in the chat header and persona lab. Each persona has a short description, traits, colour/emoji and an image; selecting one injects that persona's identity into the agent prompt so responses read like that manager.
+- Tone selection: users can pick a response tone (configured in `lib/chat/constants.ts`) such as `Balanced`, `Savage Roast`, `Eternal Optimist`, or `Pure Delulu`. The selected tone is injected into the final prompt and affects how the agent phrases its answers.
+- UI surface: `app/chat/page.tsx`, `components/chat/ChatHeader.tsx` and `components/chat/ChatInput.tsx` provide the selection controls and featured personas. Persona images are loaded via `getPersonaImagePath`.
+- Telegram parity: the Telegram bot supports the same persona + tone settings (the bot uses the same `PERSONA_MAP` and `TONE_CONFIG`), and mini-app flows will reuse these settings where applicable.
 
 ### 7) Telegram bot integration
 
@@ -91,6 +103,10 @@ Implemented bot features include:
 - update deduplication middleware by `update_id`
 - safe HTML formatting + message chunking for Telegram limits
 - per-chat conversation continuity with retry on expired conversations
+
+Telegram Mini Apps and charts:
+- Core chat features are replicated in Telegram, including support for chart rendering inside Telegram Mini Apps (Vega-Lite specs provided by the agent are rendered inside mini-app views).
+- The bot and mini-app flows reuse the same agent tooling and `conversationId` continuity where applicable.
 
 Main code/docs:
 - `app/api/webhook/telegram/route.ts`
@@ -186,6 +202,8 @@ pnpm dev
 4. Open chat
 
 - `http://localhost:3000/chat`
+
+Note: the web UI persists a selected league id in localStorage under the key `fpl_wrapped_league_id` so your league selection is remembered between sessions.
 
 5. (Optional) Set Telegram webhook
 

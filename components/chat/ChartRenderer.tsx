@@ -97,9 +97,9 @@ export const ChartRenderer = memo(function ChartRenderer({ spec }: { spec: strin
     <div className="w-full my-6 relative group">
       <div className="glass-card w-full rounded-2xl border border-white/10 shadow-2xl bg-[#0d0015]/30 overflow-visible transition-all hover:border-[#00ff87]/30">
         {title && (
-          <div className="px-5 py-4 border-b border-white/5 bg-gradient-to-r from-white/10 to-transparent flex items-center justify-between">
-            <div className="text-[11px] font-black uppercase tracking-[0.25em] text-[#00ff87] drop-shadow-[0_0_8px_rgba(0,255,135,0.4)]">{title}</div>
-            <div className="flex gap-1.5 opacity-30 group-hover:opacity-100 transition-opacity">
+          <div className="px-5 py-4 border-b border-white/5 bg-gradient-to-r from-white/10 to-transparent flex items-start justify-between gap-4">
+            <div className="text-[11px] font-black uppercase tracking-[0.25em] text-[#00ff87] drop-shadow-[0_0_8px_rgba(0,255,135,0.4)] break-words py-1 flex-1">{title}</div>
+            <div className="flex gap-1.5 opacity-30 group-hover:opacity-100 transition-opacity flex-shrink-0 mt-1.5">
               <div className="w-1.5 h-1.5 rounded-full bg-[#00ff87] animate-pulse" />
               <div className="w-1.5 h-1.5 rounded-full bg-[#00d4ff]" />
             </div>

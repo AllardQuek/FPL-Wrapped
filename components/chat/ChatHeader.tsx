@@ -173,19 +173,19 @@ export function ChatHeader({
                 
                 <button 
                   onClick={() => onUseSuggestion(`${suggestionPrefixes[suggestionIndex]} in league ${leagueId || '[ID]'}`)}
-                  className="relative h-8 flex items-center justify-center w-full z-10 outline-none" 
+                  className="relative min-h-[40px] flex items-center justify-center w-full z-10 outline-none" 
                 >
                   <AnimatePresence mode="wait">
-                    <motion.span
+                    <motion.div
                       key={suggestionIndex}
                       initial={{ y: 10, opacity: 0 }}
                       animate={{ y: 0, opacity: 1 }}
                       exit={{ y: -10, opacity: 0 }}
                       transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-                      className="absolute whitespace-nowrap text-white/90 font-medium text-sm md:text-base text-center italic tracking-tight px-4"
+                      className="absolute inset-x-0 text-white/90 font-medium text-sm md:text-base text-center italic tracking-tight px-4"
                     >
                       &ldquo;{suggestionPrefixes[suggestionIndex]}&rdquo;
-                    </motion.span>
+                    </motion.div>
                   </AnimatePresence>
                 </button>
 

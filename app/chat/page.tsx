@@ -46,18 +46,18 @@ export default function ChatPage() {
   // Dynamic question suggestions state
   const [suggestionIndex, setSuggestionIndex] = useState(0);
   const suggestionPrefixes = useMemo(() => [
-    "Generate my FPL Wrapped'",
-    "Summarise GW26",
-    "Who had the biggest bench regrets",
-    "Analyze the captaincy picks",
-    "Compare managers",
-    "Who took the most hits"
+    "Who is the biggest risk taker?",
+    "Who has the least ball knowledge?",
+    "Whose team is the most template?",
+    "Generate my FPL Wrapped",
+    "Who had the biggest bench regrets?",
+    "Compare managers"
   ], []);
 
   useEffect(() => {
     const interval = setInterval(() => {
       setSuggestionIndex((prev) => (prev + 1) % suggestionPrefixes.length);
-    }, 4000);
+    }, 2000);
     return () => clearInterval(interval);
   }, [suggestionPrefixes.length]);
 

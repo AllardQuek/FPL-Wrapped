@@ -138,7 +138,7 @@ export const ChartRenderer = memo(function ChartRenderer({ spec }: { spec: strin
           `}</style>
           <div 
             ref={el} 
-            className={`w-full flex justify-center items-center interactive-chart transition-opacity duration-500 [&>.vega-embed]:!max-w-full [&>.vega-embed]:!w-full ${isReady ? 'opacity-100' : 'opacity-0'}`} 
+            className={`w-full flex justify-center items-center chart-container transition-opacity duration-500 [&>.vega-embed]:!max-w-full [&>.vega-embed]:!w-full ${isReady ? 'opacity-100' : 'opacity-0'}`} 
           />
           
           <AnimatePresence mode="wait">

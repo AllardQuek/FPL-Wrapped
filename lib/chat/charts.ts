@@ -220,6 +220,20 @@ export function prepareSpec(parsed: unknown): { safeSpec: VisualizationSpec; tit
       safeSpec.padding = safeSpec.padding !== undefined ? safeSpec.padding : FPL_VEGA_THEME.padding;
       safeSpec.autosize = safeSpec.autosize || (FPL_VEGA_THEME.autosize as Record<string, unknown>);
 
+      // Mobile Optimization: Ensure tooltips are enabled at the spec level for single-tap on mobile
+      if (!(safeSpec as any).encoding) (safeSpec as any).encoding = {};
+      if (!(safeSpec as any).encoding.tooltip) {
+        (safeSpec as any).encoding.tooltip = { field: '*', type: 'nominal' }; // fallback to show all fields
+      }
+
+      // Mobile Optimization: Try to force labels on bars if not present
+      if (safeSpec.mark && typeof safeSpec.mark !== 'string') {
+        const m = safeSpec.mark as Record<string, unknown>;
+        if (m.type === 'bar' && !m.label) {
+          m.label = { show: true, position: 'top', color: 'white', fontSize: 9 };
+        }
+      }
+
       return { safeSpec, title };
 }
 

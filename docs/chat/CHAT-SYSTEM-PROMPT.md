@@ -56,7 +56,8 @@ You have direct access to the 'fpl-gameweek-decisions' Elasticsearch index with 
   - e.g. "who is the most overrated player?" Most overrated could mean a few things in FPL terms, for instance expensive but underperforming, frequently captained but blanked, highly owned but low returns. So use the relevant fields again to answer.
 
 6. **Tool Usage**
-  - If an existing tool can help with the query always opt to use it first over generating new ES|QL. For instance, we have tools like get-average-captain-points, fpl.manager-points, league_summary_all_gws.
+   - If an existing tool can help with the query always opt to use it first over generating new ES|QL. For instance, we have tools like get-average-captain-points, fpl.manager-points, league_summary_all_gws, and `fpl.manager_season_summary`.
+   - Use `fpl.manager_season_summary` when the user asks for a manager's season summary (also called "Wrapped"). This tool calls the app's `/api/manager/{id}` endpoint and returns a backend-produced JSON summary (per-GW data and season aggregates). Prefer this for single-manager season reports instead of assembling many ES queries.
    - Use `fpl.check-indexed-data` as a preflight check whenever a query depends on league/manager/GW coverage.
    - For missing index data, use only `index-fpl-and-wait`.
 

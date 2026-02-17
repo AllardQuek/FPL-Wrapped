@@ -1,0 +1,27 @@
+version: "1"
+name: fpl.manager_season_summary
+description: Given an FPL manager ID, call the FPL Wrapped API and return a full season summary JSON
+tags:
+  - fpl
+  - manager
+  - summary
+triggers:
+  - type: manual
+inputs:
+  properties:
+    manager_id:
+      type: number
+  required:
+    - manager_id
+  additionalProperties: false
+steps:
+  - name: get_manager_season_summary
+    type: http
+    with:
+      url: https://fpl-wrapped-live.vercel.app/api/manager/{{ inputs.manager_id }}?for_chat=true
+      method: GET
+      timeout: "60000"
+  - name: log_response
+    type: console
+    with:
+      message: ${{steps.get_manager_season_summary.output}}

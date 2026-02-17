@@ -372,6 +372,21 @@ FROM fpl-gameweek-decisions
 
 ---
 
+### Tool 12: `fpl.manager_season_summary`
+
+Fetches a precomputed season summary for a single manager (also known as "Wrapped") by calling the internal FPL Wrapped manager API. Use this tool when the user asks for a detailed season summary (per-GW data, aggregates, transfers, chips, bench/starting breakdowns) for a specific `manager_id` and you want a single consolidated JSON response rather than assembling many ES queries.
+
+Inputs: `?manager_id` (integer, required)
+
+Implementation notes:
+- This tool calls the application manager route (`/api/manager/{id}`) and returns the manager's season summary JSON (aggregates + per-gameweek documents) as produced by the backend.
+- Prefer this tool when the backend's summary is sufficient — it avoids multiple ES queries and respects any app-side denormalization or post-processing.
+- If additional league-scoped aggregations are needed (e.g. captaincy spread within a league), combine this tool with the ES|QL aggregation tools.
+
+Example usage: "Show me a season summary for manager 456" → call `fpl.manager_season_summary` with `manager_id=456` and return the JSON summary to the agent for rendering or further analysis.
+
+---
+
 ## Future — Requires Denormalized Fields
 
 ES|QL cannot access nested fields (`starters`, `bench`, `transfers`). The Index Search Tool **can** query nested fields using nested queries, but cannot aggregate them.

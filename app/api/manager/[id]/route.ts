@@ -23,6 +23,16 @@ export async function GET(
     // Generate the season summary
     const summary = generateSeasonSummary(data);
 
+    // Respect `for_chat` query param: if truthy, remove `allPlayers` from the response
+    const forChatParam = request.nextUrl?.searchParams.get('for_chat');
+    const forChat = forChatParam === '1' || forChatParam === 'true';
+
+    if (forChat && summary && typeof summary === 'object' && 'allPlayers' in (summary as any)) {
+      const pared = { ...(summary as any) };
+      delete pared.allPlayers;
+      return NextResponse.json(pared);
+    }
+
     return NextResponse.json(summary);
   } catch (error) {
     console.error('Error fetching manager data:', error);

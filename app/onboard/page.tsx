@@ -11,7 +11,6 @@ export default function OnboardPage() {
     const [type, setType] = useState<'manager' | 'league'>('manager');
     const [id, setId] = useState('');
     const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
-    const [error, setError] = useState('');
     const [logs, setLogs] = useState<string[]>([]);
     const [progress, setProgress] = useState({ current: 0, total: 0 });
     const router = useRouter();
@@ -27,7 +26,6 @@ export default function OnboardPage() {
         if (!id.trim() || status === 'loading') return;
 
         setStatus('loading');
-        setError('');
         setLogs(['Initializing data import...', `Target: ${type === 'manager' ? 'Team' : 'League'} ID ${id}`]);
         setProgress({ current: 0, total: 0 });
 
@@ -57,7 +55,6 @@ export default function OnboardPage() {
                     const data = JSON.parse(line.slice(6));
 
                     if (data.error) {
-                        setError(data.error);
                         setStatus('error');
                         setLogs(prev => [...prev, `❌ ERROR: ${data.error}`]);
                         return;
@@ -78,10 +75,10 @@ export default function OnboardPage() {
                     }
                 }
             }
-        } catch (err: any) {
-            setError(err.message || 'Something went wrong');
+        } catch (err) {
+            const message = err instanceof Error ? err.message : 'Something went wrong';
             setStatus('error');
-            setLogs(prev => [...prev, `❌ CRITICAL FAILURE: ${err.message}`]);
+            setLogs(prev => [...prev, `❌ CRITICAL FAILURE: ${message}`]);
         }
     };
 

@@ -317,8 +317,8 @@ if (bot) {
                 }
             }, 1000);
             
-            if (typeof inactivityChecker !== 'number' && 'unref' in inactivityChecker) {
-                (inactivityChecker as any).unref();
+            if (typeof inactivityChecker === 'object' && inactivityChecker && 'unref' in inactivityChecker) {
+                (inactivityChecker as { unref: () => void }).unref();
             }
 
             try {
@@ -391,17 +391,15 @@ if (bot) {
                 }
                 throw err;
             } finally {
-                clearInterval(inactivityChecker as any);
+                clearInterval(inactivityChecker);
             }
         };
 
         try {
-            let result;
-
             console.debug(`[Telegram] starting stream for chat ${chatId} with conversationId=${conversationId}`);
 
             try {
-                result = await streamResponse(conversationId);
+                await streamResponse(conversationId);
             } catch (firstError) {
                 if (!isConversationNotFoundError(firstError)) {
                     throw firstError;
@@ -415,7 +413,7 @@ if (bot) {
                     undefined,
                     '🔄 Session expired, starting a new chat...'
                 );
-                result = await streamResponse(undefined);
+                await streamResponse(undefined);
             }
 
             // Check for charts in the final content
@@ -572,8 +570,8 @@ if (bot) {
             "I'm your AI assistant for all things Fantasy Premier League.\n\n" +
             "⚡ **Quick Start:**\n" +
             "If I don't have your data yet, you can index yourself directly:\n" +
-            "• `/index_manager <your_id>`\n" +
-            "• `/index_league <league_id>`\n\n" +
+            "• `/index_manager [team_id]`\n" +
+            "• `/index_league [league_id]`\n\n" +
             "🔎 **Chat:**\n" +
             "Just send me a message directly — no command needed.\n\n" +
             "⚙️ **Settings:**\n" +
@@ -598,11 +596,11 @@ if (bot) {
             "🔍 **FPL Wrapped Help**\n\n" +
             "**Core Commands:**\n" +
             "• Send a message to ask me anything\n" +
-            "• `/index_manager <id>` - Index a specific team\n" +
-            "• `/index_league <id>` - Index an entire league\n\n" +
+            "• `/index_manager [team_id]` - Index a specific team\n" +
+            "• `/index_league [league_id]` - Index an entire league\n\n" +
             "**Customization:**\n" +
-            "• `/set_persona <key>` - e.g. PEP, ARTETA, MOURINHO\n" +
-            "• `/set_tone <id>` - balanced, roast, optimist, delulu\n" +
+            "• `/set_persona [manager]` - e.g. PEP, ARTETA, MOURINHO\n" +
+            "• `/set_tone [tone]` - balanced, roast, optimist, delulu\n" +
             "• `/settings` - Show current personality settings\n\n" +
             "**Missing Data?** \n" +
             "We might not have indexed everyone yet. If you can't get results, index manually here:\n" +
@@ -716,14 +714,14 @@ if (bot) {
     // Handle /index_manager command
     bot.command('index_manager', async (ctx) => {
         const id = ctx.message.text.split(' ')[1];
-        if (!id) return ctx.reply('Usage: `/index_manager <manager_id>`');
+        if (!id) return ctx.reply('Usage: `/index_manager [team_id]`');
         await handleIndexing(ctx, 'manager', id);
     });
 
     // Handle /index_league command
     bot.command('index_league', async (ctx) => {
         const id = ctx.message.text.split(' ')[1];
-        if (!id) return ctx.reply('Usage: `/index_league <league_id>`');
+        if (!id) return ctx.reply('Usage: `/index_league [league_id]`');
         await handleIndexing(ctx, 'league', id);
     });
 

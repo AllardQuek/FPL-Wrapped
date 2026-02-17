@@ -438,32 +438,32 @@ if (bot) {
     }
 
     // Handle start command
-    bot.start((ctx) => {
+    bot.start(async (ctx) => {
         const onboardUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'fpl-wrapped-live.vercel.app'}/onboard`;
-        ctx.reply(
+        await safeReplyHtml(ctx, renderTelegramHtml(
             "👋 Welcome to FPL Wrapped Chat!\n\n" +
             "I'm your AI assistant for all things Fantasy Premier League.\n\n" +
             "⚡ **Quick Start:**\n" +
             "If I don't have your data yet, you can index yourself directly:\n" +
             "• `/index_manager <your_id>`\n" +
             "• `/index_league <league_id>`\n\n" +
-            "� **Chat:**\n" +
+            "🔎 **Chat:**\n" +
             "Just send me a message directly or use `/chat <question>`\n\n" +
             "⚙️ **Settings:**\n" +
             "Customize my personality and tone:\n" +
             "• `/set_persona PEP` - Set manager persona (PEP, ARTETA, etc.)\n" +
             "• `/set_tone roast` - Set tone (balanced, roast, optimist, tactical)\n" +
             "• `/settings` - View current chat settings\n\n" +
-            "ℹ️ **Missing Data?**" +
+            "ℹ️ **Missing Data?**\n" +
             `If commands fail, visit ${onboardUrl} to manually index your data.`
-        );
+        ));
     });
 
     // Handle help command
-    bot.help((ctx) => {
+    bot.help(async (ctx) => {
         console.log('[Telegram] help handler invoked for chat', ctx.chat?.id);
         const onboardUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'fpl-wrapped-live.vercel.app'}/onboard`;
-        ctx.reply(
+        await safeReplyHtml(ctx, renderTelegramHtml(
             "🔍 **FPL Wrapped Help**\n\n" +
             "**Core Commands:**\n" +
             "• `/chat <question>` - Ask me anything\n" +
@@ -473,10 +473,10 @@ if (bot) {
             "• `/set_persona <key>` - e.g. PEP, ARTETA, MOURINHO\n" +
             "• `/set_tone <id>` - balanced, roast, optimist, tactical\n" +
             "• `/settings` - Show current personality settings\n\n" +
-            "**Missing Data?** " +
+            "**Missing Data?** \n" +
             "We might not have indexed everyone yet. If you can't get results, index manually here:\n" +
             `${onboardUrl}`
-        );
+        ));
     });
 
     // Settings commands: set persona, set tone, charts toggle, show settings
@@ -556,7 +556,7 @@ if (bot) {
         const s = chatSettingsByChatId.get(chatId) || {};
         const personaName = s.persona ? (PERSONA_MAP[s.persona]?.name || s.persona) : 'None';
         const toneConfig = s.tone ? TONE_CONFIG[s.tone as ToneId] : TONE_CONFIG.balanced;
-        await ctx.reply(`⚙️ **Chat Settings**\n\n🎭 **Persona:** ${personaName}\n⚡ **Tone:** ${toneConfig.icon} ${toneConfig.label}\n\nUse /set_persona or /set_tone to change these.`);
+        await safeReplyHtml(ctx, renderTelegramHtml(`⚙️ **Chat Settings**\n\n🎭 **Persona:** ${personaName}\n⚡ **Tone:** ${toneConfig.icon} ${toneConfig.label}\n\nUse /set_persona or /set_tone to change these.`));
     });
 
     // Handle /chat command

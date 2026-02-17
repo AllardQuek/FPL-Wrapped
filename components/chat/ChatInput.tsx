@@ -113,7 +113,7 @@ export function ChatInput({
             onChange={(e) => onQuestionChange(e.target.value)}
             placeholder="Chat with your FPL data"
             aria-label="FPL chat question"
-            className="flex-1 bg-transparent border-none focus:ring-0 text-white placeholder-white/20 px-4 py-3 text-base font-bold min-w-0"
+            className="flex-1 bg-transparent border-none focus:ring-0 text-white placeholder-white/20 px-3 md:px-4 py-3 text-sm md:text-base font-bold min-w-0"
             disabled={isStreaming}
           />
           {isStreaming ? (
@@ -121,7 +121,7 @@ export function ChatInput({
               type="button"
               onClick={onStop}
               aria-label="Stop generating"
-              className="bg-[#e90052] hover:bg-[#ff005c] text-white font-black px-6 py-3 rounded-xl transition-all flex items-center justify-center active:scale-95 shadow-lg"
+              className="bg-[#e90052] hover:bg-[#ff005c] text-white font-black px-4 md:px-6 py-3 rounded-xl transition-all flex items-center justify-center active:scale-95 shadow-lg"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
                 <rect x="6" y="6" width="12" height="12" rx="2" />
@@ -132,7 +132,7 @@ export function ChatInput({
               type="submit"
               disabled={!question.trim()}
               aria-label="Send question"
-              className="bg-[#00ff87] hover:bg-[#00e67a] text-[#0d0015] font-black px-8 py-3 rounded-xl transition-all flex items-center justify-center whitespace-nowrap active:scale-95 shadow-lg disabled:opacity-30 disabled:grayscale disabled:scale-100"
+              className="bg-[#00ff87] hover:bg-[#00e67a] text-[#0d0015] font-black px-4 md:px-8 py-3 rounded-xl transition-all flex items-center justify-center whitespace-nowrap active:scale-95 shadow-lg disabled:opacity-30 disabled:grayscale disabled:scale-100"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />

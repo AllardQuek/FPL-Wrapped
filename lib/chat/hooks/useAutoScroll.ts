@@ -59,6 +59,9 @@ export function useAutoScroll({ messages, isStreaming }: UseAutoScrollProps) {
     let lastScrollHeight = container.scrollHeight;
 
     const resizeObserver = new ResizeObserver(() => {
+      // Don't auto-scroll if there are no messages and we're not streaming
+      if (messages.length === 0 && !isStreaming) return;
+
       const currentScrollHeight = container.scrollHeight;
       const isShrinking = currentScrollHeight < lastScrollHeight;
       lastScrollHeight = currentScrollHeight;

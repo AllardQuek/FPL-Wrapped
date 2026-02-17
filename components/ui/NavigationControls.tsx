@@ -158,11 +158,11 @@ export function NavigationControls({ sections, currentSection, onNavigate }: Nav
         {currentSection < sections.length - 1 && (
           <button
             onClick={() => handleClickZone('next')}
-            className="fixed bottom-6 right-6 z-50 bg-slate-900/90 backdrop-blur-md text-[#00ff87] p-4 rounded-full shadow-2xl border border-white/10 transition-all active:scale-95 hover:bg-slate-800"
+            className="fixed bottom-4 right-4 md:bottom-6 md:right-6 z-50 bg-slate-900/90 backdrop-blur-md text-[#00ff87] p-3 md:p-4 rounded-full shadow-2xl border border-white/10 transition-all active:scale-95 hover:bg-slate-800"
             aria-label="Next section"
             data-html2canvas-ignore
           >
-            <ChevronDown className="w-6 h-6" />
+            <ChevronDown className="w-5 h-5 md:w-6 md:h-6" />
           </button>
         )}
       </>

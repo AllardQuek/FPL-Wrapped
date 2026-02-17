@@ -1,0 +1,43 @@
+name: fpl.detect_differentials
+description: Find FPL players owned by a super-majority (>50%) of managers in the league
+enabled: true
+tags:
+  - fpl
+  - analysis
+
+triggers:
+  - type: manual
+
+inputs:
+  - name: gw
+    type: number
+  - name: league_id
+    type: string
+
+steps:
+  - name: get_league_size
+    type: elasticsearch.request
+    with:
+      method: POST
+      path: /_query
+      body:
+        query: |
+          FROM fpl-gameweek-decisions
+          | MV_EXPAND league_ids 
+          | WHERE gameweek == {{ inputs.gw }} AND {{ inputs.league_id }} IN (league_ids)
+          | STATS league_size = COUNT_DISTINCT(manager_id)
+
+  - name: check_ownership
+    type: elasticsearch.request
+    with:
+      method: POST
+      path: /_query
+      body:
+        query: |
+          FROM fpl-gameweek-decisions
+          | MV_EXPAND league_ids 
+          | WHERE gameweek == {{ inputs.gw }} AND {{ inputs.league_id }} IN (league_ids)
+          | MV_EXPAND starter_names
+          | STATS owners = COUNT_DISTINCT(manager_id) BY starter_names
+          | WHERE owners > ({{ steps.get_league_size.output.values[0][0] }} * 0.5)
+          | SORT owners DESC

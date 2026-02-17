@@ -17,6 +17,27 @@ export default function OnboardPage() {
     const logsEndRef = useRef<HTMLDivElement>(null);
     const currentSeason = getCurrentFPLSeason();
 
+    const translateError = (error: string) => {
+        if (error.includes('404')) {
+            return type === 'manager'
+                ? "Team ID not found. Tip: Go to 'Points' on the FPL site; the number in the URL (e.g., /entry/123456/) is your Team ID."
+                : "League ID not found. Please double-check the ID from your league's URL or invite link.";
+        }
+        if (error.includes('429')) {
+            return "Too many requests. FPL servers are rate-limiting us. Please wait a minute and try again.";
+        }
+        if (error.includes('403')) {
+            return "Access forbidden. This league might be private or require authentication that we don't have.";
+        }
+        if (error.includes('500') || error.includes('502') || error.includes('503')) {
+            return "FPL servers are currently having trouble. This happens often during gameweek updates. Try again in a few minutes.";
+        }
+        if (error.includes('Elasticsearch') || error.includes('connection')) {
+            return "Database connection error. Our scouting servers are currently undergoing maintenance.";
+        }
+        return error;
+    };
+
     useEffect(() => {
         logsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [logs]);
@@ -24,6 +45,13 @@ export default function OnboardPage() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!id.trim() || status === 'loading') return;
+
+        // Simple validation
+        if (isNaN(parseInt(id))) {
+            setStatus('error');
+            setLogs(['❌ ERROR: Invalid ID. Please enter a numeric ID.']);
+            return;
+        }
 
         setStatus('loading');
         setLogs(['Initializing data import...', `Target: ${type === 'manager' ? 'Team' : 'League'} ID ${id}`]);
@@ -36,7 +64,10 @@ export default function OnboardPage() {
                 body: JSON.stringify({ type, id }),
             });
 
-            if (!response.ok) throw new Error('Failed to connect to indexing service');
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.error || `Error: ${response.statusText || response.status}`);
+            }
 
             const reader = response.body?.getReader();
             const decoder = new TextDecoder();
@@ -56,7 +87,7 @@ export default function OnboardPage() {
 
                     if (data.error) {
                         setStatus('error');
-                        setLogs(prev => [...prev, `❌ ERROR: ${data.error}`]);
+                        setLogs(prev => [...prev, `❌ ERROR: ${translateError(data.error)}`]);
                         return;
                     }
 
@@ -78,7 +109,7 @@ export default function OnboardPage() {
         } catch (err) {
             const message = err instanceof Error ? err.message : 'Something went wrong';
             setStatus('error');
-            setLogs(prev => [...prev, `❌ CRITICAL FAILURE: ${message}`]);
+            setLogs(prev => [...prev, `❌ CRITICAL FAILURE: ${translateError(message)}`]);
         }
     };
 
@@ -137,10 +168,16 @@ export default function OnboardPage() {
                                         <input
                                             type="text"
                                             value={id}
-                                            onChange={(e) => setId(e.target.value)}
+                                            onChange={(e) => {
+                                                setId(e.target.value);
+                                                if (status === 'error') setStatus('idle');
+                                            }}
                                             placeholder={`e.g. ${type === 'manager' ? '123456' : '1305804'}`}
                                             disabled={status === 'loading'}
-                                            className="w-full bg-black/40 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-white font-bold focus:ring-2 focus:ring-[#00ff87]/50 focus:border-[#00ff87] transition-all outline-none"
+                                            className={`w-full bg-black/40 border rounded-2xl py-4 pl-12 pr-4 text-white font-bold transition-all outline-none ${status === 'error'
+                                                ? 'border-[#e90052] focus:ring-2 focus:ring-[#e90052]/50'
+                                                : 'border-white/10 focus:ring-2 focus:ring-[#00ff87]/50 focus:border-[#00ff87]'
+                                                }`}
                                         />
                                     </div>
                                 </div>
@@ -160,8 +197,8 @@ export default function OnboardPage() {
                                     </div>
                                 )}
 
-                                {status === 'loading' ? (
-                                    <div className="bg-black/40 rounded-2xl p-4 border border-white/5 font-mono text-[11px] h-32 overflow-y-auto custom-scrollbar space-y-1">
+                                {status === 'loading' || status === 'error' ? (
+                                    <div className={`bg-black/40 rounded-2xl p-4 border font-mono text-[11px] h-32 overflow-y-auto custom-scrollbar space-y-1 transition-colors ${status === 'error' ? 'border-[#e90052]/30' : 'border-white/5'}`}>
                                         {logs.map((log, i) => (
                                             <div key={i} className={log.startsWith('❌') ? 'text-[#e90052]' : log.startsWith('✅') ? 'text-[#00ff87]' : 'text-white/60'}>
                                                 {log}
@@ -185,13 +222,19 @@ export default function OnboardPage() {
                                     disabled={!id.trim() || status === 'loading'}
                                     className={`w-full font-black py-4 rounded-2xl transition-all flex items-center justify-center gap-2 active:scale-[0.98] shadow-lg ${status === 'loading'
                                             ? 'bg-[#00ff87]/10 text-[#00ff87] border border-[#00ff87]/20'
-                                            : 'bg-[#00ff87] hover:bg-[#00e67a] text-black disabled:opacity-20 disabled:grayscale'
+                                            : status === 'error'
+                                                ? 'bg-[#e90052] hover:bg-[#ff1a6a] text-white'
+                                                : 'bg-[#00ff87] hover:bg-[#00e67a] text-black disabled:opacity-20 disabled:grayscale'
                                         }`}
                                 >
                                     {status === 'loading' ? (
                                         <>
                                             <Loader2 className="animate-spin" size={18} />
                                             Scouting...
+                                        </>
+                                    ) : status === 'error' ? (
+                                        <>
+                                            Try Again <ArrowRight size={18} />
                                         </>
                                     ) : (
                                         <>

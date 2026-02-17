@@ -8,7 +8,7 @@ export function FooterCard() {
   const currentSeason = getCurrentFPLSeason();
 
   return (
-    <div className="min-h-screen flex flex-col items-center p-8">
+    <div className="min-h-screen flex flex-col items-center p-4 md:p-8">
       <div className="flex-1 flex flex-col justify-center max-w-2xl w-full">
         {/* Header */}
         {/* <div className="text-center mb-8">
@@ -16,7 +16,7 @@ export function FooterCard() {
         </div> */}
 
         {/* Main Card */}
-        <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-3xl p-8 md:p-10 text-white shadow-[0_20px_50px_rgba(0,0,0,0.3)]">
+        <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-3xl p-6 md:p-10 text-white shadow-[0_20px_50px_rgba(0,0,0,0.3)]">
           {/* Main Message */}
           <div className="text-center mb-8">
             <div className="text-4xl mb-4">⚽</div>

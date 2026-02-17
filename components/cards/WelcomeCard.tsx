@@ -83,26 +83,26 @@ export function WelcomeCard({ summary }: WelcomeCardProps) {
   const { persona } = summary;
   
   return (
-    <div className="min-h-screen flex flex-col items-center p-8 overflow-hidden">
+    <div className="min-h-screen flex flex-col items-center p-4 md:p-8 overflow-hidden">
       {/* Background Accent */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[500px] bg-[#00ff87]/5 blur-[120px] rounded-full -z-10"></div>
 
       <div className="flex-1 flex flex-col justify-center text-center animate-fade-in">
-        <p className="text-white/40 text-[10px] tracking-[0.5em] uppercase mb-12">FPL Season Review</p>
+        <p className="text-white/40 text-[10px] tracking-[0.5em] uppercase mb-8 md:mb-12">FPL Season Review</p>
 
-        <div className="relative inline-block mb-12">
-          <p className="text-6xl md:text-8xl font-black tracking-tighter text-white italic opacity-10 absolute -top-12 -left-12 -z-10 select-none">{currentSeason}</p>
-          <h1 className="text-5xl md:text-7xl font-bold tracking-tight text-white mb-4">
+        <div className="relative inline-block mb-8 md:mb-12">
+          <p className="text-5xl md:text-8xl font-black tracking-tighter text-white italic opacity-10 absolute -top-8 -left-8 md:-top-12 md:-left-12 -z-10 select-none">{currentSeason}</p>
+          <h1 className="text-4xl md:text-7xl font-bold tracking-tight text-white mb-4">
             {(summary.teamName || 'Team').toUpperCase()}.
           </h1>
         </div>
 
-        <p className="text-lg md:text-xl font-medium text-white/60 mb-8 max-w-sm mx-auto leading-relaxed">
+        <p className="text-base md:text-xl font-medium text-white/60 mb-6 md:mb-8 max-w-sm mx-auto leading-relaxed">
           what kind of manager are you?
         </p>
 
         {/* Mystery Avatar - User's Unknown Persona */}
-        <div className="flex justify-center mb-16">
+        <div className="flex justify-center mb-10 md:mb-16">
           <ManagerAvatar
             key="mystery"
             image=""
@@ -115,8 +115,8 @@ export function WelcomeCard({ summary }: WelcomeCardProps) {
 
         {/* All Manager Personas Grid */}
         <div className="max-w-3xl mx-auto">
-          <p className="text-white/50 text-[9px] tracking-[0.3em] uppercase mb-6">16 Manager Personas</p>
-          <div className="grid grid-cols-4 md:grid-cols-8 gap-4 md:gap-6 justify-items-center">
+          <p className="text-white/50 text-[9px] tracking-[0.3em] uppercase mb-4 md:mb-6">16 Manager Personas</p>
+          <div className="grid grid-cols-4 md:grid-cols-8 gap-3 md:gap-6 justify-items-center">
             {ALL_PERSONAS.map((p) => (
               <ManagerAvatar
                 key={p.key}

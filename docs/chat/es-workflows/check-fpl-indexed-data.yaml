@@ -1,6 +1,9 @@
 name: fpl.check-indexed-data
 description: Check indexed FPL coverage for league or manager (single tool, routed by conditions)
 enabled: true
+tags:
+  - fpl
+  - indexing
 triggers:
   - type: manual
 

@@ -386,7 +386,7 @@ export default function ChatPage() {
           style={{ overflowAnchor: 'auto' }}
         >
           {/* Sticky Mini-Info Indicator */}
-          <div className="sticky top-0 z-20 flex justify-center pointer-events-none pb-4">
+          <div className="sticky top-0 z-20 flex justify-center pointer-events-none">
             <div className="px-3 py-1 rounded-full bg-black/40 backdrop-blur-md border border-white/5 text-white/30 text-[9px] font-black tracking-[0.2em] uppercase shadow-2xl">
               Season {currentSeason} • chat
             </div>
@@ -407,7 +407,7 @@ export default function ChatPage() {
             onUseSuggestion={handleUseSuggestion}
           />
 
-          <div className="max-w-4xl mx-auto w-full space-y-8 px-4">
+          <div className="max-w-4xl mx-auto w-full space-y-8">
             {messages.map((message, messageIndex) => (
               <MessageItem
                 key={message.id}

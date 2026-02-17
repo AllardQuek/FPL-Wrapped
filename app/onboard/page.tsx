@@ -2,8 +2,9 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { getCurrentFPLSeason } from '@/lib/season';
-import { ArrowRight, Search, Trophy, User, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
+import { ArrowRight, Search, Trophy, User, CheckCircle2, AlertCircle, Loader2, MessageSquare } from 'lucide-react';
 import { Particles } from '@/components/ui/Particles';
 
 export default function OnboardPage() {
@@ -236,9 +237,22 @@ export default function OnboardPage() {
                 </div>
 
                 {/* Footer info */}
-                <p className="text-center mt-8 text-white/20 text-[9px] font-bold uppercase tracking-[0.3em]">
-                    FPL Wrapped Intelligence Division
-                </p>
+                <div className="mt-8 flex flex-col items-center gap-6">
+                    <Link
+                        href="/chat"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="group relative inline-flex items-center gap-3 px-6 py-3 rounded-xl bg-white/5 border border-white/10 text-white/60 hover:text-[#00ff87] hover:border-[#00ff87]/30 hover:bg-[#00ff87]/5 transition-all duration-300 active:scale-95 shadow-lg"
+                    >
+                        <MessageSquare size={14} className="group-hover:scale-110 transition-transform" />
+                        <span className="text-[11px] font-black tracking-[0.2em] uppercase">
+                            Already indexed? Start Chatting
+                        </span>
+                    </Link>
+                    <p className="text-white/20 text-[9px] font-bold uppercase tracking-[0.3em]">
+                        FPL Wrapped Intelligence
+                    </p>
+                </div>
             </div>
         </main>
     );

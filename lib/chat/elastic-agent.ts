@@ -4,6 +4,7 @@
  */
 
 import * as fs from 'fs';
+import { toErrorMessage } from './utils';
 
 export interface ToolCall {
   tool_id: string;
@@ -24,17 +25,6 @@ export interface ChatStreamChunk {
   done?: boolean;
   conversationId?: string;
   error?: string;
-}
-
-function toErrorMessage(value: unknown): string {
-  if (value instanceof Error) return value.message;
-  if (typeof value === 'string') return value;
-  if (value == null) return 'Unknown error';
-  try {
-    return JSON.stringify(value);
-  } catch {
-    return String(value);
-  }
 }
 
 /**

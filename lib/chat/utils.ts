@@ -1,3 +1,33 @@
+export const SERVICE_DOWN_MESSAGE = "❌ One of our services is down so please try again later 🥲";
+
+/**
+ * Checks if an error message indicates a downstream service failure (e.g. Anthropic/Claude)
+ */
+export function isServiceDownError(error: string): boolean {
+  const errorLower = error.toLowerCase();
+  return (
+    errorLower.includes('agentexecutionerror') || 
+    errorLower.includes('inference entity') || 
+    errorLower.includes('anthropic') || 
+    errorLower.includes('claude') || 
+    errorLower.includes('service error')
+  );
+}
+
+/**
+ * Universal error converter - converts any unknown error type to string
+ */
+export function toErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  if (typeof error === 'string') return error;
+  if (error == null) return 'Unknown error';
+  try {
+    return JSON.stringify(error);
+  } catch {
+    return String(error);
+  }
+}
+
 /**
  * Convert technical errors into user-friendly messages
  */
@@ -37,6 +67,12 @@ export function getUserFriendlyError(error: string): string {
   // Terminated or interrupted
   if (errorLower.includes('terminated') || errorLower.includes('interrupted')) {
     return "The operation was interrupted. This usually happens if the search took too long or was cancelled.";
+  }
+
+  // Service/Provider specific downstream errors
+  if (isServiceDownError(error)) {
+    // Strip the ❌ for the UI fallback which usually adds its own prefix or has different styling
+    return SERVICE_DOWN_MESSAGE.replace('❌ ', '');
   }
 
   // Generic fallback

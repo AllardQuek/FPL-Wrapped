@@ -4,6 +4,11 @@ import { buildFinalPrompt } from './prompt';
 import { AVAILABLE_TONES, TONES, TONE_CONFIG, ToneId } from './constants';
 import { PERSONA_MAP } from '../analysis/persona/constants';
 import { saveChartSpec } from './chart-storage';
+import { 
+    isServiceDownError, 
+    toErrorMessage, 
+    SERVICE_DOWN_MESSAGE 
+} from './utils';
 
 const featuredPersonaKeys = ['PEP', 'ARTETA', 'AMORIM', 'MOURINHO'] as const;
 type FeaturedPersona = (typeof featuredPersonaKeys)[number];
@@ -91,17 +96,6 @@ if (bot) {
     type IndexingContext = ChatContext & {
         message: { text: string };
     };
-
-    function toErrorMessage(error: unknown): string {
-        if (error instanceof Error) return error.message;
-        if (typeof error === 'string') return error;
-        if (error == null) return 'Unknown error';
-        try {
-            return JSON.stringify(error);
-        } catch {
-            return String(error);
-        }
-    }
 
     function isConversationNotFoundError(error: unknown): boolean {
         const message = toErrorMessage(error);
@@ -419,13 +413,18 @@ if (bot) {
             }
         } catch (error: unknown) {
             console.error('Telegram bot error:', error);
-            const errorMessage = toErrorMessage(error);
+            const errStr = toErrorMessage(error);
+            
+            const userFriendlyMsg = isServiceDownError(errStr)
+                ? SERVICE_DOWN_MESSAGE
+                : `❌ Sorry, I encountered an error: ${errStr}`;
+
             await ctx.telegram.editMessageText(
                 chatId,
                 placeholder.message_id,
                 undefined,
-                `❌ Sorry, I encountered an error: ${errorMessage}`
-            );
+                userFriendlyMsg
+            ).catch(() => {});
         }
     }
 
@@ -491,12 +490,18 @@ if (bot) {
             );
         } catch (error: unknown) {
             console.error('Indexing error:', error);
+            const errStr = toErrorMessage(error);
+            
+            const message = isServiceDownError(errStr)
+                ? SERVICE_DOWN_MESSAGE
+                : `❌ Indexing failed: ${errStr}`;
+
             await ctx.telegram.editMessageText(
                 chatId,
                 statusMessage.message_id,
                 undefined,
-                `❌ Indexing failed: ${toErrorMessage(error)}\n\nTry manual indexing at: ${process.env.NEXT_PUBLIC_APP_URL || 'fpl-wrapped-live.vercel.app'}/onboard`
-            );
+                `${message}\n\nTry manual indexing at: ${process.env.NEXT_PUBLIC_APP_URL || 'fpl-wrapped-live.vercel.app'}/onboard`
+            ).catch(() => {});
         }
     }
 

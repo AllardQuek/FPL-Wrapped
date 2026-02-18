@@ -216,9 +216,9 @@ export function createTelegramChatService(
             if (vegaMatch) {
                 try {
                     const spec = vegaMatch[1];
-                    const chartId = deps?.saveChartSpec
+                    const chartId: string = deps?.saveChartSpec
                         ? await deps.saveChartSpec(spec, String(chatId))
-                        : (await import('../../chart-storage')).saveChartSpec(spec, String(chatId));
+                        : await (await import('../../chart-storage')).saveChartSpec(spec, String(chatId));
                     const chartUrl = `${appUrl}/chat/chart/${chartId}`;
 
                     extra.reply_markup = Markup.inlineKeyboard([[Markup.button.webApp('📊 View Chart', chartUrl)]]).reply_markup;

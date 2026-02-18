@@ -53,6 +53,7 @@
     "vega-embed": "^7.1.0",
     "vega-lite": "^6.4.2"
   },
+  "license": "MIT",
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@testing-library/jest-dom": "^6.9.1",

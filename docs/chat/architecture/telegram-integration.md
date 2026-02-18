@@ -44,7 +44,7 @@ Primary references:
 - `app/api/webhook/telegram/route.ts`
 - `lib/chat/telegram-bot.ts`
 - `lib/chat/telegram/services/chat-service.ts`
-- `docs/architecture/telegram-bot.md`
+- `docs/wrapped/architecture/telegram-bot.md`
 
 ## Command and message behavior (current)
 

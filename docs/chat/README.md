@@ -122,7 +122,7 @@ Telegram Mini Apps and charts:
 Main code/docs:
 - `app/api/webhook/telegram/route.ts`
 - `lib/chat/telegram-bot.ts`
-- `docs/architecture/telegram-bot.md`
+- `docs/wrapped/architecture/telegram-bot.md`
 - `scripts/setup-telegram-webhook.ts`
 
 ---
@@ -253,6 +253,6 @@ Operational runbook:
 - `docs/chat/CHAT-SYSTEM-PROMPT.md`
 - `docs/chat/es-tools/mini-league-agent-tools.md`
 - `docs/chat/indexing/on-demand-indexing-api.md`
-- `docs/architecture/telegram-bot.md`
+- `docs/wrapped/architecture/telegram-bot.md`
 - `docs/chat/vega-chart-formatting.md`
 - `docs/chat/requirements/plan-chat.md` (historical planning doc)

@@ -4,7 +4,7 @@ This document outlines the architectural decisions and implementation details fo
 
 ## 1. The Challenge: Webhook Retries
 
-Telegram's Bot API expects a `200 OK` response to its webhook requests within **30 seconds**. If the server does not respond within this window, Telegram assumes the delivery failed and automatically retries the request multiple times.
+Telegram's Bot API expects a `200 OK` response to its webhook requests within **60 seconds** (?). If the server does not respond within this window, Telegram assumes the delivery failed and automatically retries the request multiple times.
 
 In FPL Wrapped, many bot actions (like AI-powered chat or full-league indexing) can take significantly longer than 30 seconds.
 

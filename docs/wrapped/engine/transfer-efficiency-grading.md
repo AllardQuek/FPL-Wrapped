@@ -153,5 +153,5 @@ Required +93 pts for D grade (0.5 × 186)
 ## References
 
 - Analysis script: `scripts/analyze-managers.ts`
-- Transfer timing analysis: `docs/research/transfer-timing-psychology.md`
-- Behavioral signals: `docs/engine/behavioral-signals.md`
+- Transfer timing analysis: `docs/wrapped/research/transfer-timing-psychology.md`
+- Behavioral signals: `docs/wrapped/engine/behavioral-signals.md`

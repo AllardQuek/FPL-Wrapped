@@ -1,7 +1,7 @@
 # Mini-League ES|QL Templates — Review Report
 
 **Date:** 2026-02-15
-**File reviewed:** `docs/research/extended-features/mini-league-esql.esql`
+**File reviewed:** `mini-league-esql.esql` (historical template file referenced in prior review runs)
 **Index mapping:** `lib/elasticsearch/fpl-gameweek-decisions-index-schema.json`
 **Context:** [Elastic Agent Builder ES|QL tools](https://www.elastic.co/docs/explore-analyze/ai-features/agent-builder/tools/esql-tools)
 **Status:** ✅ All fixes applied to the templates file

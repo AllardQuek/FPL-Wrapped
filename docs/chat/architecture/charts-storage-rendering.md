@@ -21,7 +21,7 @@ flowchart TD
 
     A --> K[Telegram flow detects vega block]
     K --> L[saveChartSpec -> fpl-chat-charts]
-    L --> M[/chat/chart/:id web app view]
+    L --> M["/chat/chart/:id web app view"]
 ```
 
 ## Web rendering path

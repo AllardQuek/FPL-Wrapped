@@ -22,7 +22,7 @@ flowchart TD
     TOOLS --> ESEXE[(fpl-indexing-executions)]
 
     TCHAT --> CHSTORE[(fpl-chat-charts)]
-    TCHAT --> CHARTPAGE[/chat/chart/:id]
+    TCHAT --> CHARTPAGE["/chat/chart/:id"]
 ```
 
 ## Web chat sequence

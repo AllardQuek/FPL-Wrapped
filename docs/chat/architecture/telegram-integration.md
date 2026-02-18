@@ -19,7 +19,7 @@ sequenceDiagram
     participant Bot as telegram-bot.ts
     participant Service as services/chat-service.ts
     participant Agent as elastic-agent.ts
-    participant Charts as fpl-chat-charts + /chat/chart/:id
+    participant Charts as fpl-chat-charts + "/chat/chart/:id"
 
     Tg->>Hook: Incoming update
     Hook->>Tg: Immediate 200 OK

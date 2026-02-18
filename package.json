@@ -12,6 +12,12 @@
     "es:health": "npx tsx scripts/es-health.ts",
     "es:index": "npx tsx scripts/index-manager-gameweek.ts",
     "es:query": "npx tsx scripts/es-query-test.ts",
+    "test": "vitest",
+    "test:watch": "vitest --watch",
+    "test:coverage": "vitest run --coverage",
+    "test:elasticsearch": "vitest run test/elasticsearch/*.test.*",
+    "test:chat": "vitest run test/chat/*.test.*",
+    "test:telegram": "vitest run test/telegram/*.test.*",
     "test:indexing:async": "npx tsx scripts/test-indexing-async-api.ts",
     "debug:transformer": "NODE_TLS_REJECT_UNAUTHORIZED=0 npx tsx scripts/debug-transformer.ts",
     "es:migrate": "npx tsx scripts/migrate-denormalization.ts"

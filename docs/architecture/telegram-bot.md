@@ -66,7 +66,21 @@ bot.use(async (ctx, next) => {
 });
 ```
 
-## 4. Deployment Considerations (Serverless)
+## 4. Conversation Session Memory (User Experience)
+
+The bot keeps a per-chat `conversationId` in an in-memory bounded cache so memory does not grow forever.
+
+- **Current defaults** (see `lib/chat/telegram-bot.ts`):
+    - `maxEntries = 10,000`
+    - `ttlMs = 24 hours` (sliding TTL based on activity)
+    - cleanup every `10 minutes`
+- **Why this exists**: protects service stability (bounded memory, less GC pressure, fewer OOM risks).
+- **User-visible behavior**: if a chat is inactive long enough to expire (or evicted under heavy load), the next message starts a fresh session and prior AI context may not be remembered.
+- **Expected phrasing for product/support**: “If you return after a long break (about a day by default), the bot may start a new conversation context. Your commands still work, but you may need to restate context.”
+
+This is separate from update deduplication (`update_id` cache), which prevents processing the same webhook update more than once.
+
+## 5. Deployment Considerations (Serverless)
 
 When deploying on serverless platforms like **Vercel**, the runtime environment typically terminates as soon as the HTTP response is sent.
 

@@ -48,11 +48,10 @@ export function getESClient(): Client | null {
       // Reasonable timeouts
       requestTimeout: 10000,
       maxRetries: 2,
-      // Disable SSL verification if on corporate network
-      // Only use this in development/testing!
-      tls: {
-        rejectUnauthorized: process.env.ELASTICSEARCH_REJECT_UNAUTHORIZED !== 'false',
-      },
+      // Disable SSL verification if on private network: Only use in dev!
+      // tls: {
+      //   rejectUnauthorized: process.env.ELASTICSEARCH_REJECT_UNAUTHORIZED !== 'false',
+      // },
     });
     
     connectionAttempted = true;

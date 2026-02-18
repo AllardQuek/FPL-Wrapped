@@ -1,7 +1,7 @@
 import { Markup } from 'telegraf';
 import { streamChatWithAgent } from '../../elastic-agent';
+import type { ChatStreamChunk } from '../../elastic-agent';
 import { buildFinalPrompt } from '../../prompt';
-import { saveChartSpec } from '../../chart-storage';
 import { renderTelegramHtml, splitTelegramMessage } from '../render';
 import { safeEditMessageHtml, safeReplyHtml } from '../safe-telegram';
 import type { TelegramTextCommandContext } from '../types';
@@ -9,8 +9,14 @@ import { isServiceDownError, toErrorMessage, SERVICE_DOWN_MESSAGE } from '../../
 
 type ChatSettings = { persona?: string; tone?: string };
 
+type ConversationIdStore = {
+    get: (chatId: number) => string | undefined;
+    set: (chatId: number, conversationId: string) => void;
+    delete: (chatId: number) => boolean;
+};
+
 type CreateTelegramChatServiceOptions = {
-    conversationIdsByChatId: Map<number, string>;
+    conversationIdsByChatId: ConversationIdStore;
     chatProcessing: Set<number>;
     chatSettingsByChatId: Map<number, ChatSettings>;
     consumeWebhookAck: (chatId: number) => number | undefined;
@@ -31,7 +37,19 @@ function isConversationNotFoundError(error: unknown): boolean {
     }
 }
 
-export function createTelegramChatService(options: CreateTelegramChatServiceOptions) {
+export function createTelegramChatService(
+    options: CreateTelegramChatServiceOptions,
+    deps?: {
+        saveChartSpec?: (spec: string, chatId: string) => Promise<string>;
+        streamChatWithAgent?: (
+            message: string,
+            conversationId?: string,
+            options?: { includeVegaHint?: boolean; signal?: AbortSignal }
+        ) => AsyncGenerator<ChatStreamChunk, void, unknown>;
+        safeEditMessageHtml?: typeof safeEditMessageHtml;
+        safeReplyHtml?: typeof safeReplyHtml;
+    }
+) {
     const {
         conversationIdsByChatId,
         chatProcessing,
@@ -39,6 +57,9 @@ export function createTelegramChatService(options: CreateTelegramChatServiceOpti
         consumeWebhookAck,
         streamInactivityTimeoutMs = 30_000
     } = options;
+    const streamFn = deps?.streamChatWithAgent ?? streamChatWithAgent;
+    const safeEditHtmlFn = deps?.safeEditMessageHtml ?? safeEditMessageHtml;
+    const safeReplyHtmlFn = deps?.safeReplyHtml ?? safeReplyHtml;
 
     return async function handleChat(ctx: TelegramTextCommandContext, question: string) {
         const chatId = ctx.chat.id;
@@ -90,7 +111,7 @@ export function createTelegramChatService(options: CreateTelegramChatServiceOpti
             }
 
             try {
-                for await (const chunk of streamChatWithAgent(promptToSend, conversationIdForRequest, { includeVegaHint: true, signal: ac.signal })) {
+                for await (const chunk of streamFn(promptToSend, conversationIdForRequest, { includeVegaHint: true, signal: ac.signal })) {
                     lastChunkAt = Date.now();
 
                     if (chunk.conversationId && chunk.conversationId !== latestConversationId) {
@@ -144,7 +165,7 @@ export function createTelegramChatService(options: CreateTelegramChatServiceOpti
                         const statusHtml = `\n\n${separator}\n<i>⚡️ ${currentStatus}</i>`;
                         const previewHtml = rendered ? `${rendered}${statusHtml}` : `<i>⚡️ ${currentStatus}</i>`;
                         const previewChunk = splitTelegramMessage(previewHtml)[0];
-                        await safeEditMessageHtml(ctx, chatId, placeholder.message_id, previewChunk);
+                        await safeEditHtmlFn(ctx, chatId, placeholder.message_id, previewChunk);
                         lastUpdate = Date.now();
                     }
 
@@ -175,14 +196,14 @@ export function createTelegramChatService(options: CreateTelegramChatServiceOpti
                 }
 
                 conversationIdsByChatId.delete(chatId);
-                const sessionResetOk = await safeEditMessageHtml(
+                const sessionResetOk = await safeEditHtmlFn(
                     ctx,
                     chatId,
                     placeholder.message_id,
                     renderTelegramHtml('🔄 Session expired, starting a new chat...')
                 );
                 if (!sessionResetOk) {
-                    await safeReplyHtml(ctx, renderTelegramHtml('🔄 Session expired, starting a new chat...'));
+                    await safeReplyHtmlFn(ctx, renderTelegramHtml('🔄 Session expired, starting a new chat...'));
                 }
                 await streamResponse(undefined);
             }
@@ -195,7 +216,9 @@ export function createTelegramChatService(options: CreateTelegramChatServiceOpti
             if (vegaMatch) {
                 try {
                     const spec = vegaMatch[1];
-                    const chartId = await saveChartSpec(spec, String(chatId));
+                    const chartId = deps?.saveChartSpec
+                        ? await deps.saveChartSpec(spec, String(chatId))
+                        : (await import('../../chart-storage')).saveChartSpec(spec, String(chatId));
                     const chartUrl = `${appUrl}/chat/chart/${chartId}`;
 
                     extra.reply_markup = Markup.inlineKeyboard([[Markup.button.webApp('📊 View Chart', chartUrl)]]).reply_markup;
@@ -207,14 +230,14 @@ export function createTelegramChatService(options: CreateTelegramChatServiceOpti
             const finalHtml = renderTelegramHtml(fullContent);
             const finalChunks = splitTelegramMessage(finalHtml);
 
-            const finalEditOk = await safeEditMessageHtml(ctx, chatId, placeholder.message_id, finalChunks[0], extra);
+            const finalEditOk = await safeEditHtmlFn(ctx, chatId, placeholder.message_id, finalChunks[0], extra);
             if (!finalEditOk) {
-                await safeReplyHtml(ctx, finalChunks[0], extra);
+                await safeReplyHtmlFn(ctx, finalChunks[0], extra);
             }
 
             for (let index = 1; index < finalChunks.length; index++) {
                 const chunkExtra = index === finalChunks.length - 1 ? extra : {};
-                await safeReplyHtml(ctx, finalChunks[index], chunkExtra);
+                await safeReplyHtmlFn(ctx, finalChunks[index], chunkExtra);
             }
         } catch (error: unknown) {
             console.error('Telegram bot error:', error);
@@ -233,12 +256,12 @@ export function createTelegramChatService(options: CreateTelegramChatServiceOpti
                 const separator = '────────────────────';
                 const finalHtml = `${rendered}\n\n${separator}\n${userFriendlyMsg}`;
                 const previewChunk = splitTelegramMessage(finalHtml)[0];
-                const partialEditOk = await safeEditMessageHtml(ctx, chatId, placeholder.message_id, previewChunk);
+                const partialEditOk = await safeEditHtmlFn(ctx, chatId, placeholder.message_id, previewChunk);
                 if (!partialEditOk) {
-                    await safeReplyHtml(ctx, previewChunk);
+                    await safeReplyHtmlFn(ctx, previewChunk);
                 }
             } else {
-                const errorEditOk = await safeEditMessageHtml(
+                const errorEditOk = await safeEditHtmlFn(
                     ctx,
                     chatId,
                     placeholder.message_id,

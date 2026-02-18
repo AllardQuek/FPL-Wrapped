@@ -28,6 +28,7 @@ export function registerCoreHandlers(bot: Telegraf, deps: CoreHandlerDeps) {
                 "🛠️ **Troubleshooting:**\n" +
                 "If I hang or don't respond, try:\n" +
                 "• `/reset` — reset the conversation for your chat\n" +
+                "• After long inactivity (~24h), I may start a fresh context\n" +
                 "• Send a follow-up message (sometimes the request didn't reach me)\n" +
                 "• Restart the bot (ask the bot owner)\n\n" +
                 "ℹ️ **Missing Data?**\n" +
@@ -55,6 +56,7 @@ export function registerCoreHandlers(bot: Telegraf, deps: CoreHandlerDeps) {
                 '🛠️ **Troubleshooting:**\n' +
                 "If I hang or don't respond, try:\n" +
                 '• `/reset` — reset the conversation for your chat\n' +
+                '• After long inactivity (~24h), I may start a fresh context\n' +
                 '• Send a follow-up message\n' +
                 '• Ask the bot owner to restart the bot\n\n' +
                 '**Missing Data?** \n' +

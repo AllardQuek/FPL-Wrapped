@@ -1,3 +1,6 @@
+> ⚠️ Historical ideation transcript (non-canonical).
+> For current architecture and implementation behavior, use `docs/chat/architecture/README.md` and `docs/chat/README.md`.
+
 User: what you think about a plan to index fpl data into elasticsearch? do you think there are good use cases to do so? e.g. one feature i'm thinking about it letting users query about their data and we form the queries to help them
 
 GitHub Copilot: Interesting idea! Let me share my thoughts on Elasticsearch for FPL data:

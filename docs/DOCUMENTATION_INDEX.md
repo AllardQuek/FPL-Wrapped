@@ -51,14 +51,20 @@ Quick reference to all project documentation, organized by purpose and task.
 
 ### 🔍 Elasticsearch & AI Integration
 - **[Elastic Chat Product README](chat/README.md) ⭐** - End-to-end overview of chat capabilities, APIs, indexing workflows, Telegram integration, and Vega charting.
-- **[Requirements & Use Cases](chat/requirements/my-use-cases.md)** - Business goals for the search-driven analytics.
-- **[Mini-League Implementation Plan](chat/requirements/plan.md)** - Phase-by-phase roadmap for indexing and reports.
-- **[Chat Feature Plan](chat/requirements/plan-chat.md)** - Strategy for natural language to ES|QL queries.
-- **[High-Level AI Approaches](chat/indexing/high-level-approaches.md)** - Extensive research on AI integration patterns.
+- **[Chat Architecture Hub](chat/architecture/README.md) ⭐** - Canonical architecture navigation for chat runtime, ES/indexing, Agent Builder, charts, and Telegram.
+- **[System Overview](chat/architecture/system-flow.md)** - End-to-end system and sequence diagrams for web + Telegram chat.
+- **[Elasticsearch & Indexing Architecture](chat/architecture/elasticsearch-indexing.md)** - Index responsibilities, execution lifecycle, and indexing API flow.
+- **[Agent Builder Integration](chat/architecture/agent-builder.md)** - Tool/workflow boundaries and streaming event contract.
+- **[Charts Storage & Rendering](chat/architecture/charts-storage-rendering.md)** - Visualization parsing, sanitization, storage, and Telegram chart-link flow.
+- **[Telegram Integration Architecture](chat/architecture/telegram-integration.md)** - Webhook reliability model, bot runtime, and chart web-app integration.
 - **[Indexing Strategy](chat/indexing/indexing-data.md)** - Technical approach to bulk indexing and incremental updates.
 - **[Denormalization Example](chat/indexing/denormalization-example.md)** - Practical example of mapping transforms.
 - **[ES|QL Query Tools](chat/es-tools/mini-league-agent-tools.md)** - Definitions for the Agentic AI tools.
 - **[ES|QL Performance Review](chat/es-tools/mini-league-esql-review.md)** - Evaluation of ES|QL against standard queries.
+- **[Requirements & Use Cases](chat/requirements/my-use-cases.md) (historical)** - Early business framing.
+- **[Mini-League Implementation Plan](chat/requirements/plan.md) (historical)** - Earlier phase roadmap.
+- **[Chat Feature Plan](chat/requirements/plan-chat.md) (historical)** - Earlier implementation/planning draft.
+- **[High-Level AI Approaches](chat/indexing/high-level-approaches.md) (historical)** - Research transcript and ideation.
 
 ---
 

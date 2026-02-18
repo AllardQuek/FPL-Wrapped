@@ -44,7 +44,7 @@ ES|QL tools require **all parameters to be required** — the verifier rejects n
 
 These workflows can be triggered by the agent when data for a requested league or manager is not found in the index.
 
-See detailed architecture + runbook: `docs/elastic/indexing/on-demand-indexing-api.md`.
+See detailed architecture + runbook: `docs/chat/indexing/on-demand-indexing-api.md`.
 
 ### Recommended default: `index-fpl-and-wait`
 

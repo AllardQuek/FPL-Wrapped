@@ -1,5 +1,8 @@
 # Plan: Chat with FPL Data (Elastic Agent Builder)
 
+> ⚠️ Historical planning document (non-canonical).
+> For current architecture and implementation behavior, use `docs/chat/architecture/README.md` and `docs/chat/README.md`.
+
 **TL;DR**: Build a conversational interface to query FPL league data using **Elastic's Agent Builder** (no custom agent code needed!). Available via web UI (`/chat`) and Telegram bot (`/ask`). The agent lives in Elastic Cloud and we just call its API.
 
 **Estimated Time**: 1-2 days

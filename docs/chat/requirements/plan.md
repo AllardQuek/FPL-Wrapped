@@ -1,5 +1,8 @@
 # Plan: Mini-League Reports & Scheduled Delivery
 
+> ⚠️ Historical planning document (non-canonical).
+> For current architecture and implementation behavior, use `docs/chat/architecture/README.md` and `docs/chat/README.md`.
+
 **What this plan covers:**
 - ✅ **Phase 1**: Elasticsearch indexing infrastructure (data foundation)
 - ✅ **Phase 2**: 34 pre-built query functions for mini-league insights (strategic intelligence, performance analysis)

@@ -2,6 +2,17 @@
 
 This README documents the chat product in FPL Wrapped: what it supports today, how it works, and how to run/operate it.
 
+## Canonical architecture docs
+
+For separation of concerns and implementation-level diagrams, use:
+
+- `docs/chat/architecture/README.md`
+- `docs/chat/architecture/system-flow.md`
+- `docs/chat/architecture/elasticsearch-indexing.md`
+- `docs/chat/architecture/agent-builder.md`
+- `docs/chat/architecture/charts-storage-rendering.md`
+- `docs/chat/architecture/telegram-integration.md`
+
 ## What this product is
 
 The chat product is an FPL-specific conversational assistant powered by **Elastic Agent Builder** and backed by the `fpl-gameweek-decisions` index.
@@ -9,7 +20,7 @@ The chat product is an FPL-specific conversational assistant powered by **Elasti
 It is available through:
 - Web chat UI: `/chat`
 - Telegram bot: webhook-driven bot flow
-- Telegram Mini App: in-chat mini-apps with chart rendering (see Telegram section)
+- Telegram web-app chart views linked from bot messages (see Telegram section)
 
 ---
 
@@ -80,7 +91,7 @@ Supported chart flow:
 
 Additional rendering targets:
 - Charts are rendered inline in the web UI from `<visualization tool-result-id="..." />` tags and fenced `vega-lite` blocks.
-- Chart rendering is also supported in Telegram Mini Apps (Vega-Lite specs produced by the agent are mapped into mini-app views), enabling inline visuals inside Telegram conversations.
+- For Telegram, Vega-Lite chart specs can be saved and opened via a Telegram web-app button (`/chat/chart/{id}`) for chart viewing.
 
 Main code/docs:
 - `lib/chat/charts.ts`
@@ -105,8 +116,8 @@ Implemented bot features include:
 - per-chat conversation continuity with retry on expired conversations
 
 Telegram Mini Apps and charts:
-- Core chat features are replicated in Telegram, including support for chart rendering inside Telegram Mini Apps (Vega-Lite specs provided by the agent are rendered inside mini-app views).
-- The bot and mini-app flows reuse the same agent tooling and `conversationId` continuity where applicable.
+- Current production behavior: chart-focused web-app integration (bot sends a `📊 View Chart` button that opens `/chat/chart/{id}`).
+- Roadmap direction: broader mini-app parity with web chat features.
 
 Main code/docs:
 - `app/api/webhook/telegram/route.ts`
@@ -238,9 +249,10 @@ Operational runbook:
 
 ## Related docs
 
+- `docs/chat/architecture/README.md` (canonical architecture hub)
 - `docs/chat/CHAT-SYSTEM-PROMPT.md`
 - `docs/chat/es-tools/mini-league-agent-tools.md`
 - `docs/chat/indexing/on-demand-indexing-api.md`
 - `docs/architecture/telegram-bot.md`
 - `docs/chat/vega-chart-formatting.md`
-- `docs/chat/requirements/plan-chat.md`
+- `docs/chat/requirements/plan-chat.md` (historical planning doc)

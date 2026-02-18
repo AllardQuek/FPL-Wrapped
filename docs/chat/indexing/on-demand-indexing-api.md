@@ -36,7 +36,7 @@ Request body supports:
 - `max_steps` (1–50)
 - `max_iterations` (1–30)
 
-For Agent Builder, the recommended workflow (`docs/elastic/workflows/index-and-wait.yaml`) intentionally pins:
+For Agent Builder, the recommended workflow (`docs/chat/es-workflows/index-and-wait.yaml`) intentionally pins:
 
 - `max_steps: 5`
 - `max_iterations: 8`
@@ -91,9 +91,9 @@ Core behavior:
 
 Current workflow files:
 
-- `docs/elastic/workflows/index-and-wait.yaml` (single-tool orchestrator, recommended)
-- `docs/elastic/workflows/run-index-execution.yaml` (run chunk)
-- `docs/elastic/workflows/get-index-status.yaml` (poll status)
+- `docs/chat/es-workflows/index-and-wait.yaml` (single-tool orchestrator, recommended)
+- `docs/chat/es-workflows/run-index-execution.yaml` (run chunk)
+- `docs/chat/es-workflows/get-index-status.yaml` (poll status)
 
 ### Recommended workflow orchestration in the agent
 

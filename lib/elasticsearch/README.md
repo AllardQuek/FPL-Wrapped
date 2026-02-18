@@ -1,5 +1,11 @@
 # Elasticsearch Integration
 
+> ⚠️ Legacy implementation note.
+> For current chat/search architecture, indexing flow, and Telegram/chart integration, use:
+> - `docs/chat/README.md`
+> - `docs/chat/architecture/elasticsearch-indexing.md`
+> - `docs/chat/architecture/system-flow.md`
+
 Experimental Elasticsearch integration for FPL Wrapped, enabling mini-league reports and conversational queries.
 
 ## Status: Phase 1 Complete ✅

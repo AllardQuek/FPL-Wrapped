@@ -1,10 +1,36 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { waitUntil } from '@vercel/functions';
-import { bot, registerWebhookAck } from '@/lib/chat/telegram-bot';
+import { bot } from '@/lib/chat/telegram-bot';
+import { registerWebhookAck } from '@/lib/chat/telegram/services/ack-registry';
 
 export const runtime = 'nodejs';
 // Allow longer background processing on Vercel (seconds). Adjust to your plan limits.
 export const maxDuration = 180;
+
+type TelegramWebhookPayload = {
+    message?: { chat?: { id?: number }; text?: string };
+    callback_query?: { message?: { chat?: { id?: number } } };
+    channel_post?: { chat?: { id?: number } };
+};
+
+function toTelegramPayload(value: unknown): TelegramWebhookPayload {
+    if (!value || typeof value !== 'object') return {};
+    return value as TelegramWebhookPayload;
+}
+
+function extractChatId(payload: TelegramWebhookPayload): number | undefined {
+    return payload.message?.chat?.id
+        ?? payload.callback_query?.message?.chat?.id
+        ?? payload.channel_post?.chat?.id;
+}
+
+function shouldSendThinkingAck(payload: TelegramWebhookPayload): boolean {
+    const incomingText = payload.message?.text;
+    if (typeof incomingText !== 'string') return false;
+
+    const trimmed = incomingText.trim().toLowerCase();
+    return !trimmed.startsWith('/') || trimmed.startsWith('/chat');
+}
 
 export async function POST(req: NextRequest) {
     if (!bot) {
@@ -13,42 +39,33 @@ export async function POST(req: NextRequest) {
 
     try {
         const body = await req.json();
+        const payload = toTelegramPayload(body);
 
         // Try to send a synchronous ACK before returning so the user always
         // sees the placeholder. Use the same text as the bot placeholder to
         // make the transition seamless (avoids visible "Got it" -> "Thinking").
         try {
-            const chatId = (body as any)?.message?.chat?.id
-                || (body as any)?.callback_query?.message?.chat?.id
-                || (body as any)?.channel_post?.chat?.id;
+            const chatId = extractChatId(payload);
 
             if (chatId) {
                 // Only send/register a quick ack for incoming messages that
                 // will trigger a streaming AI/chat response. Avoid sending
                 // a "Thinking..." placeholder for static slash commands or
                 // UI callbacks.
-                const incomingText = (body as any)?.message?.text;
-                const isChatMessage = typeof incomingText === 'string' && (
-                    // Plain messages (not starting with '/')
-                    !incomingText.trim().startsWith('/') ||
-                    // Explicit /chat command should also produce an ack
-                    incomingText.trim().toLowerCase().startsWith('/chat')
-                );
-
-                if (isChatMessage) {
-                        // Send and register an immediate ack BEFORE handling the
-                        // update to avoid a race where both the webhook and the bot
-                        // send a "Thinking..." message. Awaiting here keeps the
-                        // behavior deterministic; the webhook handler still returns
-                        // quickly because sending is typically fast.
-                        try {
-                            const msg = await bot.telegram.sendMessage(chatId, '🤔 Thinking...');
-                            if (msg && (msg as any).message_id) {
-                                registerWebhookAck(chatId, (msg as any).message_id);
-                            }
-                        } catch (err) {
-                            console.error('Failed to send immediate ack to Telegram user:', err);
+                if (shouldSendThinkingAck(payload)) {
+                    // Send and register an immediate ack BEFORE handling the
+                    // update to avoid a race where both the webhook and the bot
+                    // send a "Thinking..." message. Awaiting here keeps the
+                    // behavior deterministic; the webhook handler still returns
+                    // quickly because sending is typically fast.
+                    try {
+                        const msg = await bot.telegram.sendMessage(chatId, '🤔 Thinking...');
+                        if (msg?.message_id) {
+                            registerWebhookAck(chatId, msg.message_id);
                         }
+                    } catch (err) {
+                        console.error('Failed to send immediate ack to Telegram user:', err);
+                    }
                 }
             }
         } catch (err) {
@@ -67,9 +84,10 @@ export async function POST(req: NextRequest) {
         })());
 
         return NextResponse.json({ ok: true });
-    } catch (error: any) {
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Unknown webhook error';
         console.error('Webhook error:', error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        return NextResponse.json({ error: message }, { status: 500 });
     }
 }
 

@@ -1,6 +1,7 @@
 import { Telegraf } from 'telegraf';
 import * as dotenv from 'dotenv';
 import path from 'path';
+import { TELEGRAM_COMMANDS } from '../lib/chat/telegram/commands';
 
 // Load .env.local or .env
 dotenv.config({ path: path.resolve(process.cwd(), '.env.local') });
@@ -15,23 +16,12 @@ if (!token) {
 
 const bot = new Telegraf(token);
 
-const commands = [
-    { command: 'index_manager', description: 'Index a team' },
-    { command: 'index_league', description: 'Index a league' },
-    { command: 'set_persona', description: 'Set manager persona' },
-    { command: 'set_tone', description: 'Set the tone' },
-    { command: 'settings', description: 'Show current settings' },
-    { command: 'reset', description: 'Reset your chat session' },
-    { command: 'help', description: 'Show help' },
-    { command: 'start', description: 'Start the bot' }
-];
-
 async function updateCommands() {
     const scopes = [
-        { type: 'default' },
-        { type: 'all_private_chats' },
-        { type: 'all_group_chats' },
-        { type: 'all_chat_administrators' }
+        { type: 'default' as const },
+        { type: 'all_private_chats' as const },
+        { type: 'all_group_chats' as const },
+        { type: 'all_chat_administrators' as const }
     ];
 
     try {
@@ -39,7 +29,7 @@ async function updateCommands() {
 
         for (const scope of scopes) {
             try {
-                await bot.telegram.setMyCommands(commands, { scope });
+                await bot.telegram.setMyCommands(TELEGRAM_COMMANDS, { scope });
                 console.log(`   ✅ Updated commands for scope: ${scope.type}`);
             } catch (err) {
                 console.warn(`   ⚠️ Failed to update commands for scope ${scope.type}:`, err);
@@ -47,7 +37,7 @@ async function updateCommands() {
         }
 
         console.log('✅ Finished attempting to update Telegram commands for all scopes.');
-        commands.forEach(c => console.log(`   /${c.command} - ${c.description}`));
+        TELEGRAM_COMMANDS.forEach(c => console.log(`   /${c.command} - ${c.description}`));
     } catch (error) {
         console.error('❌ Failed to update Telegram commands:', error);
         process.exit(1);

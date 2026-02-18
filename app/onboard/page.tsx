@@ -134,29 +134,54 @@ export default function OnboardPage() {
 
                 {/* Console Card */}
                 <div className="glass-card border-white/5 rounded-2xl overflow-hidden shadow-xl animate-fade-in">
-                    {/* Mode Selector */}
-                    <div className="flex border-b border-white/5 bg-white/5">
-                        <button
-                            onClick={() => setType('manager')}
-                            disabled={status === 'loading'}
-                            className={`flex-1 py-4 text-xs font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${type === 'manager' ? 'text-[#00ff87] bg-white/5 border-b-2 border-[#00ff87]' : 'text-white/30 hover:text-white/60'
-                                }`}
-                        >
-                            <User size={14} /> My Team
-                        </button>
-                        <button
-                            onClick={() => setType('league')}
-                            disabled={status === 'loading'}
-                            className={`flex-1 py-4 text-xs font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${type === 'league' ? 'text-[#00ff87] bg-white/5 border-b-2 border-[#00ff87]' : 'text-white/30 hover:text-white/60'
-                                }`}
-                        >
-                            <Trophy size={14} /> Full League
-                        </button>
-                    </div>
-
                     <div className="p-6 md:p-8">
                         {status !== 'success' ? (
                             <form onSubmit={handleSubmit} className="space-y-6">
+                                {/* Type Selection */}
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">
+                                        Select Import Type
+                                    </label>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <button
+                                            type="button"
+                                            onClick={() => setType('manager')}
+                                            disabled={status === 'loading'}
+                                            className={`p-4 rounded-2xl border flex flex-col items-center gap-3 transition-all ${
+                                                type === 'manager' 
+                                                ? 'bg-[#00ff87]/10 border-[#00ff87] text-[#00ff87]' 
+                                                : 'bg-white/5 border-white/10 text-white/30 hover:text-white/60 hover:border-white/20'
+                                            }`}
+                                        >
+                                            <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${type === 'manager' ? 'bg-[#00ff87]/20' : 'bg-white/5'}`}>
+                                                <User size={20} />
+                                            </div>
+                                            <div className="text-center">
+                                                <div className="text-[10px] font-black uppercase tracking-widest mb-0.5">Manager</div>
+                                                <div className="text-[8px] font-medium opacity-50 lowercase tracking-normal">Individual Team Report</div>
+                                            </div>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setType('league')}
+                                            disabled={status === 'loading'}
+                                            className={`p-4 rounded-2xl border flex flex-col items-center gap-3 transition-all ${
+                                                type === 'league' 
+                                                ? 'bg-[#00ff87]/10 border-[#00ff87] text-[#00ff87]' 
+                                                : 'bg-white/5 border-white/10 text-white/30 hover:text-white/60 hover:border-white/20'
+                                            }`}
+                                        >
+                                            <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${type === 'league' ? 'bg-[#00ff87]/20' : 'bg-white/5'}`}>
+                                                <Trophy size={20} />
+                                            </div>
+                                            <div className="text-center">
+                                                <div className="text-[10px] font-black uppercase tracking-widest mb-0.5">League</div>
+                                                <div className="text-[8px] font-medium opacity-50 lowercase tracking-normal">Group Performance Stats</div>
+                                            </div>
+                                        </button>
+                                    </div>
+                                </div>
+
                                 <div className="space-y-2">
                                     <label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">
                                         Enter {type === 'manager' ? 'Team' : 'League'} ID

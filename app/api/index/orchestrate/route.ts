@@ -88,17 +88,18 @@ export async function POST(req: NextRequest) {
                 execution = existing;
             } else {
                 const standings = await getLeagueStandings(leagueId, 1);
-                const managerIds = standings.standings.results.map(m => m.entry);
-                if (managerIds.length === 0) {
+                const firstPageManagerIds = (standings.standings?.results ?? []).map(m => m.entry);
+                if (firstPageManagerIds.length === 0) {
                     return NextResponse.json({ error: 'No managers found for league_id' }, { status: 404 });
                 }
 
                 execution = await createLeagueExecution({
                     leagueId,
-                    managerIds,
                     fromGw,
                     toGw,
-                    requestKey
+                    requestKey,
+                    initialPageManagerIds: firstPageManagerIds,
+                    initialPageHasNext: Boolean(standings.standings?.has_next)
                 });
             }
         } else {
@@ -156,6 +157,11 @@ export async function POST(req: NextRequest) {
             progress: {
                 managers_processed: current.managers_processed,
                 total_managers: current.total_managers,
+                discovered_managers: current.discovered_managers,
+                league_page: current.league_page,
+                league_page_has_next: current.league_page_has_next,
+                league_page_manager_index: current.league_page_manager_index,
+                league_page_manager_count: current.league_page_manager_ids?.length,
                 gameweeks_processed: current.gameweeks_processed,
                 gameweeks_success: current.gameweeks_success,
                 gameweeks_failed: current.gameweeks_failed,

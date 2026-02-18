@@ -33,6 +33,11 @@ export async function POST(
             progress: {
                 managers_processed: execution.managers_processed,
                 total_managers: execution.total_managers,
+                discovered_managers: execution.discovered_managers,
+                league_page: execution.league_page,
+                league_page_has_next: execution.league_page_has_next,
+                league_page_manager_index: execution.league_page_manager_index,
+                league_page_manager_count: execution.league_page_manager_ids?.length,
                 gameweeks_processed: execution.gameweeks_processed,
                 gameweeks_success: execution.gameweeks_success,
                 gameweeks_failed: execution.gameweeks_failed,

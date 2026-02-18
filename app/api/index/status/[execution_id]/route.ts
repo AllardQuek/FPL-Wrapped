@@ -22,16 +22,20 @@ export async function GET(
         }
 
         const totalGameweeks = execution.to_gw - execution.from_gw + 1;
-        const managerProgressTotal = execution.total_managers || 0;
+        const managerProgressTotal = execution.total_managers;
         const managerProgressCurrent = execution.managers_processed || 0;
-        const managerPercentage = managerProgressTotal > 0
-            ? Math.round((managerProgressCurrent / managerProgressTotal) * 100)
+        const managerPercentage = (managerProgressTotal ?? 0) > 0
+            ? Math.round((managerProgressCurrent / (managerProgressTotal as number)) * 100)
             : undefined;
 
-        const gameweekPercentage = totalGameweeks > 0
-            ? Math.round((execution.gameweeks_processed / (execution.type === 'league'
-                ? totalGameweeks * (execution.total_managers || 0)
-                : totalGameweeks)) * 100)
+        const gameweekDenominator = execution.type === 'league'
+            ? ((managerProgressTotal ?? 0) > 0
+                ? totalGameweeks * (managerProgressTotal as number)
+                : undefined)
+            : totalGameweeks;
+
+        const gameweekPercentage = (gameweekDenominator ?? 0) > 0
+            ? Math.round((execution.gameweeks_processed / (gameweekDenominator as number)) * 100)
             : 0;
 
         return NextResponse.json({
@@ -42,6 +46,11 @@ export async function GET(
             progress: {
                 managers_processed: managerProgressCurrent,
                 total_managers: managerProgressTotal,
+                discovered_managers: execution.discovered_managers,
+                league_page: execution.league_page,
+                league_page_has_next: execution.league_page_has_next,
+                league_page_manager_index: execution.league_page_manager_index,
+                league_page_manager_count: execution.league_page_manager_ids?.length,
                 managers_percentage: managerPercentage,
                 gameweeks_processed: execution.gameweeks_processed,
                 gameweeks_success: execution.gameweeks_success,

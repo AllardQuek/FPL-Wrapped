@@ -24,10 +24,14 @@ export interface IndexExecutionDocument {
 
     manager_id?: number;
     league_id?: number;
-    manager_ids?: number[];
-    current_manager_index?: number;
     total_managers?: number;
     managers_processed?: number;
+
+    league_page?: number;
+    league_page_has_next?: boolean;
+    league_page_manager_ids?: number[];
+    league_page_manager_index?: number;
+    discovered_managers?: number;
 
     gameweeks_processed: number;
     gameweeks_success: number;
@@ -71,10 +75,13 @@ async function ensureExecutionsIndex() {
                 current_gw: { type: 'integer' },
                 manager_id: { type: 'integer' },
                 league_id: { type: 'integer' },
-                manager_ids: { type: 'integer' },
-                current_manager_index: { type: 'integer' },
                 total_managers: { type: 'integer' },
                 managers_processed: { type: 'integer' },
+                league_page: { type: 'integer' },
+                league_page_has_next: { type: 'boolean' },
+                league_page_manager_ids: { type: 'integer' },
+                league_page_manager_index: { type: 'integer' },
+                discovered_managers: { type: 'integer' },
                 gameweeks_processed: { type: 'integer' },
                 gameweeks_success: { type: 'integer' },
                 gameweeks_failed: { type: 'integer' },
@@ -86,10 +93,11 @@ async function ensureExecutionsIndex() {
 
 export async function createLeagueExecution(params: {
     leagueId: number;
-    managerIds: number[];
     fromGw: number;
     toGw: number;
     requestKey: string;
+    initialPageManagerIds?: number[];
+    initialPageHasNext?: boolean;
 }): Promise<IndexExecutionDocument> {
     await ensureExecutionsIndex();
     const client = getESClient();
@@ -107,14 +115,17 @@ export async function createLeagueExecution(params: {
         status: 'queued',
         created_at: now,
         updated_at: now,
-        message: `Queued league indexing for ${params.managerIds.length} managers`,
+        message: 'Queued league indexing',
         league_id: params.leagueId,
-        manager_ids: params.managerIds,
         from_gw: params.fromGw,
         to_gw: params.toGw,
         current_gw: params.fromGw,
-        current_manager_index: 0,
-        total_managers: params.managerIds.length,
+        league_page: 1,
+        league_page_has_next: params.initialPageHasNext,
+        league_page_manager_ids: params.initialPageManagerIds ?? [],
+        league_page_manager_index: 0,
+        discovered_managers: params.initialPageManagerIds?.length ?? 0,
+        total_managers: params.initialPageHasNext ? undefined : (params.initialPageManagerIds?.length ?? 0),
         managers_processed: 0,
         gameweeks_processed: 0,
         gameweeks_success: 0,

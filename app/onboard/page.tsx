@@ -42,6 +42,8 @@ export default function OnboardPage() {
         logsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [logs]);
 
+    const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!id.trim() || status === 'loading') return;
@@ -58,10 +60,34 @@ export default function OnboardPage() {
         setProgress({ current: 0, total: 0 });
 
         try {
-            const response = await fetch('/api/index', {
+            type IndexProgressPayload = {
+                managers_processed?: number;
+                total_managers?: number;
+                discovered_managers?: number;
+                league_page?: number;
+                league_page_manager_index?: number;
+                league_page_manager_count?: number;
+                gameweeks_processed?: number;
+                from_gw?: number;
+                to_gw?: number;
+            };
+
+            type IndexApiPayload = {
+                status?: string;
+                execution_id?: string;
+                message?: string;
+                error?: string;
+                progress?: IndexProgressPayload;
+            };
+
+            const response = await fetch('/api/index/orchestrate', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ type, id }),
+                body: JSON.stringify(
+                    type === 'league'
+                        ? { type, league_id: id, max_steps: 10, max_iterations: 1 }
+                        : { type, manager_id: id, max_steps: 10, max_iterations: 1 }
+                ),
             });
 
             if (!response.ok) {
@@ -69,43 +95,109 @@ export default function OnboardPage() {
                 throw new Error(errorData.error || `Error: ${response.statusText || response.status}`);
             }
 
-            const reader = response.body?.getReader();
-            const decoder = new TextDecoder();
+            let payload = (await response.json()) as IndexApiPayload;
 
-            if (!reader) throw new Error('No connection to stream');
-
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
-
-                const chunk = decoder.decode(value);
-                const lines = chunk.split('\n\n');
-
-                for (const line of lines) {
-                    if (!line.startsWith('data: ')) continue;
-                    const data = JSON.parse(line.slice(6));
-
-                    if (data.error) {
-                        setStatus('error');
-                        setLogs(prev => [...prev, `❌ ERROR: ${translateError(data.error)}`]);
-                        return;
-                    }
-
-                    if (data.done) {
-                        setStatus('success');
-                        setLogs(prev => [...prev, 'Indexing complete.']);
-                        return;
-                    }
-
-                    if (data.message) {
-                        setLogs(prev => [...prev, `▶ ${data.message}`]);
-                    }
-
-                    if (data.current !== undefined && data.total !== undefined) {
-                        setProgress({ current: data.current, total: data.total });
-                    }
-                }
+            if (payload.error) {
+                throw new Error(payload.error);
             }
+
+            const executionId = payload.execution_id;
+            if (!executionId) {
+                throw new Error('Missing execution_id from indexing response');
+            }
+
+            setLogs(prev => [...prev, `Execution started: ${executionId}`]);
+
+            let lastLoggedMessage = '';
+            let guard = 0;
+
+            const applyProgress = (data: IndexApiPayload) => {
+                const progressData = data.progress;
+                if (!progressData) {
+                    return;
+                }
+
+                if (type === 'league') {
+                    const managersProcessed = progressData.managers_processed ?? 0;
+                    const totalManagers = progressData.total_managers;
+                    const discoveredManagers = progressData.discovered_managers ?? 0;
+
+                    if (totalManagers && totalManagers > 0) {
+                        setProgress({ current: managersProcessed, total: totalManagers });
+                    } else if (discoveredManagers > 0) {
+                        setProgress({
+                            current: Math.min(managersProcessed, discoveredManagers),
+                            total: discoveredManagers
+                        });
+                    } else {
+                        setProgress({ current: managersProcessed, total: 0 });
+                    }
+
+                    const page = progressData.league_page;
+                    const pageIndex = (progressData.league_page_manager_index ?? 0) + 1;
+                    const pageCount = progressData.league_page_manager_count;
+                    const progressLine = page
+                        ? `Page ${page}${pageCount ? ` • manager ${Math.min(pageIndex, pageCount)}/${pageCount}` : ''}`
+                        : '';
+
+                    if (progressLine && progressLine !== lastLoggedMessage) {
+                        lastLoggedMessage = progressLine;
+                        setLogs(prev => [...prev, `▶ ${progressLine}`]);
+                    }
+                } else {
+                    const processed = progressData.gameweeks_processed ?? 0;
+                    const fromGw = progressData.from_gw ?? 1;
+                    const toGw = progressData.to_gw ?? fromGw;
+                    setProgress({ current: processed, total: Math.max(0, toGw - fromGw + 1) });
+                }
+            };
+
+            applyProgress(payload);
+
+            while (payload.status !== 'completed') {
+                if (payload.status === 'failed') {
+                    throw new Error(payload.error || payload.message || 'Indexing failed');
+                }
+
+                guard += 1;
+                if (guard > 5000) {
+                    throw new Error('Indexing did not complete in expected time window');
+                }
+
+                const runResponse = await fetch(`/api/index/run/${executionId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ max_steps: 10 }),
+                });
+
+                if (!runResponse.ok) {
+                    const runError = await runResponse.json().catch(() => ({}));
+                    throw new Error(runError.error || `Run failed: ${runResponse.status}`);
+                }
+
+                payload = (await runResponse.json()) as IndexApiPayload;
+                if (payload.message && payload.message !== lastLoggedMessage) {
+                    lastLoggedMessage = payload.message;
+                    setLogs(prev => [...prev, `▶ ${payload.message}`]);
+                }
+
+                const statusResponse = await fetch(`/api/index/status/${executionId}`);
+                if (statusResponse.ok) {
+                    payload = (await statusResponse.json()) as IndexApiPayload;
+                }
+
+                applyProgress(payload);
+
+                if (payload.status === 'completed') {
+                    break;
+                }
+
+                await sleep(600);
+            }
+
+            setStatus('success');
+            setLogs(prev => [...prev, 'Indexing complete.']);
+            return;
         } catch (err) {
             const message = err instanceof Error ? err.message : 'Something went wrong';
             setStatus('error');

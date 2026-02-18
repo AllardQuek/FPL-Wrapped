@@ -200,6 +200,60 @@ export async function getLeagueStandings(
 }
 
 /**
+ * Get all ranked league standings entries across all available pages.
+ *
+ * Notes:
+ * - Uses `standings.results` as the source of ranked managers.
+ * - Ignores `new_entries` pagination because it is a separate feed.
+ * - Includes defensive de-duplication and repeat-page detection.
+ *
+ * @param leagueId The league id.
+ * @param maxPages Safety cap for max pages to fetch.
+ * @param delayMs Delay between page fetches to reduce rate-limit pressure.
+ * @returns All unique `standings.results` rows across pages.
+ */
+export async function getAllLeagueStandingsEntries(
+  leagueId: number,
+  maxPages: number = 3000,
+  delayMs: number = 150
+): Promise<LeagueStandings['standings']['results']> {
+  const entries: LeagueStandings['standings']['results'] = [];
+  const seenEntryIds = new Set<number>();
+
+  for (let page = 1; page <= maxPages; page++) {
+    const data = await getLeagueStandings(leagueId, page);
+    const standings = data.standings;
+    const rows = standings?.results ?? [];
+
+    if (rows.length === 0) {
+      break;
+    }
+
+    let addedThisPage = 0;
+    for (const row of rows) {
+      if (seenEntryIds.has(row.entry)) {
+        continue;
+      }
+      seenEntryIds.add(row.entry);
+      entries.push(row);
+      addedThisPage++;
+    }
+
+    if (addedThisPage === 0) {
+      break;
+    }
+
+    if (!standings?.has_next) {
+      break;
+    }
+
+    await sleep(delayMs);
+  }
+
+  return entries;
+}
+
+/**
  * Get a manager's team picks for a specific gameweek.
  *
  * This wrapper includes an in-memory per-manager+gameweek cache (`picksCache`) to

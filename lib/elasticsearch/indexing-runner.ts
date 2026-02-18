@@ -1,4 +1,4 @@
-import { getBootstrapData } from '@/lib/fpl-api';
+import { getBootstrapData, getLeagueStandings } from '@/lib/fpl-api';
 import { indexManagerGameweek } from '@/lib/elasticsearch/indexing-service';
 import {
     getExecution,
@@ -33,8 +33,9 @@ function markFailed(doc: IndexExecutionDocument, error: unknown) {
 
 function resolveLeagueProgressMessage(doc: IndexExecutionDocument): string {
     const managersProcessed = doc.managers_processed ?? 0;
-    const totalManagers = doc.total_managers ?? 0;
-    return `Indexing league ${doc.league_id}: ${managersProcessed}/${totalManagers} managers, ${doc.gameweeks_processed} gameweeks processed`;
+    const totalManagers = doc.total_managers ?? '?';
+    const page = doc.league_page ?? 1;
+    return `Indexing league ${doc.league_id} (page ${page}): ${managersProcessed}/${totalManagers} managers, ${doc.gameweeks_processed} gameweeks processed`;
 }
 
 function resolveManagerProgressMessage(doc: IndexExecutionDocument): string {
@@ -84,40 +85,65 @@ async function processManagerGameweekStep(doc: IndexExecutionDocument, bootstrap
 
 async function processLeagueGameweekStep(doc: IndexExecutionDocument, bootstrapCurrentGw: number) {
     const leagueId = doc.league_id;
-    const managerIds = doc.manager_ids ?? [];
-    if (!leagueId || managerIds.length === 0) {
-        throw new Error('Invalid league execution: missing league_id or manager_ids');
+    if (!leagueId) {
+        throw new Error('Invalid league execution: missing league_id');
     }
 
-    const currentManagerIndex = doc.current_manager_index ?? 0;
-    const managerId = managerIds[currentManagerIndex];
+    if (doc.current_gw > doc.to_gw) {
+        doc.current_gw = doc.from_gw;
+        doc.league_page_manager_index = (doc.league_page_manager_index ?? 0) + 1;
+        doc.managers_processed = (doc.managers_processed ?? 0) + 1;
+    }
 
+    const resolveCurrentManagerId = async (): Promise<number | undefined> => {
+        while (true) {
+            const pageManagerIds = doc.league_page_manager_ids ?? [];
+            const pageManagerIndex = doc.league_page_manager_index ?? 0;
+
+            if (pageManagerIndex < pageManagerIds.length) {
+                return pageManagerIds[pageManagerIndex];
+            }
+
+            if (pageManagerIds.length > 0 && doc.league_page_has_next === false) {
+                return undefined;
+            }
+
+            const nextPage = pageManagerIds.length > 0
+                ? (doc.league_page ?? 1) + 1
+                : (doc.league_page ?? 1);
+
+            const standings = await getLeagueStandings(leagueId, nextPage);
+            const rows = standings.standings?.results ?? [];
+
+            doc.league_page = nextPage;
+            doc.league_page_has_next = Boolean(standings.standings?.has_next);
+            doc.league_page_manager_ids = rows.map(row => row.entry);
+            doc.league_page_manager_index = 0;
+            doc.discovered_managers = (doc.discovered_managers ?? 0) + rows.length;
+
+            if (!doc.league_page_has_next) {
+                doc.total_managers = doc.discovered_managers;
+            }
+
+            if (rows.length === 0 && !doc.league_page_has_next) {
+                return undefined;
+            }
+        }
+    };
+
+    const managerId = await resolveCurrentManagerId();
     if (managerId === undefined) {
+        if (doc.total_managers === undefined) {
+            doc.total_managers = doc.managers_processed ?? 0;
+        }
         markCompleted(
             doc,
-            `League ${leagueId} indexing complete: ${doc.managers_processed ?? 0}/${doc.total_managers ?? 0} managers`
+            `League ${leagueId} indexing complete: ${doc.managers_processed ?? 0}/${doc.total_managers ?? 0} managers, ${doc.gameweeks_success} success, ${doc.gameweeks_failed} failed, ${doc.gameweeks_skipped} skipped`
         );
         return;
     }
 
     const gw = doc.current_gw;
-    if (gw > doc.to_gw) {
-        doc.current_manager_index = currentManagerIndex + 1;
-        doc.managers_processed = (doc.current_manager_index ?? 0);
-        doc.current_gw = doc.from_gw;
-
-        if ((doc.current_manager_index ?? 0) >= managerIds.length) {
-            markCompleted(
-                doc,
-                `League ${leagueId} indexing complete: ${doc.managers_processed ?? 0}/${doc.total_managers ?? 0} managers, ${doc.gameweeks_success} success, ${doc.gameweeks_failed} failed, ${doc.gameweeks_skipped} skipped`
-            );
-            return;
-        }
-
-        doc.message = resolveLeagueProgressMessage(doc);
-        return;
-    }
-
     const isFutureGw = gw > bootstrapCurrentGw;
     if (isFutureGw) {
         doc.gameweeks_skipped += 1;

@@ -1,12 +1,12 @@
 import { getESClient } from './client';
 import { transformToGameweekDecision, GameweekDecisionDocument } from './transformer';
 import {
+    getAllLeagueStandingsEntries,
     getBootstrapData,
     getGameWeekPicks,
     getLiveGameWeek,
     getManagerInfo,
-    getManagerTransfers,
-    getLeagueStandings
+    getManagerTransfers
 } from '../fpl-api';
 
 const indexName = process.env.ELASTICSEARCH_INDEX_NAME || 'fpl-gameweek-decisions';
@@ -208,9 +208,8 @@ export async function indexLeagueAllGameweeks(
     onProgress?: ProgressCallback
 ): Promise<{ managersProcessed: number; totalSuccess: number; totalFailed: number }> {
     try {
-        // Fetch league standings
-        const standings = await getLeagueStandings(leagueId, 1);
-        const managers = standings.standings.results;
+        // Fetch all league standings pages (ranked managers in standings.results)
+        const managers = await getAllLeagueStandingsEntries(leagueId);
 
         onProgress?.({
             type: 'league',

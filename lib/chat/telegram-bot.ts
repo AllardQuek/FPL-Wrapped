@@ -10,6 +10,14 @@ import { createConversationStore } from './telegram/services/conversation-store'
 
 const token = process.env.TELEGRAM_BOT_TOKEN;
 
+// Stream inactivity timeout (minutes-based env var for readability).
+const STREAM_INACTIVITY_TIMEOUT_MINUTES = Number(
+    process.env.TELEGRAM_STREAM_INACTIVITY_TIMEOUT_MINUTES ?? '3'
+);
+const STREAM_INACTIVITY_TIMEOUT_MS = Number(
+    process.env.TELEGRAM_STREAM_INACTIVITY_TIMEOUT_MS ?? String(STREAM_INACTIVITY_TIMEOUT_MINUTES * 60_000)
+);
+
 if (!token) {
     console.warn('TELEGRAM_BOT_TOKEN is not defined. Telegram bot will not be initialized.');
 }
@@ -17,7 +25,7 @@ if (!token) {
 /**
  * Initialize Telegraf bot
  */
-export const bot = token ? new Telegraf(token) : null;
+export const bot = token ? new Telegraf(token, { handlerTimeout: STREAM_INACTIVITY_TIMEOUT_MS }) : null;
 
 if (bot) {
     // Conversation cache tuning:
@@ -38,14 +46,8 @@ if (bot) {
     // Per-chat settings: persona key, tone id.
     const chatSettingsByChatId = new Map<number, { persona?: string; tone?: string }>();
     // abort stream if no chunks for the given timeout.
-    // Use a minutes-based env var for readability, but accept a ms override for backwards compatibility.
-    // Default: 3 minutes.
-    const STREAM_INACTIVITY_TIMEOUT_MINUTES = Number(
-        process.env.TELEGRAM_STREAM_INACTIVITY_TIMEOUT_MINUTES ?? '3'
-    );
-    const STREAM_INACTIVITY_TIMEOUT_MS = Number(
-        process.env.TELEGRAM_STREAM_INACTIVITY_TIMEOUT_MS ?? String(STREAM_INACTIVITY_TIMEOUT_MINUTES * 60_000)
-    );
+    // `STREAM_INACTIVITY_TIMEOUT_MS` is computed above and used both for the
+    // Telegraf handler timeout and the stream inactivity abort check.
     const updateDeduper = createUpdateDeduper(1000);
 
     // Middleware to deduplicate updates (Telegram retries on timeout)

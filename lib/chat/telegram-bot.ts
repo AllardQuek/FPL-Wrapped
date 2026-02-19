@@ -37,7 +37,15 @@ if (bot) {
     const chatProcessing = new Set<number>();
     // Per-chat settings: persona key, tone id.
     const chatSettingsByChatId = new Map<number, { persona?: string; tone?: string }>();
-    const STREAM_INACTIVITY_TIMEOUT_MS = 30_000; // abort stream if no chunks for 30s
+    // abort stream if no chunks for the given timeout.
+    // Use a minutes-based env var for readability, but accept a ms override for backwards compatibility.
+    // Default: 3 minutes.
+    const STREAM_INACTIVITY_TIMEOUT_MINUTES = Number(
+        process.env.TELEGRAM_STREAM_INACTIVITY_TIMEOUT_MINUTES ?? '3'
+    );
+    const STREAM_INACTIVITY_TIMEOUT_MS = Number(
+        process.env.TELEGRAM_STREAM_INACTIVITY_TIMEOUT_MS ?? String(STREAM_INACTIVITY_TIMEOUT_MINUTES * 60_000)
+    );
     const updateDeduper = createUpdateDeduper(1000);
 
     // Middleware to deduplicate updates (Telegram retries on timeout)

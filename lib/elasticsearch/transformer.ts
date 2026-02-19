@@ -135,6 +135,11 @@ export function transformToGameweekDecision(
   // Split picks into starters (1-11) and bench (12-15)
   const starters = picks.picks
     .filter(p => p.position <= 11)
+    // Ensure picks are ordered by `position` so denormalized arrays (names/points/ids)
+    // keep a consistent index mapping to the player's slot (1..11). Without this
+    // explicit sort, the API's returned order may differ and cause name/point
+    // arrays to be out-of-order relative to expected slot positions.
+    .sort((a, b) => a.position - b.position)
     .map(p => {
       const player = getPlayer(p.element, bootstrap);
       return {
@@ -148,6 +153,11 @@ export function transformToGameweekDecision(
 
   const bench = picks.picks
     .filter(p => p.position > 11)
+    // Sort bench picks by `position` (12..15) to guarantee the denormalized
+    // arrays `bench_names`, `bench_points`, `bench_element_ids` have indices
+    // corresponding to bench slot order. See test/elasticsearch/benchOrder.test.ts
+    // which demonstrates the failure mode when the sort is omitted.
+    .sort((a, b) => a.position - b.position)
     .map(p => {
       const player = getPlayer(p.element, bootstrap);
       return {

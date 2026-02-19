@@ -1,0 +1,13 @@
+{
+  "processors": [
+    {
+      "script": {
+        "lang": "painless",
+        "source": "if (ctx.bench_element_ids != null && ctx.bench_element_ids instanceof List && ctx.bench_element_ids.size()==4) { ctx.bench_1_slot_12_id = ctx.bench_element_ids.get(0); ctx.bench_1_slot_13_id = ctx.bench_element_ids.get(1); ctx.bench_1_slot_14_id = ctx.bench_element_ids.get(2); ctx.bench_1_slot_15_id = ctx.bench_element_ids.get(3); } if (ctx.bench_names != null && ctx.bench_names instanceof List && ctx.bench_names.size()==4) { ctx.bench_1_slot_12_name = ctx.bench_names.get(0); ctx.bench_1_slot_13_name = ctx.bench_names.get(1); ctx.bench_1_slot_14_name = ctx.bench_names.get(2); ctx.bench_1_slot_15_name = ctx.bench_names.get(3); } if (ctx.bench_points != null && ctx.bench_points instanceof List && ctx.bench_points.size()==4) { ctx.bench_1_slot_12_points = ctx.bench_points.get(0); ctx.bench_1_slot_13_points = ctx.bench_points.get(1); ctx.bench_1_slot_14_points = ctx.bench_points.get(2); ctx.bench_1_slot_15_points = ctx.bench_points.get(3); int s=0; int m=Integer.MIN_VALUE; for (int i=0;i<ctx.bench_points.size();++i){ Object o = ctx.bench_points.get(i); int v = o instanceof Number ? ((Number)o).intValue() : 0; s += v; if (i==0 || v>m) { m=v; } } ctx.bench_total = s; ctx.bench_max = (m==Integer.MIN_VALUE?0:m); }"
+      }
+    },
+    { "remove": { "field": "bench_names", "ignore_missing": true } },
+    { "remove": { "field": "bench_points", "ignore_missing": true } },
+    { "remove": { "field": "bench_element_ids", "ignore_missing": true } }
+  ]
+}

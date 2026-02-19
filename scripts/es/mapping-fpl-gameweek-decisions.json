@@ -1,0 +1,24 @@
+{
+  "mappings": {
+    "properties": {
+      "bench_1_slot_12_id": { "type": "integer" },
+      "bench_1_slot_12_name": { "type": "keyword" },
+      "bench_1_slot_12_points": { "type": "integer" },
+
+      "bench_1_slot_13_id": { "type": "integer" },
+      "bench_1_slot_13_name": { "type": "keyword" },
+      "bench_1_slot_13_points": { "type": "integer" },
+
+      "bench_1_slot_14_id": { "type": "integer" },
+      "bench_1_slot_14_name": { "type": "keyword" },
+      "bench_1_slot_14_points": { "type": "integer" },
+
+      "bench_1_slot_15_id": { "type": "integer" },
+      "bench_1_slot_15_name": { "type": "keyword" },
+      "bench_1_slot_15_points": { "type": "integer" },
+
+      "bench_total": { "type": "integer" },
+      "bench_max": { "type": "integer" }
+    }
+  }
+}

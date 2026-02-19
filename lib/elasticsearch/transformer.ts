@@ -172,6 +172,27 @@ export function transformToGameweekDecision(
   // Calculate total bench points
   const pointsOnBench = bench.reduce((sum, p) => sum + p.points, 0);
 
+  // Build deterministic slot fields for bench so ES single-valued doc-values
+  // can be used safely in queries/aggregations. This encodes slots 12..15
+  // as explicit single-valued fields like `bench_slot_12_id`,
+  // `bench_slot_12_name`, `bench_slot_12_points` and also provides
+  // convenient aggregates `bench_pt_1st..4th`, `bench_total`, `bench_max`.
+  const benchSlotFields: Record<string, any> = {};
+  const benchPoints = bench.map(b => b.points);
+  bench.forEach((b, i) => {
+    const pos = b.position_index; // expected 12..15
+    benchSlotFields[`bench_slot_${pos}_id`] = b.player_id;
+    benchSlotFields[`bench_slot_${pos}_name`] = b.name;
+    benchSlotFields[`bench_slot_${pos}_points`] = b.points;
+  });
+  // Add convenience ordered bench_pt_1st..bench_pt_4th (slot 12..15)
+  benchSlotFields.bench_pt_1st = benchPoints[0] ?? 0;
+  benchSlotFields.bench_pt_2nd = benchPoints[1] ?? 0;
+  benchSlotFields.bench_pt_3rd = benchPoints[2] ?? 0;
+  benchSlotFields.bench_pt_4th = benchPoints[3] ?? 0;
+  benchSlotFields.bench_total = benchPoints.reduce((s, v) => s + (v || 0), 0);
+  benchSlotFields.bench_max = benchPoints.length ? Math.max(...benchPoints) : 0;
+
   // Transform transfers
   const transformedTransfers = gwTransfers.map(t => {
     const playerIn = getPlayer(t.element_in, bootstrap);
@@ -221,6 +242,8 @@ export function transformToGameweekDecision(
     bench_names: bench.map(b => b.name),
     bench_points: bench.map(b => b.points),
     bench_element_ids: bench.map(b => b.player_id),
+    // Deterministic slot fields for query-time access (see benchSlotFields)
+    ...benchSlotFields,
 
     transfer_in_names: transformedTransfers.map(t => t.player_in_name),
     transfer_out_names: transformedTransfers.map(t => t.player_out_name),

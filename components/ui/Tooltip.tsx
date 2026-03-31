@@ -18,7 +18,7 @@ export function InfoTooltip({ content, side = "top", maxWidth = "max-w-[200px]",
         <TooltipPrimitive.Provider delayDuration={300}>
             <TooltipPrimitive.Root>
                 <TooltipPrimitive.Trigger asChild>
-                    <button className="inline-flex items-center justify-center p-1 opacity-50 hover:opacity-100 transition-opacity focus:outline-none">
+                    <button className="inline-flex items-center justify-center p-1 opacity-50 hover:opacity-100 transition-opacity focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50 rounded-full">
                         <Info className={`w-3 h-3 ${iconColor}`} />
                     </button>
                 </TooltipPrimitive.Trigger>
